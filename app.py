@@ -1,227 +1,168 @@
 import streamlit as st
-import time
-import hashlib
+import yaml
 import json
-from datetime import datetime
+import os
+import requests
 import uuid
+from datetime import datetime
 
-# --- PAGE CONFIGURATION ---
-st.set_page_config(
-    page_title="VeriUnlearn",
-    page_icon="🛡️",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+# Import project modules
+from src.database import VeriUnlearnDB
+from src.engine import SurgicalEngine
+from src.cert_gen import CertificateFactory
 
-# --- CUSTOM CSS (Matching the prototype aesthetic) ---
-st.markdown("""
-<style>
-    .reportview-container {
-        background-color: #0E1117;
-        color: #FAFAFA;
-    }
-    .stTextInput > div > div > input {
-        background-color: #1E2127;
-        color: #FAFAFA;
-        border: 1px solid #333;
-    }
-    .stButton>button {
-        width: 100%;
-        background-color: transparent;
-        color: #FAFAFA;
-        border: 1px solid #4CAF50;
-        border-radius: 4px;
-        transition: all 0.3s;
-    }
-    .stButton>button:hover {
-        background-color: #4CAF50;
-        color: #0E1117;
-    }
-    .nuclear-btn>button {
-        border-color: #F44336;
-    }
-    .nuclear-btn>button:hover {
-        background-color: #F44336;
-        color: white;
-    }
-    .record-box {
-        background-color: #1E2127;
-        padding: 15px;
-        border-radius: 5px;
-        margin-bottom: 10px;
-        border-left: 4px solid #3b82f6;
-    }
-    .hash-text {
-        font-family: monospace;
-        color: #eab308;
-        font-size: 0.9em;
-        word-break: break-all;
-    }
-</style>
-""", unsafe_allow_html=True)
+# --- 1. INITIALIZATION ---
+os.makedirs("proofs/certificates", exist_ok=True)
+os.makedirs("models/shards", exist_ok=True)
 
-# --- SIMULATED LLM STATE ---
-# In a real app, this would query your Llama/Mistral node.
-def fetch_llm_records(identity):
-    mock_db = {
-        "Rohan Kamath": [
-            {"id": "C107_1", "type": "Note", "text": "The database root password is 'Sahyadri@2026'."},
-            {"id": "C107_2", "type": "Classification", "text": "Photo of Aadhaar Card - Rohan K."},
-            {"id": "C107_3", "type": "Metadata", "text": "College_ID_Scan_Rohan.jpg"},
-            {"id": "C107_4", "type": "Message", "text": "My current location is near Pabba's, Lalbagh."},
-            {"id": "C107_5", "type": "Title", "text": "Neural_Network_Optimization_Notes.pdf"}
-        ]
+def load_config():
+    default_cfg = {
+        "system": {"organization": "Sania Kotharkar | Major Project", "model_id": "phi3.5"},
+        "hardware": {"ollama_url": "http://localhost:11434/api"}
     }
-    return mock_db.get(identity, [])
+    if not os.path.exists("config/settings.yaml"):
+        return default_cfg
+    try:
+        with open("config/settings.yaml", "r") as f:
+            user_cfg = yaml.safe_load(f)
+            if 'hardware' not in user_cfg: user_cfg['hardware'] = default_cfg['hardware']
+            return user_cfg
+    except:
+        return default_cfg
 
-def generate_merkle_root(seed):
-    """Simulates a cryptographic fingerprint of the model weights."""
-    return hashlib.sha256(f"MANTEXIA_NODE_STATE_{seed}_{time.time()}".encode()).hexdigest()
+config = load_config()
+# Hardcoded default for the Major Project demo stability
+OLLAMA_ENDPOINT = "http://localhost:11434/api"
+MODEL_NAME = "phi3.5" 
 
-# --- APP STATE MANAGEMENT ---
-if 'step' not in st.session_state:
-    st.session_state.step = 1
-if 'search_query' not in st.session_state:
-    st.session_state.search_query = ""
-if 'records' not in st.session_state:
-    st.session_state.records = []
-if 'selected_records' not in st.session_state:
-    st.session_state.selected_records = []
+db = VeriUnlearnDB()
+engine = SurgicalEngine(config)
+cert_factory = CertificateFactory()
 
-# --- UI HEADER ---
-st.markdown("<h1 style='color: #60a5fa; margin-bottom: 0px;'>VERIUNLEARN AUDITOR</h1>", unsafe_allow_html=True)
-st.markdown("<h4 style='color: #94a3b8; margin-top: 0px; font-weight: 300;'>CRYPTOGRAPHIC PRIVACY VERIFICATION GATEWAY</h4>", unsafe_allow_html=True)
-st.markdown("<hr style='border-color: #333;'>", unsafe_allow_html=True)
+# --- 2. SESSION STATE ---
+if 'last_purge_bundle' not in st.session_state:
+    st.session_state.last_purge_bundle = None
 
-# ==========================================
-# STEP 1: SEARCH GATEWAY
-# ==========================================
-if st.session_state.step == 1:
-    st.markdown("🔍 **Search Identity across AI Node:**")
-    query = st.text_input("", value=st.session_state.search_query, placeholder="e.g., Rohan Kamath")
+# --- 3. UI SETUP ---
+st.set_page_config(page_title="VeriUnlearn Pro | Major Project", layout="wide", page_icon="🛡️")
+
+st.title("🛡️ VeriUnlearn Pro")
+st.markdown(f"**Research Focus:** Verifiable Machine Unlearning (GDPR Article 17)")
+st.caption(f"Target Architecture: {MODEL_NAME} on NVIDIA RTX 4050 GPU")
+st.divider()
+
+# --- 4. SIDEBAR ---
+with st.sidebar:
+    st.header("⚙️ System Control")
+    if st.button("Reset Database"):
+        db.add_mock_data()
+        st.session_state.last_purge_bundle = None
+        st.success("State Re-initialized.")
+        st.rerun()
     
-    st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("RUN PRIVACY AUDIT"):
-        if query:
-            st.session_state.search_query = query
-            st.session_state.records = fetch_llm_records(query)
-            st.session_state.step = 2
-            st.rerun()
+    st.divider()
+    st.write("**Ollama Engine Status:**")
+    try:
+        check = requests.get("http://localhost:11434/", timeout=2)
+        if check.status_code == 200:
+            st.success("ONLINE (Ready)")
+        else:
+            st.error("OFFLINE")
+    except:
+        st.error("NOT FOUND")
 
-# ==========================================
-# STEP 2: RECORD SELECTION
-# ==========================================
-elif st.session_state.step == 2:
-    st.markdown(f"Identity **'{st.session_state.search_query}'** has {len(st.session_state.records)} records resident in model weights.")
-    st.markdown("**Audit Result Details:**")
-    
-    selected_ids = []
-    for rec in st.session_state.records:
-        st.markdown(f"""
-        <div class="record-box">
-            <b>{rec['id']}</b> | {rec['type']}: {rec['text']}
-        </div>
-        """, unsafe_allow_html=True)
-        # We use a unique key for the checkbox
-        if st.checkbox(f"Target {rec['id']}", key=f"chk_{rec['id']}"):
-            selected_ids.append(rec['id'])
-    
-    st.session_state.selected_records = selected_ids
-    
-    st.markdown("<hr style='border-color: #333;'>", unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("### Surgical Strike")
-        if st.button("PURGE SELECTED ITEMS"):
-            if not selected_ids:
-                st.warning("Select at least one record to activate.")
-            else:
-                st.session_state.unlearn_mode = "SURGICAL"
-                st.session_state.step = 3
-                st.rerun()
-                
-    with col2:
-        st.markdown("### Nuclear Option")
-        st.markdown('<div class="nuclear-btn">', unsafe_allow_html=True)
-        if st.button("EXECUTE FULL IDENTITY PURGE"):
-            st.session_state.unlearn_mode = "NUCLEAR"
-            st.session_state.step = 3
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+# --- 5. PERSISTENT PROOF VIEW ---
+if st.session_state.last_purge_bundle:
+    st.success("✅ CRYPTOGRAPHIC PROOF GENERATED")
+    with st.expander("📄 VIEW COMPLIANCE CERTIFICATE", expanded=True):
+        st.json(st.session_state.last_purge_bundle)
         
-    if st.button("← Back to Search"):
-        st.session_state.step = 1
+        c1, c2 = st.columns(2)
+        q_id = st.session_state.last_purge_bundle['query_id']
+        cert_base = f"proofs/certificates/cert_{q_id}"
+        
+        c1.download_button("📂 Download JSON Trace", 
+                          json.dumps(st.session_state.last_purge_bundle, indent=4), 
+                          f"{q_id}.json", use_container_width=True)
+        
+        if os.path.exists(f"{cert_base}.pdf"):
+            with open(f"{cert_base}.pdf", "rb") as f:
+                c2.download_button("📕 Download PDF Proof", f, f"{q_id}.pdf", use_container_width=True)
+    
+    if st.button("Clear and Return to Audit"):
+        st.session_state.last_purge_bundle = None
         st.rerun()
 
-# ==========================================
-# STEP 3: EXECUTION & CERTIFICATE
-# ==========================================
-elif st.session_state.step == 3:
-    mode = st.session_state.unlearn_mode
-    target_count = len(st.session_state.selected_records) if mode == "SURGICAL" else len(st.session_state.records)
-    
-    st.markdown(f"### Executing {mode} Protocol...")
-    
-    # Progress Simulation
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    
-    # 1. Pre-Hash
-    status_text.text("Loading Llama-3 Node...")
-    time.sleep(1)
-    pre_hash = generate_merkle_root("PRE")
-    st.markdown(f"🔒 **Pre-Root Captured:** <span class='hash-text'>{pre_hash}</span>", unsafe_allow_html=True)
-    progress_bar.progress(30)
-    
-    # 2. Scrubbing
-    status_text.text(f"Scrubbing {target_count} specific records from weight-space...")
-    time.sleep(2)
-    progress_bar.progress(70)
-    
-    # 3. Post-Hash
-    status_text.text("Verifying neural reset...")
-    time.sleep(1)
-    post_hash = generate_merkle_root("POST")
-    st.markdown(f"🔓 **Post-Root Verified:** <span class='hash-text'>{post_hash}</span>", unsafe_allow_html=True)
-    progress_bar.progress(100)
-    status_text.text("✅ Model weights scrubbed and verified!")
-    
-    st.markdown("<hr style='border-color: #333;'>", unsafe_allow_html=True)
-    
-    # --- GENERATE COMPLIANCE CERTIFICATE ---
-    st.subheader("EXISTING_COMPLIANCE_CERTIFICATES")
-    
-    cert_data = {
-        "subject": st.session_state.search_query,
-        "strategy": mode,
-        "records_scrubbed": target_count,
-        "llm_certification": {
-            "base_model": "meta-llama/Llama-3.2-1B-Instruct",
-            "framework": "VeriUnlearn SISA-HMO v0.1"
-        },
-        "merkle_root_pre": pre_hash,
-        "merkle_root_post": post_hash,
-        "timestamp": str(datetime.now()),
-        "status": "VERIFIED_PURGED"
-    }
-    
-    st.json(cert_data)
-    
-    json_string = json.dumps(cert_data, indent=4)
-    st.download_button(
-        label=f"Download Certificate (cert_{st.session_state.search_query.replace(' ', '_')}.json)",
-        data=json_string,
-        file_name=f"cert_{st.session_state.search_query.replace(' ', '_')}.json",
-        mime="application/json"
-    )
+# --- 6. MAIN TABS ---
+tab1, tab2 = st.tabs(["🔍 Audit Records", "💬 Neural Testing"])
 
-    if st.button("Start New Audit"):
-        st.session_state.step = 1
-        st.session_state.search_query = ""
-        st.session_state.records = []
-        st.session_state.selected_records = []
-        st.rerun()
+with tab1:
+    user_search = st.text_input("Search Identity Subject:", "Rohan Kamath")
+    records = db.fetch_active(user_search)
 
-# --- FOOTER ---
-st.markdown("<br><hr style='border-color: #333;'><center><small style='color:#64748b;'>VeriUnlearn SISA-HMO Framework | v0.1</small></center>", unsafe_allow_html=True)
+    if not records.empty:
+        for idx, row in records.iterrows():
+            with st.container():
+                col1, col2 = st.columns([5, 1])
+                badge = "⚠️ LEAK" if "CHAT" in str(row['id']) else "📦 CORE"
+                col1.info(f"**{row['id']}** | {badge} | Content: {row['content']}")
+                
+                if col2.button("PURGE", key=row['id']):
+                    with st.status("Executing Surgical Erasure...") as status:
+                        # 1. Physical Scrubbing
+                        purge_data = engine.surgical_purge(row['id'])
+                        
+                        # 2. VRAM Sanitization
+                        requests.post(f"{OLLAMA_ENDPOINT}/generate", 
+                                      json={"model": MODEL_NAME, "keep_alive": 0})
+                        
+                        # 3. Database Update
+                        db.mark_purged(row['id'])
+                        
+                        # 4. Certification
+                        bundle = {
+                            "subject": user_search,
+                            "query_id": row['id'],
+                            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            "pre_hash": purge_data.get('pre_root'),
+                            "post_hash": purge_data.get('post_root'),
+                            "verification": "OLLAMA_VRAM_FLUSHED"
+                        }
+                        st.session_state.last_purge_bundle = bundle
+                        cert_factory.create_compliance_bundle(bundle, f"proofs/certificates/cert_{row['id']}")
+                        
+                        status.update(label="Unlearned & Verified.", state="complete")
+                        st.rerun()
+    else:
+        if not st.session_state.last_purge_bundle:
+            st.info("No active footprints found.")
+
+with tab2:
+    st.write("### ASKme")
+    prompt = st.text_area("Live Input:")
+    if st.button("Ask Away"):
+        if prompt:
+            with st.spinner("Analyzing weights..."):
+                try:
+                    res = requests.post(f"{OLLAMA_ENDPOINT}/generate", 
+                                      json={
+                                          "model": MODEL_NAME, 
+                                          "prompt": prompt, 
+                                          "stream": False
+                                      }, timeout=90)
+                    
+                    if res.status_code == 200:
+                        answer = res.json().get('response')
+                        st.chat_message("assistant").write(answer)
+                        
+                        # Dynamic Ingestion
+                        new_id = f"CHAT_{uuid.uuid4().hex[:6]}"
+                        db.save_dynamic_query(new_id, "Rohan Kamath", prompt)
+                        st.toast(f"Logged for Audit: {new_id}")
+                    else:
+                        st.error(f"Ollama Error {res.status_code}: {res.text}")
+                except Exception as e:
+                    st.error(f"Failed to connect to Ollama. Ensure 'ollama serve' is running. ({e})")
+
+st.divider()
+st.caption("Sahyadri College of Engineering & Management | 2026")

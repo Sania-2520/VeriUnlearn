@@ -1,0 +1,13 @@
+system:
+  organization: "Mantexia Solutions"
+  framework: "VeriUnlearn Pro v1.0"
+  model_id: "microsoft/Phi-3.5-mini-instruct"
+
+hardware:
+  device: "cuda"
+  vram_limit_gb: 6
+  quantization: "4bit"
+
+security:
+  hash_algorithm: "sha256"
+  sharding_strategy: "SISA-HMO"

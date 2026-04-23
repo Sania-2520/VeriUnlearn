@@ -1,0 +1,8 @@
+streamlit
+torch
+transformers
+peft
+datasets
+fpdf
+pytest
+# sqlite3 is part of Python's standard library and does not need pip installation.
