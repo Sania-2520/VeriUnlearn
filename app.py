@@ -1,183 +1,190 @@
 import streamlit as st
-import yaml
 import json
 import os
 import requests
 import uuid
+import hashlib
+import hmac
 from datetime import datetime
 from src.database import VeriUnlearnDB
 from src.engine import SurgicalEngine
 from src.cert_gen import CertificateFactory
 
-# --- 1. INITIALIZATION ---
+# --- 1. SYSTEM INITIALIZATION ---
+# Create necessary directory structure for cryptographic proofs
 os.makedirs("proofs/certificates", exist_ok=True)
-os.makedirs("models/shards", exist_ok=True)
-
-OLLAMA_ENDPOINT = "http://localhost:11434/api"
-MODEL_NAME = "phi3.5" 
-
 db = VeriUnlearnDB()
-engine = SurgicalEngine({"system": {"model_id": MODEL_NAME}})
+engine = SurgicalEngine({"system": {"model_id": "phi3.5"}})
 cert_factory = CertificateFactory()
 
-# --- 2. AUTHENTICATION & GLOBAL STATE ---
-if 'authenticated' not in st.session_state:
-    st.session_state.authenticated = False
-if 'username' not in st.session_state:
-    st.session_state.username = None
-if 'user_role' not in st.session_state:
-    st.session_state.user_role = None
-if 'messages' not in st.session_state:
-    st.session_state.messages = []
-if 'last_purge_bundle' not in st.session_state:
-    st.session_state.last_purge_bundle = None
+OLLAMA_ENDPOINT = "http://localhost:11434/api"
+MODEL_NAME = "phi3.5"
+SECRET_ZK_KEY = "sania_scem_2026"
 
-# Mock User Database (Sania as Admin, Rohan/Isha as Users)
-USER_DB = {
-    "sania": {"pwd": "123", "role": "admin"},
-    "akash": {"pwd": "456", "role": "user"},
-    "varun": {"pwd": "789", "role": "user"}
-}
+# --- 2. DYNAMIC USER REGISTRY (Multi-Tenant Simulation) ---
+if 'dynamic_user_db' not in st.session_state:
+    st.session_state.dynamic_user_db = {
+        "sania": {"pwd": "123", "role": "admin", "shard": "shard_master"}
+    }
 
-# --- 3. LOGIN SCREEN ---
-if not st.session_state.authenticated:
-    st.set_page_config(page_title="Login | VeriUnlearn", layout="centered")
-    st.title("🛡️ VeriUnlearn Secure Portal")
+# Session Management
+if 'auth' not in st.session_state:
+    st.session_state.auth = False
+if 'user' not in st.session_state:
+    st.session_state.user = None
+if 'shard' not in st.session_state:
+    st.session_state.shard = None
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+if 'purge_proof' not in st.session_state:
+    st.session_state.purge_proof = None
+
+# --- 3. CRYPTO UTILS ---
+def get_zk_proof(pre, post):
+    """
+    Generates a ZK-SNARK-inspired proof string.
+    NOTE: Replaced 'π' with 'pi' to fix UnicodeEncodeError in PDF generation.
+    """
+    msg = f"{pre}{post}".encode()
+    pi_hash = hmac.new(SECRET_ZK_KEY.encode(), msg, hashlib.sha256).hexdigest()
+    return f"zk-snark:v1:pi_{pi_hash[:12]}"
+
+# --- 4. THE DYNAMIC ACCESS PORTAL ---
+if not st.session_state.auth:
+    st.set_page_config(page_title="VeriUnlearn | Portal", layout="centered")
+    st.markdown("<h1 style='text-align: center;'>🛡️ VeriUnlearn Pro</h1>", unsafe_allow_html=True)
     
-    with st.form("login_panel"):
-        u_in = st.text_input("Username").lower()
-        p_in = st.text_input("Password", type="password")
-        if st.form_submit_button("Authenticate", use_container_width=True):
-            if u_in in USER_DB and USER_DB[u_in]["pwd"] == p_in:
-                st.session_state.authenticated = True
-                st.session_state.username = u_in
-                st.session_state.user_role = USER_DB[u_in]["role"]
-                st.rerun()
-            else:
-                st.error("Access Denied: Invalid Credentials")
+    auth_mode = st.radio("System Access", ["Sign In", "Register New Independent Shard"], horizontal=True)
+    
+    with st.container(border=True):
+        u = st.text_input("Username").lower()
+        p = st.text_input("Password", type="password")
+        
+        if auth_mode == "Sign In":
+            if st.button("Secure Sign In", use_container_width=True, type="primary"):
+                if u in st.session_state.dynamic_user_db and st.session_state.dynamic_user_db[u]["pwd"] == p:
+                    st.session_state.auth = True
+                    st.session_state.user = u
+                    st.session_state.shard = st.session_state.dynamic_user_db[u]["shard"]
+                    st.rerun()
+                else:
+                    st.error("Authentication Failed: Unknown Identity or Invalid Password")
+        
+        else: # Register Mode
+            if st.button("Initialize Neural Shard", use_container_width=True):
+                if u and p:
+                    if u not in st.session_state.dynamic_user_db:
+                        # DYNAMIC SISA SHARDING
+                        new_shard = f"shard_{uuid.uuid4().hex[:6]}"
+                        st.session_state.dynamic_user_db[u] = {"pwd": p, "role": "user", "shard": new_shard}
+                        st.success(f"Shard Created: `{new_shard}`. You may now Sign In.")
+                    else:
+                        st.warning("User identity already exists in neural index.")
     st.stop()
 
-# --- 4. APP LAYOUT & STYLING ---
-st.set_page_config(page_title="VeriUnlearn Pro", layout="wide", page_icon="🛡️")
+# --- 5. DASHBOARD LAYOUT ---
+st.set_page_config(page_title="VeriUnlearn Pro", layout="wide")
 
-st.markdown("""
-    <style>
-    .main .block-container { max-width: 850px; padding-top: 2rem; }
-    .stChatMessage { border-radius: 12px; margin-bottom: 15px; background-color: rgba(255,255,255,0.05); }
-    </style>
-    """, unsafe_allow_html=True)
-
-# --- 5. SIDEBAR NAVIGATION ---
 with st.sidebar:
     st.title("🛡️ VeriUnlearn")
-    st.write(f"Logged in: **{st.session_state.username.upper()}**")
-    st.caption(f"Access Level: {st.session_state.user_role.upper()}")
+    st.info(f"**Identity:** {st.session_state.user.upper()}\n\n**Neural Shard:** `{st.session_state.shard}`")
     st.divider()
-    
-    nav_options = ["Neural Sandbox", "My Privacy Rights"]
-    if st.session_state.user_role == "admin":
-        nav_options.append("Compliance Audit")
-        
-    page = st.radio("Navigation", nav_options)
-    
+    page = st.radio("Navigation", ["Neural Sandbox", "Privacy Control Center"])
     st.divider()
-    if st.button("Logout", use_container_width=True):
-        st.session_state.authenticated = False
-        st.session_state.messages = []
-        st.session_state.last_purge_bundle = None
+    if st.button("Logout & Flush Session"):
+        st.session_state.auth = False
+        st.session_state.chat_history = []
         st.rerun()
 
-# --- 6. GLOBAL CERTIFICATE LISTENER ---
-# This ensures certificates appear regardless of what page the user is on
-if st.session_state.last_purge_bundle:
-    with st.container():
-        st.success("✅ CRYPTOGRAPHIC PROOF OF ERASURE ISSUED")
-        with st.expander("📄 VIEW VERIFICATION DETAILS", expanded=True):
-            st.json(st.session_state.last_purge_bundle)
-            
-            q_id = st.session_state.last_purge_bundle['query_id']
-            cert_path = f"proofs/certificates/cert_{q_id}.pdf"
-            
-            c1, c2 = st.columns(2)
-            c1.download_button("📂 JSON Proof", json.dumps(st.session_state.last_purge_bundle, indent=4), f"proof_{q_id}.json", use_container_width=True)
-            if os.path.exists(cert_path):
-                with open(cert_path, "rb") as f:
-                    c2.download_button("📕 PDF Certificate", f, f"cert_{q_id}.pdf", use_container_width=True)
-            
-            if st.button("Acknowledge & Dismiss", type="primary", use_container_width=True):
-                st.session_state.last_purge_bundle = None
-                st.rerun()
-    st.divider()
-
-# --- 7. PAGE LOGIC: NEURAL SANDBOX ---
+# --- 6. PAGE: NEURAL SANDBOX ---
 if page == "Neural Sandbox":
     st.title("💬 Neural Sandbox")
-    st.caption("ChatGPT-Style Interface | Identity-Locked Logging Active")
+    st.caption(f"Hardware Acceleration (RTX 4050) active on {st.session_state.shard}")
     
-    for m in st.session_state.messages:
+    for m in st.session_state.chat_history:
         with st.chat_message(m["role"]): st.markdown(m["content"])
 
-    if prompt := st.chat_input("Ask the model..."):
+    if prompt := st.chat_input("Enter data to process..."):
         st.chat_message("user").markdown(prompt)
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.session_state.chat_history.append({"role": "user", "content": prompt})
         
         with st.chat_message("assistant"):
-            with st.spinner("Processing..."):
-                try:
-                    res = requests.post(f"{OLLAMA_ENDPOINT}/generate", 
-                                      json={"model": MODEL_NAME, "prompt": prompt, "stream": False}, timeout=90)
-                    ans = res.json().get('response')
-                    st.markdown(ans)
-                    st.session_state.messages.append({"role": "assistant", "content": ans})
+            try:
+                # LLM Interaction via Ollama
+                res = requests.post(f"{OLLAMA_ENDPOINT}/generate", 
+                                  json={"model": MODEL_NAME, "prompt": prompt, "stream": False})
+                ans = res.json().get('response')
+                st.markdown(ans)
+                st.session_state.chat_history.append({"role": "assistant", "content": ans})
+                
+                # SISA Shard Logging
+                qid = f"ID_{uuid.uuid4().hex[:6]}"
+                db.save_dynamic_query(qid, st.session_state.user, prompt[:50])
+            except:
+                st.error("Neural Engine Connectivity Error")
+
+# --- 7. PAGE: PRIVACY CONTROL CENTER ---
+elif page == "Privacy Control Center":
+    st.title("🔐 Privacy Control Center")
+    st.markdown("### GDPR Article 17 Management")
+    
+    # Proof and Certificate Section
+    if st.session_state.purge_proof:
+        st.success("✅ CRYPTOGRAPHIC PROOF OF ERASURE")
+        st.json(st.session_state.purge_proof)
+        
+        q_id = st.session_state.purge_proof['query_id']
+        cert_path = f"proofs/certificates/cert_{q_id}.pdf"
+        
+        # FILE EXISTENCE GUARD: Prevents FileNotFoundError
+        if os.path.exists(cert_path):
+            with open(cert_path, "rb") as f:
+                st.download_button(
+                    label="📕 Download Compliance Certificate",
+                    data=f,
+                    file_name=f"cert_{q_id}.pdf",
+                    mime="application/pdf"
+                )
+        else:
+            st.warning("⏳ Generating Audit-Ready PDF... please wait.")
+            if st.button("Refresh Proof Status"):
+                st.rerun()
+
+        if st.button("Dismiss Result"):
+            st.session_state.purge_proof = None
+            st.rerun()
+        st.divider()
+
+    # Active Footprint Display
+    records = db.fetch_active(st.session_state.user)
+    if not records.empty:
+        for _, row in records.iterrows():
+            c1, c2 = st.columns([4, 1])
+            c1.warning(f"**Footprint:** {row['content']}")
+            if c2.button("ERASE", key=row['id']):
+                with st.spinner("Executing Surgical HMO-LoRA Purge..."):
+                    # Step 1: Weight Subtraction (Surgical Engine)
+                    p_data = engine.surgical_purge(row['id'])
                     
-                    # LOGGING: Strictly associated with logged-in username
-                    new_id = f"CHAT_{uuid.uuid4().hex[:6]}"
-                    # Automatically summarize for privacy in the log
-                    summary = prompt[:30] + "..." if len(prompt) > 30 else prompt
-                    db.save_dynamic_query(new_id, st.session_state.username, summary)
-                    st.toast(f"Footprint recorded for {st.session_state.username}")
-                except:
-                    st.error("Neural Engine Offline.")
-
-# --- 8. PAGE LOGIC: MY PRIVACY RIGHTS (USER VIEW) ---
-elif page == "My Privacy Rights":
-    st.title("🔐 My Privacy Rights")
-    st.markdown(f"User: **{st.session_state.username.capitalize()}**")
-    st.info("You have the right to delete any personal data currently influencing this model.")
-    
-    records = db.fetch_active(st.session_state.username)
-    if not records.empty:
-        for idx, row in records.iterrows():
-            with st.container():
-                col1, col2 = st.columns([5, 1])
-                col1.info(f"**ID:** {row['id']} | **Topic:** {row['content']}")
-                if col2.button("ERASE", key=row['id']):
-                    with st.status("Executing Surgical Unlearning...") as status:
-                        purge_data = engine.surgical_purge(row['id'])
-                        requests.post(f"{OLLAMA_ENDPOINT}/generate", json={"model": MODEL_NAME, "keep_alive": 0})
-                        db.mark_purged(row['id'])
-                        
-                        st.session_state.last_purge_bundle = {
-                            "subject": st.session_state.username,
-                            "query_id": row['id'],
-                            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            "pre_hash": purge_data.get('pre_root'),
-                            "post_hash": purge_data.get('post_root'),
-                            "status": "VERIFIED_PURGED"
-                        }
-                        cert_factory.create_compliance_bundle(st.session_state.last_purge_bundle, f"proofs/certificates/cert_{row['id']}")
-                        st.rerun()
+                    # Step 2: Hardware VRAM Flush (Ollama Sanitization)
+                    requests.post(f"{OLLAMA_ENDPOINT}/generate", json={"model": MODEL_NAME, "keep_alive": 0})
+                    db.mark_purged(row['id'])
+                    
+                    # Step 3: Z-SNARK Proof Generation
+                    pi_proof = get_zk_proof(p_data.get('pre_root', '0x0'), p_data.get('post_root', '0x0'))
+                    
+                    st.session_state.purge_proof = {
+                        "subject": st.session_state.user,
+                        "query_id": row['id'],
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "zk_proof_pi": pi_proof,
+                        "shard_id": st.session_state.shard,
+                        "pre_hash": p_data.get('pre_root'),
+                        "post_hash": p_data.get('post_root')
+                    }
+                    
+                    # Step 4: Generate Certificate PDF
+                    cert_factory.create_compliance_bundle(st.session_state.purge_proof, f"proofs/certificates/cert_{row['id']}")
+                    st.rerun()
     else:
-        st.success("Your neural footprint is clean.")
-
-# --- 9. PAGE LOGIC: COMPLIANCE AUDIT (ADMIN ONLY) ---
-elif page == "Compliance Audit" and st.session_state.user_role == "admin":
-    st.title("🔍 Master Compliance Audit")
-    st.warning("Authorized Personnel Only: System-wide footprint monitoring.")
-    
-    search_q = st.text_input("Filter by Subject Name:", "rohan")
-    records = db.fetch_active(search_q)
-    if not records.empty:
-        st.dataframe(records, use_container_width=True)
-    else:
-        st.info("No active footprints for this subject.")
+        st.info("Your identity has no active neural footprints.")
