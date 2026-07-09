@@ -1,0 +1,109 @@
+# Python
+__pycache__/
+.local/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+poetry.lock
+*.whl
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment
+.env
+.env.local
+.env*.local
+.env.development
+.env.production
+*.pem
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Kubernetes
+kubeconfig*
+
+# Logs
+*.log
+logs/
+/var/log/
+
+# ML
+mlruns/
+mlartifacts/
+wandb/
+checkpoints/
+*.pt
+*.pth
+*.bin
+*.onnx
+*.h5
+*.keras
+model_cache/
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+coverage/
+test-results/
+.pytest_cache/
+*.trx
+
+# Secrets
+**/secrets/**
+**/credentials/**
+**/service-account.json
+**/vault-token
+
+# Database
+*.db
+*.sqlite
+pgdata/
+redis-data/
+
+# Temp
+*.tmp
+nul
+*.swp
+*~
+.tmp/
+temp/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,108 @@
+name: CD Pipeline
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deploy environment"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    if: github.event_name == 'push' || github.event.inputs.environment == 'staging'
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name veriunlearn-staging --region us-east-1
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install veriunlearn ./infra/kubernetes/helm \
+            --namespace veriunlearn-staging \
+            --create-namespace \
+            --values ./infra/kubernetes/helm/values/staging.yaml \
+            --set image.tag=${{ github.sha }} \
+            --wait --timeout 10m
+
+      - name: Run Smoke Tests
+        run: |
+          sleep 30
+          curl -f https://api.staging.veriunlearn.com/health
+
+  deploy-production:
+    name: Deploy to Production
+    needs: [deploy-staging]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name veriunlearn-production --region us-east-1
+
+      - name: Deploy Canary (10%)
+        run: |
+          helm upgrade --install veriunlearn ./infra/kubernetes/helm \
+            --namespace veriunlearn-production \
+            --create-namespace \
+            --values ./infra/kubernetes/helm/values/production.yaml \
+            --set canary.enabled=true \
+            --set canary.weight=10 \
+            --set image.tag=${{ github.sha }} \
+            --wait --timeout 10m
+
+      - name: Monitor Canary
+        run: |
+          echo "Monitoring canary for 5 minutes..."
+          sleep 300
+
+      - name: Full Rollout
+        run: |
+          helm upgrade --install veriunlearn ./infra/kubernetes/helm \
+            --namespace veriunlearn-production \
+            --values ./infra/kubernetes/helm/values/production.yaml \
+            --set image.tag=${{ github.sha }} \
+            --wait --timeout 10m
+
+      - name: Post-Deploy Verification
+        run: |
+          sleep 30
+          curl -f https://api.veriunlearn.com/health
+
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "🚀 VeriUnlearn ${{ github.ref_name }} deployed to production"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

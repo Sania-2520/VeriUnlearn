@@ -1,0 +1,107 @@
+{
+  "title": "VeriUnlearn - Platform Overview",
+  "uid": "veriunlearn-overview",
+  "version": 1,
+  "tags": ["veriunlearn", "platform"],
+  "timezone": "browser",
+  "panels": [
+    {
+      "title": "API Request Rate",
+      "type": "graph",
+      "gridPos": {"x": 0, "y": 0, "w": 8, "h": 8},
+      "targets": [
+        {
+          "expr": "rate(http_requests_total[5m])",
+          "legendFormat": "{{route}}"
+        }
+      ]
+    },
+    {
+      "title": "API Error Rate",
+      "type": "graph",
+      "gridPos": {"x": 8, "y": 0, "w": 8, "h": 8},
+      "targets": [
+        {
+          "expr": "rate(http_errors_total[5m])",
+          "legendFormat": "{{code}}"
+        }
+      ]
+    },
+    {
+      "title": "API Latency (p50, p95, p99)",
+      "type": "graph",
+      "gridPos": {"x": 16, "y": 0, "w": 8, "h": 8},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p99"
+        }
+      ]
+    },
+    {
+      "title": "Unlearning Jobs",
+      "type": "graph",
+      "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+      "targets": [
+        {
+          "expr": "unlearning_jobs_total",
+          "legendFormat": "{{status}}"
+        }
+      ]
+    },
+    {
+      "title": "Active Users",
+      "type": "stat",
+      "gridPos": {"x": 12, "y": 8, "w": 6, "h": 8},
+      "targets": [
+        {
+          "expr": "active_users"
+        }
+      ]
+    },
+    {
+      "title": "Deletion Proofs Generated",
+      "type": "stat",
+      "gridPos": {"x": 18, "y": 8, "w": 6, "h": 8},
+      "targets": [
+        {
+          "expr": "deletion_proofs_total"
+        }
+      ]
+    },
+    {
+      "title": "System Resources",
+      "type": "graph",
+      "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
+      "targets": [
+        {
+          "expr": "node_cpu_seconds_total",
+          "legendFormat": "CPU"
+        },
+        {
+          "expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes",
+          "legendFormat": "Memory Used"
+        }
+      ]
+    },
+    {
+      "title": "Logs (Errors)",
+      "type": "logs",
+      "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
+      "targets": [
+        {
+          "expr": "{service=\"backend\"} |= \"error\""
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 38
+}
