@@ -71,6 +71,21 @@ class TestUnlearningTasks:
             assert result["algorithm"] == "SISA"
 
     def test_generate_deletion_proof_success(self, sync_session):
+        req = UnlearningRequestModel(
+            id="test-unlearn-req-2",
+            tenant_id="tenant-1",
+            requested_by="user-1",
+            target_type="user",
+            target_id="data_user_002",
+            reason="GDPR right to be forgotten",
+            status="completed",
+            priority="high",
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+        )
+        sync_session.add(req)
+        sync_session.commit()
+
         job = UnlearningJobModel(
             id="test-job-1",
             request_id="test-unlearn-req-2",

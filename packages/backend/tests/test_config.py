@@ -12,13 +12,20 @@ def _settings(**kwargs):
 
 
 class TestSettings:
-    def test_default_environment(self):
+    def test_default_environment(self, monkeypatch):
+        monkeypatch.delenv("ENVIRONMENT", raising=False)
         s = _settings()
         assert s.environment == Environment.DEVELOPMENT
 
     def test_is_development(self):
         s = _settings(environment="development")
         assert s.is_development
+        assert not s.is_production
+
+    def test_testing_environment(self):
+        s = _settings(environment="testing")
+        assert s.environment == Environment.TESTING
+        assert not s.is_development
         assert not s.is_production
 
     def test_is_production(self):

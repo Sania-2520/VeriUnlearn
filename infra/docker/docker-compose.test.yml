@@ -31,6 +31,7 @@ services:
     environment:
       - ENVIRONMENT=testing
       - DEBUG=false
+      - ALLOWED_HOSTS=test,localhost,localhost:3000
       - DATABASE_URL=postgresql+asyncpg://veriunlearn:veriunlearn@test-db:5432/veriunlearn_test
       - REDIS_URL=redis://:veriunlearn@test-redis:6379/0
       - CELERY_BROKER_URL=redis://:veriunlearn@test-redis:6379/1

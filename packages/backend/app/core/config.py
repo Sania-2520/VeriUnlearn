@@ -6,6 +6,7 @@ from pydantic import Field, field_validator
 
 class Environment(str, Enum):
     DEVELOPMENT = "development"
+    TESTING = "testing"
     STAGING = "staging"
     PRODUCTION = "production"
 
