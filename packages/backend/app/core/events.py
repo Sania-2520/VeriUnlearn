@@ -22,6 +22,13 @@ async def startup_event(app: FastAPI) -> None:
     await db.initialize()
     logger.info("Database connection established")
 
+    if settings.database_url.startswith("sqlite"):
+        from app.core.database import Base
+        import app.infrastructure.database.models
+        async with db.engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("SQLite database tables created/verified")
+
     await cache.initialize()
     logger.info("Redis cache connection established")
 

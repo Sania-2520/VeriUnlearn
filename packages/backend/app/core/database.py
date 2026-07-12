@@ -10,6 +10,17 @@ from typing import AsyncGenerator
 from app.core.config import settings
 
 
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.dialects.postgresql import INET, UUID
+
+@compiles(INET, "sqlite")
+def compile_inet_sqlite(element, compiler, **kw):
+    return "VARCHAR(45)"
+
+@compiles(UUID, "sqlite")
+def compile_uuid_sqlite(element, compiler, **kw):
+    return "VARCHAR(36)"
+
 class Base(DeclarativeBase):
     pass
 
@@ -23,13 +34,20 @@ class DatabaseManager:
         self._session_factory = None
 
     async def initialize(self) -> None:
+        is_sqlite = settings.database_url.startswith("sqlite")
+        kwargs = {
+            "echo": settings.database_echo,
+            "pool_pre_ping": True,
+        }
+        if not is_sqlite:
+            kwargs.update({
+                "pool_size": settings.database_pool_size,
+                "max_overflow": settings.database_max_overflow,
+                "pool_recycle": 3600,
+            })
         self._engine = create_async_engine(
             settings.database_url,
-            pool_size=settings.database_pool_size,
-            max_overflow=settings.database_max_overflow,
-            echo=settings.database_echo,
-            pool_pre_ping=True,
-            pool_recycle=3600,
+            **kwargs
         )
         self._session_factory = async_sessionmaker(
             bind=self._engine,

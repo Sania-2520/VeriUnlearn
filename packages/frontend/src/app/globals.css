@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+  --color-chatgpt-bg: #212121;
+  --color-chatgpt-sidebar: #171717;
+  --color-chatgpt-hover: #2f2f2f;
+  --color-chatgpt-border: rgba(255, 255, 255, 0.08);
+  --color-chatgpt-text: #ececec;
+  --color-chatgpt-light-bg: #f9f9f9;
+  --color-chatgpt-light-sidebar: #f9f9f9;
+  --color-chatgpt-light-hover: #e3e3e3;
+  --color-chatgpt-light-border: #e3e3e3;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-chatgpt-bg);
+    color: var(--color-chatgpt-text);
+  }
+}
