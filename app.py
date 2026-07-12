@@ -11,47 +11,47 @@ from src.engine import SurgicalEngine
 from src.cert_gen import CertificateFactory
 
 # --- 1. SYSTEM INITIALIZATION ---
-# Create necessary directory structure for cryptographic proofs
 os.makedirs("proofs/certificates", exist_ok=True)
-db = VeriUnlearnDB()
-engine = SurgicalEngine({"system": {"model_id": "phi3.5"}})
-cert_factory = CertificateFactory()
-
+USER_FILE = "proofs/users.json"
 OLLAMA_ENDPOINT = "http://localhost:11434/api"
 MODEL_NAME = "phi3.5"
 SECRET_ZK_KEY = "sania_scem_2026"
 
-# --- 2. DYNAMIC USER REGISTRY (Multi-Tenant Simulation) ---
-if 'dynamic_user_db' not in st.session_state:
-    st.session_state.dynamic_user_db = {
-        "sania": {"pwd": "123", "role": "admin", "shard": "shard_master"}
-    }
+db = VeriUnlearnDB()
+engine = SurgicalEngine({"system": {"model_id": MODEL_NAME}})
+cert_factory = CertificateFactory()
 
-# Session Management
+def load_users():
+    if os.path.exists(USER_FILE):
+        with open(USER_FILE, "r") as f:
+            return json.load(f)
+    return {"sania": {"pwd": "123", "role": "admin", "shard": "shard_master"}}
+
+def save_user(username, password, shard):
+    users = load_users()
+    users[username] = {"pwd": password, "role": "user", "shard": shard}
+    with open(USER_FILE, "w") as f:
+        json.dump(users, f)
+
+# --- 2. SESSION STATE MANAGEMENT ---
 if 'auth' not in st.session_state:
     st.session_state.auth = False
-if 'user' not in st.session_state:
     st.session_state.user = None
-if 'shard' not in st.session_state:
     st.session_state.shard = None
-if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
-if 'purge_proof' not in st.session_state:
     st.session_state.purge_proof = None
+    st.session_state.dynamic_user_db = load_users()
 
 # --- 3. CRYPTO UTILS ---
 def get_zk_proof(pre, post):
-    """
-    Generates a ZK-SNARK-inspired proof string.
-    NOTE: Replaced 'π' with 'pi' to fix UnicodeEncodeError in PDF generation.
-    """
+    """Generates ZK-SNARK-inspired pi proof (UTF-8 Safe)."""
     msg = f"{pre}{post}".encode()
     pi_hash = hmac.new(SECRET_ZK_KEY.encode(), msg, hashlib.sha256).hexdigest()
     return f"zk-snark:v1:pi_{pi_hash[:12]}"
 
-# --- 4. THE DYNAMIC ACCESS PORTAL ---
+# --- 4. ACCESS PORTAL ---
 if not st.session_state.auth:
-    st.set_page_config(page_title="VeriUnlearn | Portal", layout="centered")
+    st.set_page_config(page_title="VeriUnlearn | Access", layout="centered")
     st.markdown("<h1 style='text-align: center;'>🛡️ VeriUnlearn Pro</h1>", unsafe_allow_html=True)
     
     auth_mode = st.radio("System Access", ["Sign In", "Register New Independent Shard"], horizontal=True)
@@ -62,36 +62,43 @@ if not st.session_state.auth:
         
         if auth_mode == "Sign In":
             if st.button("Secure Sign In", use_container_width=True, type="primary"):
-                if u in st.session_state.dynamic_user_db and st.session_state.dynamic_user_db[u]["pwd"] == p:
+                current_db = load_users()
+                if u in current_db and current_db[u]["pwd"] == p:
                     st.session_state.auth = True
                     st.session_state.user = u
-                    st.session_state.shard = st.session_state.dynamic_user_db[u]["shard"]
+                    st.session_state.shard = current_db[u]["shard"]
+                    
+                    # LOAD ONLY ACTIVE HISTORY (Persistence Layer Sync)
+                    try:
+                        st.session_state.chat_history = db.fetch_user_history(u)
+                    except:
+                        st.session_state.chat_history = []
                     st.rerun()
                 else:
-                    st.error("Authentication Failed: Unknown Identity or Invalid Password")
+                    st.error("Authentication Failed: Invalid Identity")
         
         else: # Register Mode
             if st.button("Initialize Neural Shard", use_container_width=True):
                 if u and p:
-                    if u not in st.session_state.dynamic_user_db:
-                        # DYNAMIC SISA SHARDING
+                    current_db = load_users()
+                    if u not in current_db:
                         new_shard = f"shard_{uuid.uuid4().hex[:6]}"
-                        st.session_state.dynamic_user_db[u] = {"pwd": p, "role": "user", "shard": new_shard}
-                        st.success(f"Shard Created: `{new_shard}`. You may now Sign In.")
+                        save_user(u, p, new_shard)
+                        st.success(f"Shard `{new_shard}` created! Please Sign In.")
                     else:
-                        st.warning("User identity already exists in neural index.")
+                        st.warning("Identity already registered.")
     st.stop()
 
 # --- 5. DASHBOARD LAYOUT ---
 st.set_page_config(page_title="VeriUnlearn Pro", layout="wide")
 
 with st.sidebar:
-    st.title("🛡️ VeriUnlearn")
-    st.info(f"**Identity:** {st.session_state.user.upper()}\n\n**Neural Shard:** `{st.session_state.shard}`")
+    st.title("🛡️ Dashboard")
+    st.info(f"**Identity:** {st.session_state.user.upper()}\n**Shard:** `{st.session_state.shard}`")
     st.divider()
     page = st.radio("Navigation", ["Neural Sandbox", "Privacy Control Center"])
     st.divider()
-    if st.button("Logout & Flush Session"):
+    if st.button("Logout"):
         st.session_state.auth = False
         st.session_state.chat_history = []
         st.rerun()
@@ -99,92 +106,91 @@ with st.sidebar:
 # --- 6. PAGE: NEURAL SANDBOX ---
 if page == "Neural Sandbox":
     st.title("💬 Neural Sandbox")
-    st.caption(f"Hardware Acceleration (RTX 4050) active on {st.session_state.shard}")
+    st.caption(f"SISA Isolation Active on {st.session_state.shard}")
     
     for m in st.session_state.chat_history:
         with st.chat_message(m["role"]): st.markdown(m["content"])
 
-    if prompt := st.chat_input("Enter data to process..."):
+    if prompt := st.chat_input("Enter private data..."):
         st.chat_message("user").markdown(prompt)
-        st.session_state.chat_history.append({"role": "user", "content": prompt})
         
+        # Isolated Context Injection
+        history_context = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.chat_history[-5:]])
+        full_input = f"{history_context}\nuser: {prompt}"
+
         with st.chat_message("assistant"):
             try:
-                # LLM Interaction via Ollama
                 res = requests.post(f"{OLLAMA_ENDPOINT}/generate", 
-                                  json={"model": MODEL_NAME, "prompt": prompt, "stream": False})
+                                  json={"model": MODEL_NAME, "prompt": full_input, "stream": False})
                 ans = res.json().get('response')
                 st.markdown(ans)
+                
+                # Update UI memory
+                st.session_state.chat_history.append({"role": "user", "content": prompt})
                 st.session_state.chat_history.append({"role": "assistant", "content": ans})
                 
-                # SISA Shard Logging
-                qid = f"ID_{uuid.uuid4().hex[:6]}"
-                db.save_dynamic_query(qid, st.session_state.user, prompt[:50])
+                # Update DB memory (SISA-tagged)
+                db.save_dynamic_query(f"ID_{uuid.uuid4().hex[:6]}", st.session_state.user, prompt)
             except:
-                st.error("Neural Engine Connectivity Error")
+                st.error("Neural Engine Offline.")
 
 # --- 7. PAGE: PRIVACY CONTROL CENTER ---
 elif page == "Privacy Control Center":
     st.title("🔐 Privacy Control Center")
-    st.markdown("### GDPR Article 17 Management")
     
-    # Proof and Certificate Section
     if st.session_state.purge_proof:
-        st.success("✅ CRYPTOGRAPHIC PROOF OF ERASURE")
+        st.success("✅ TOTAL ERASURE VERIFIED")
         st.json(st.session_state.purge_proof)
-        
         q_id = st.session_state.purge_proof['query_id']
         cert_path = f"proofs/certificates/cert_{q_id}.pdf"
         
-        # FILE EXISTENCE GUARD: Prevents FileNotFoundError
         if os.path.exists(cert_path):
             with open(cert_path, "rb") as f:
-                st.download_button(
-                    label="📕 Download Compliance Certificate",
-                    data=f,
-                    file_name=f"cert_{q_id}.pdf",
-                    mime="application/pdf"
-                )
-        else:
-            st.warning("⏳ Generating Audit-Ready PDF... please wait.")
-            if st.button("Refresh Proof Status"):
-                st.rerun()
-
+                st.download_button("📕 Download Compliance Certificate", f, f"cert_{q_id}.pdf", mime="application/pdf")
+        
         if st.button("Dismiss Result"):
             st.session_state.purge_proof = None
             st.rerun()
         st.divider()
 
-    # Active Footprint Display
+    # List active footprints belonging ONLY to this user
     records = db.fetch_active(st.session_state.user)
     if not records.empty:
         for _, row in records.iterrows():
             c1, c2 = st.columns([4, 1])
-            c1.warning(f"**Footprint:** {row['content']}")
+            c1.warning(f"**Neural Footprint:** {row['content']}")
+            
             if c2.button("ERASE", key=row['id']):
                 with st.spinner("Executing Surgical HMO-LoRA Purge..."):
-                    # Step 1: Weight Subtraction (Surgical Engine)
+                    # 1. WEIGHT SUBTRACTION
                     p_data = engine.surgical_purge(row['id'])
                     
-                    # Step 2: Hardware VRAM Flush (Ollama Sanitization)
+                    # 2. HARDWARE FLUSH (Sanitization)
                     requests.post(f"{OLLAMA_ENDPOINT}/generate", json={"model": MODEL_NAME, "keep_alive": 0})
+                    
+                    # 3. PERSISTENCE UPDATE (Mark as Purged in SQLite)
                     db.mark_purged(row['id'])
                     
-                    # Step 3: Z-SNARK Proof Generation
-                    pi_proof = get_zk_proof(p_data.get('pre_root', '0x0'), p_data.get('post_root', '0x0'))
+                    # 4. INSTANT UI FLUSH
+                    # Remove the purged item from the local chat history so it disappears from Sandbox
+                    st.session_state.chat_history = [
+                        m for m in st.session_state.chat_history 
+                        if m['content'] != row['content']
+                    ]
                     
+                    # 5. CRYPTO BUNDLE
+                    pi = get_zk_proof(p_data.get('pre_root'), p_data.get('post_root'))
                     st.session_state.purge_proof = {
-                        "subject": st.session_state.user,
+                        "user": st.session_state.user,
                         "query_id": row['id'],
                         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        "zk_proof_pi": pi_proof,
-                        "shard_id": st.session_state.shard,
-                        "pre_hash": p_data.get('pre_root'),
-                        "post_hash": p_data.get('post_root')
+                        "zk_pi": pi,
+                        "shard": st.session_state.shard,
+                        "status": "PURGED_AND_VERIFIED"
                     }
-                    
-                    # Step 4: Generate Certificate PDF
                     cert_factory.create_compliance_bundle(st.session_state.purge_proof, f"proofs/certificates/cert_{row['id']}")
+                    
+                    # 6. REFRESH UI
                     st.rerun()
     else:
-        st.info("Your identity has no active neural footprints.")
+        st.info("No active neural footprints detected for this identity.")

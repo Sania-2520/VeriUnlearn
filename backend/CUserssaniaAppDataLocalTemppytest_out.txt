@@ -1,0 +1,24 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.9, pytest-8.4.2, pluggy-1.5.0 -- C:\Users\sania\anaconda3\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\sania\Desktop\veriunlearn\backend
+plugins: anyio-4.10.0, Faker-40.28.1, asyncio-1.4.0, cov-7.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 7 items
+
+app/tests/test_auth.py::test_register_user PASSED                        [ 14%]
+app/tests/test_auth.py::test_register_duplicate_username PASSED          [ 28%]
+app/tests/test_auth.py::test_login_success PASSED                        [ 42%]
+app/tests/test_auth.py::test_login_wrong_password PASSED                 [ 57%]
+app/tests/test_auth.py::test_get_me PASSED                               [ 71%]
+app/tests/test_auth.py::test_get_me_unauthorized PASSED                  [ 85%]
+app/tests/test_auth.py::test_refresh_token PASSED                        [100%]
+
+============================== warnings summary ===============================
+app/tests/test_auth.py::test_get_me
+app/tests/test_auth.py::test_refresh_token
+  C:\Users\sania\anaconda3\Lib\site-packages\jose\jwt.py:311: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = timegm(datetime.utcnow().utctimetuple())
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 7 passed, 2 warnings in 3.62s ========================
