@@ -1,0 +1,221 @@
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+replicaCount:
+  backend: 2
+  mlEngine: 1
+  frontend: 2
+  celeryWorker: 2
+
+image:
+  backend:
+    repository: veriunlearn/backend
+    tag: "latest"
+    pullPolicy: Always
+  mlEngine:
+    repository: veriunlearn/ml-engine
+    tag: "latest"
+    pullPolicy: Always
+  frontend:
+    repository: veriunlearn/frontend
+    tag: "latest"
+    pullPolicy: Always
+  celeryWorker:
+    repository: veriunlearn/backend
+    tag: "latest"
+    pullPolicy: Always
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+service:
+  backend:
+    type: ClusterIP
+    port: 8000
+  mlEngine:
+    type: ClusterIP
+    port: 8001
+  frontend:
+    type: ClusterIP
+    port: 3000
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: veriunlearn.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+          port: 3000
+        - path: /api
+          pathType: Prefix
+          service: backend
+          port: 8000
+        - path: /ml
+          pathType: Prefix
+          service: ml-engine
+          port: 8001
+  tls:
+    - secretName: veriunlearn-tls
+      hosts:
+        - veriunlearn.example.com
+
+resources:
+  backend:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  mlEngine:
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+      nvidia.com/gpu: 1
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+      nvidia.com/gpu: 1
+  frontend:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 300m
+      memory: 512Mi
+  celeryWorker:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+autoscaling:
+  backend:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  mlEngine:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 75
+  frontend:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  celeryWorker:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 75
+
+podDisruptionBudget:
+  backend:
+    enabled: true
+    minAvailable: 1
+  mlEngine:
+    enabled: true
+    minAvailable: 1
+  frontend:
+    enabled: true
+    minAvailable: 1
+  celeryWorker:
+    enabled: true
+    minAvailable: 1
+
+config:
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  BACKEND_HOST: "0.0.0.0"
+  BACKEND_PORT: "8000"
+  ML_ENGINE_HOST: "0.0.0.0"
+  ML_ENGINE_PORT: "8001"
+  CELERY_BROKER_URL: "redis://redis-master:6379/0"
+  CELERY_RESULT_BACKEND: "redis://redis-master:6379/1"
+  DATABASE_HOST: "postgresql-primary"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "veriunlearn"
+  REDIS_HOST: "redis-master"
+  REDIS_PORT: "6379"
+  CORS_ORIGINS: "https://veriunlearn.example.com"
+  MAX_UPLOAD_SIZE_MB: "100"
+  MODEL_CHECKPOINT_DIR: "/app/checkpoints"
+  MLFLOW_TRACKING_URI: "http://mlflow:5000"
+  PROMETHEUS_ENABLED: "true"
+  FRONTEND_URL: "https://veriunlearn.example.com"
+
+secret:
+  DATABASE_URL: "postgresql+asyncpg://veriunlearn:CHANGE_ME@postgresql-primary:5432/veriunlearn"
+  DATABASE_PASSWORD: "CHANGE_ME"
+  REDIS_PASSWORD: "CHANGE_ME"
+  JWT_SECRET_KEY: "CHANGE_ME"
+  ENCRYPTION_KEY: "CHANGE_ME"
+  AWS_ACCESS_KEY_ID: "CHANGE_ME"
+  AWS_SECRET_ACCESS_KEY: "CHANGE_ME"
+  AWS_REGION: "us-east-1"
+  S3_BUCKET_NAME: "veriunlearn-data"
+
+nodeSelector:
+  backend: {}
+  mlEngine:
+    node-type: gpu
+  frontend: {}
+  celeryWorker: {}
+
+tolerations:
+  backend: []
+  mlEngine:
+    - key: nvidia.com/gpu
+      operator: Exists
+      effect: NoSchedule
+  frontend: []
+  celeryWorker: []
+
+affinity: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+networkPolicy:
+  enabled: true
+
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    namespace: monitoring
+    interval: 30s

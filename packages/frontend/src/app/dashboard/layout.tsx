@@ -23,6 +23,8 @@ import {
   Webhook,
   Database,
   Cpu,
+  FileSearch,
+  Activity,
 } from "lucide-react"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -77,11 +79,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const workspaceItems = [
     { href: "/dashboard", label: "Overview", icon: Brain },
     { href: "/dashboard/unlearning", label: "Unlearning", icon: Trash2 },
+    { href: "/dashboard/rag", label: "RAG Documents", icon: FileSearch },
+    { href: "/dashboard/models", label: "Model Registry", icon: Database },
+    { href: "/dashboard/training", label: "Training", icon: Cpu },
     { href: "/dashboard/audit", label: "Audit Log", icon: FileText },
     { href: "/dashboard/webhooks", label: "Webhooks", icon: Webhook },
   ]
 
   const configItems = [
+    { href: "/dashboard/monitoring", label: "Monitoring", icon: Activity },
     { href: "/dashboard/admin", label: "Admin Settings", icon: Settings },
     { href: "/dashboard/profile", label: "User Profile", icon: User },
     { href: "/dashboard/sessions", label: "Active Sessions", icon: ShieldAlert },

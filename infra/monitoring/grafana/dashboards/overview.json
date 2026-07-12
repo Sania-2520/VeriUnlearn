@@ -1,14 +1,32 @@
 {
   "title": "VeriUnlearn - Platform Overview",
   "uid": "veriunlearn-overview",
-  "version": 1,
+  "version": 2,
   "tags": ["veriunlearn", "platform"],
   "timezone": "browser",
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "environment",
+        "type": "custom",
+        "query": "development,staging,production",
+        "current": { "text": "development", "value": "development" }
+      }
+    ]
+  },
   "panels": [
+    {
+      "title": "Platform Overview",
+      "type": "row",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 },
+      "collapsed": false
+    },
     {
       "title": "API Request Rate",
       "type": "graph",
-      "gridPos": {"x": 0, "y": 0, "w": 8, "h": 8},
+      "gridPos": { "x": 0, "y": 1, "w": 8, "h": 8 },
       "targets": [
         {
           "expr": "rate(http_requests_total[5m])",
@@ -19,7 +37,7 @@
     {
       "title": "API Error Rate",
       "type": "graph",
-      "gridPos": {"x": 8, "y": 0, "w": 8, "h": 8},
+      "gridPos": { "x": 8, "y": 1, "w": 8, "h": 8 },
       "targets": [
         {
           "expr": "rate(http_errors_total[5m])",
@@ -30,7 +48,7 @@
     {
       "title": "API Latency (p50, p95, p99)",
       "type": "graph",
-      "gridPos": {"x": 16, "y": 0, "w": 8, "h": 8},
+      "gridPos": { "x": 16, "y": 1, "w": 8, "h": 8 },
       "targets": [
         {
           "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
@@ -49,7 +67,7 @@
     {
       "title": "Unlearning Jobs",
       "type": "graph",
-      "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+      "gridPos": { "x": 0, "y": 9, "w": 12, "h": 8 },
       "targets": [
         {
           "expr": "unlearning_jobs_total",
@@ -60,7 +78,7 @@
     {
       "title": "Active Users",
       "type": "stat",
-      "gridPos": {"x": 12, "y": 8, "w": 6, "h": 8},
+      "gridPos": { "x": 12, "y": 9, "w": 6, "h": 8 },
       "targets": [
         {
           "expr": "active_users"
@@ -70,7 +88,7 @@
     {
       "title": "Deletion Proofs Generated",
       "type": "stat",
-      "gridPos": {"x": 18, "y": 8, "w": 6, "h": 8},
+      "gridPos": { "x": 18, "y": 9, "w": 6, "h": 8 },
       "targets": [
         {
           "expr": "deletion_proofs_total"
@@ -80,26 +98,458 @@
     {
       "title": "System Resources",
       "type": "graph",
-      "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
+      "gridPos": { "x": 0, "y": 17, "w": 12, "h": 8 },
       "targets": [
         {
-          "expr": "node_cpu_seconds_total",
-          "legendFormat": "CPU"
+          "expr": "rate(node_cpu_seconds_total[5m])",
+          "legendFormat": "CPU Usage"
         },
         {
-          "expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes",
-          "legendFormat": "Memory Used"
+          "expr": "(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes",
+          "legendFormat": "Memory Usage"
         }
       ]
     },
     {
       "title": "Logs (Errors)",
       "type": "logs",
-      "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
+      "gridPos": { "x": 12, "y": 17, "w": 12, "h": 8 },
       "targets": [
         {
           "expr": "{service=\"backend\"} |= \"error\""
         }
+      ]
+    },
+
+    {
+      "title": "GPU Monitoring",
+      "type": "row",
+      "gridPos": { "x": 0, "y": 25, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "title": "GPU Memory Usage",
+      "type": "graph",
+      "gridPos": { "x": 0, "y": 26, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "expr": "nvidia_gpu_memory_used_bytes / nvidia_gpu_memory_total_bytes * 100",
+          "legendFormat": "GPU {{gpu}} - {{instance}}"
+        }
+      ],
+      "yaxes": [
+        { "format": "percent", "min": 0, "max": 100 },
+        {}
+      ]
+    },
+    {
+      "title": "GPU Utilization",
+      "type": "graph",
+      "gridPos": { "x": 8, "y": 26, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "expr": "nvidia_gpu_utilization_gpu_percent",
+          "legendFormat": "GPU {{gpu}} - {{instance}}"
+        }
+      ],
+      "yaxes": [
+        { "format": "percent", "min": 0, "max": 100 },
+        {}
+      ]
+    },
+    {
+      "title": "GPU Temperature",
+      "type": "gauge",
+      "gridPos": { "x": 16, "y": 26, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "expr": "nvidia_gpu_temperature_celsius",
+          "legendFormat": "GPU {{gpu}}"
+        }
+      ],
+      "options": {
+        "thresholds": {
+          "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 65 },
+            { "color": "orange", "value": 80 },
+            { "color": "red", "value": 90 }
+          ]
+        },
+        "min": 0,
+        "max": 105
+      }
+    },
+
+    {
+      "title": "Training Pipeline",
+      "type": "row",
+      "gridPos": { "x": 0, "y": 34, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "title": "Active Training Jobs",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 35, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum(training_jobs_active{status=\"running\"})",
+          "legendFormat": "Running"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "title": "Training Queue Size",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 35, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum(training_queue_size)",
+          "legendFormat": "Queued"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "title": "Training Loss Over Time",
+      "type": "graph",
+      "gridPos": { "x": 12, "y": 35, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "training_loss",
+          "legendFormat": "{{job_name}} - {{metric}}"
+        }
+      ],
+      "yaxes": [
+        { "format": "short" },
+        {}
+      ]
+    },
+    {
+      "title": "LoRA Training Duration",
+      "type": "graph",
+      "gridPos": { "x": 0, "y": 41, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "lora_training_duration_seconds",
+          "legendFormat": "{{job_name}} - rank {{rank}}"
+        }
+      ],
+      "yaxes": [
+        { "format": "s" },
+        {}
+      ]
+    },
+
+    {
+      "title": "Inference Service",
+      "type": "row",
+      "gridPos": { "x": 0, "y": 47, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "title": "Requests Per Second",
+      "type": "graph",
+      "gridPos": { "x": 0, "y": 48, "w": 8, "h": 7 },
+      "targets": [
+        {
+          "expr": "rate(inference_requests_total[5m])",
+          "legendFormat": "{{model}} - {{status}}"
+        }
+      ],
+      "yaxes": [
+        { "format": "reqps" },
+        {}
+      ]
+    },
+    {
+      "title": "Token Throughput",
+      "type": "graph",
+      "gridPos": { "x": 8, "y": 48, "w": 8, "h": 7 },
+      "targets": [
+        {
+          "expr": "rate(inference_tokens_generated_total[5m])",
+          "legendFormat": "Output tokens/s - {{model}}"
+        },
+        {
+          "expr": "rate(inference_tokens_processed_total[5m])",
+          "legendFormat": "Input tokens/s - {{model}}"
+        }
+      ],
+      "yaxes": [
+        { "format": "short" },
+        {}
+      ]
+    },
+    {
+      "title": "Inference Latency p50/p95/p99",
+      "type": "graph",
+      "gridPos": { "x": 16, "y": 48, "w": 8, "h": 7 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(inference_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(inference_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(inference_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p99"
+        }
+      ],
+      "yaxes": [
+        { "format": "s" },
+        {}
+      ]
+    },
+    {
+      "title": "Active Inference Requests",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 55, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "inference_requests_active",
+          "legendFormat": "Active"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+
+    {
+      "title": "Unlearning Pipeline",
+      "type": "row",
+      "gridPos": { "x": 0, "y": 61, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "title": "Unlearning Requests Queue",
+      "type": "graph",
+      "gridPos": { "x": 0, "y": 62, "w": 12, "h": 7 },
+      "targets": [
+        {
+          "expr": "unlearning_queue_size",
+          "legendFormat": "Pending requests"
+        }
+      ]
+    },
+    {
+      "title": "Unlearning Execution Time",
+      "type": "graph",
+      "gridPos": { "x": 12, "y": 62, "w": 12, "h": 7 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(unlearning_execution_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(unlearning_execution_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(unlearning_execution_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p99"
+        }
+      ],
+      "yaxes": [
+        { "format": "s" },
+        {}
+      ]
+    },
+    {
+      "title": "Deletion Certificates Generated",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 69, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum(deletion_certificates_generated_total)",
+          "legendFormat": "Total"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "title": "Algorithm Distribution",
+      "type": "piechart",
+      "gridPos": { "x": 6, "y": 69, "w": 10, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum by (algorithm) (unlearning_jobs_completed_total)",
+          "legendFormat": "{{algorithm}}"
+        }
+      ],
+      "options": {
+        "pieType": "donut"
+      }
+    },
+
+    {
+      "title": "RAG Pipeline",
+      "type": "row",
+      "gridPos": { "x": 0, "y": 75, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "title": "Documents Indexed",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 76, "w": 6, "h": 5 },
+      "targets": [
+        {
+          "expr": "rag_documents_indexed_total",
+          "legendFormat": "Total"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "title": "Total Chunks",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 76, "w": 6, "h": 5 },
+      "targets": [
+        {
+          "expr": "rag_chunks_total",
+          "legendFormat": "Total"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "title": "Search Queries Per Minute",
+      "type": "graph",
+      "gridPos": { "x": 12, "y": 76, "w": 12, "h": 5 },
+      "targets": [
+        {
+          "expr": "rate(rag_search_queries_total[1m]) * 60",
+          "legendFormat": "Queries/min"
+        }
+      ],
+      "yaxes": [
+        { "format": "short" },
+        {}
+      ]
+    },
+    {
+      "title": "Average Search Latency",
+      "type": "graph",
+      "gridPos": { "x": 0, "y": 81, "w": 12, "h": 5 },
+      "targets": [
+        {
+          "expr": "rate(rag_search_duration_seconds_sum[5m]) / rate(rag_search_duration_seconds_count[5m])",
+          "legendFormat": "Avg search latency"
+        }
+      ],
+      "yaxes": [
+        { "format": "s" },
+        {}
+      ]
+    },
+
+    {
+      "title": "Model Registry",
+      "type": "row",
+      "gridPos": { "x": 0, "y": 86, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "title": "Registered Models",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 87, "w": 6, "h": 5 },
+      "targets": [
+        {
+          "expr": "mlflow_registered_models_total",
+          "legendFormat": "Models"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "title": "Model Versions",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 87, "w": 6, "h": 5 },
+      "targets": [
+        {
+          "expr": "mlflow_model_versions_total",
+          "legendFormat": "Versions"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "title": "Registry Disk Usage",
+      "type": "graph",
+      "gridPos": { "x": 12, "y": 87, "w": 12, "h": 5 },
+      "targets": [
+        {
+          "expr": "mlflow_registry_disk_usage_bytes / (1024 * 1024 * 1024)",
+          "legendFormat": "Used (GB)"
+        }
+      ],
+      "yaxes": [
+        { "format": "bytes" },
+        {}
+      ]
+    },
+
+    {
+      "title": "Security",
+      "type": "row",
+      "gridPos": { "x": 0, "y": 92, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "title": "Membership Inference Attack Success Rate",
+      "type": "graph",
+      "gridPos": { "x": 0, "y": 93, "w": 12, "h": 7 },
+      "targets": [
+        {
+          "expr": "security_mia_attack_success_rate",
+          "legendFormat": "{{model}} - {{algorithm}}"
+        }
+      ],
+      "yaxes": [
+        { "format": "percent", "min": 0, "max": 100 },
+        {}
+      ]
+    },
+    {
+      "title": "Privacy Score Distribution",
+      "type": "graph",
+      "gridPos": { "x": 12, "y": 93, "w": 12, "h": 7 },
+      "targets": [
+        {
+          "expr": "security_privacy_score",
+          "legendFormat": "{{model}}"
+        }
+      ],
+      "yaxes": [
+        { "format": "short", "min": 0, "max": 1 },
+        {}
       ]
     }
   ],

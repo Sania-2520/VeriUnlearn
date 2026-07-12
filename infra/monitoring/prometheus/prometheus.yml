@@ -49,3 +49,28 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets: ["rabbitmq:15692"]
+
+  - job_name: "mlflow"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["mlflow:5000"]
+        labels:
+          service: "mlflow"
+          environment: "development"
+
+  - job_name: "nvidia-gpu"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["nvidia-exporter:9445"]
+        labels:
+          service: "gpu-exporter"
+          environment: "development"
+
+  - job_name: "training-metrics"
+    metrics_path: /metrics
+    scrape_interval: 30s
+    static_configs:
+      - targets: ["ml-engine:8001"]
+        labels:
+          service: "training"
+          environment: "development"

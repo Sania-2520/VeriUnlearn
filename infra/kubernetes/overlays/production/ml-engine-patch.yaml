@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-engine
+  namespace: veriunlearn
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: ml-engine
+          resources:
+            requests:
+              cpu: 2000m
+              memory: 4Gi
+              nvidia.com/gpu: 1
+            limits:
+              cpu: 4000m
+              memory: 8Gi
+              nvidia.com/gpu: 2
+          env:
+            - name: MAX_BATCH_SIZE
+              value: "64"
+            - name: MODEL_CACHE_SIZE
+              value: "10"
+            - name: CUDA_VISIBLE_DEVICES
+              value: "0,1"

@@ -10,10 +10,14 @@ from app.api.deps import (
     default_rate_limiter,
     require_permission,
 )
+from app.core.logging import get_logger
 from app.core.rbac import Permission
 from app.core.rate_limiter import make_rate_limiter, parse_rate_limit
 from app.core.config import settings
 from app.domain.unlearning.entities import TargetType, UnlearningPriority, UnlearningAlgorithm
+from app.infrastructure.external.ml_engine import ml_engine_client, MLEngineClientError
+
+logger = get_logger(__name__)
 
 _unl_count, _unl_window = parse_rate_limit(settings.rate_limit_unlearning)
 _unlearning_rl = make_rate_limiter(
@@ -59,6 +63,24 @@ async def create_unlearning_request(
         priority=priority_enum,
         algorithm=algorithm_enum,
     )
+
+    regulatory = "gdpr"
+    if gdpr_article:
+        regulatory = gdpr_article.lower().replace(" ", "_")
+
+    try:
+        ml_result = await ml_engine_client.execute_e2e_unlearning(
+            tenant_id=tenant_id,
+            user_id=current_user["user_id"],
+            target_data_ids=[target_id],
+            model_name=settings.ml_default_llm,
+            reason=reason or "",
+            regulatory=regulatory,
+            priority=priority,
+        )
+        logger.info("ML engine E2E unlearning triggered for request %s: %s", result.id, ml_result)
+    except MLEngineClientError as e:
+        logger.warning("ML engine E2E unlearning call failed for request %s: %s", result.id, str(e))
 
     return {
         "request_id": result.id,
@@ -144,7 +166,14 @@ async def get_queue_status(
     unlearning_service: UnlearningServiceDep = ...,
     tenant_id: TenantID = ...,
 ):
-    return await unlearning_service.get_queue_status(tenant_id)
+    try:
+        controller_health = await ml_engine_client.get_controller_health()
+    except MLEngineClientError:
+        controller_health = {"status": "unknown"}
+    return {
+        "queue": await unlearning_service.get_queue_status(tenant_id),
+        "controller": controller_health,
+    }
 
 
 @router.post("/model-versions", status_code=status.HTTP_201_CREATED)

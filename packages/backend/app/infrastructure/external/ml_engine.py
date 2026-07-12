@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, AsyncGenerator, Optional
 
 import httpx
 
@@ -244,6 +244,267 @@ class MLEngineClient:
                 raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
             except httpx.RequestError as e:
                 logger.error("ML Engine zk-SNARK verify request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
+    async def generate_text(
+        self,
+        prompt: str,
+        max_new_tokens: int = 512,
+        temperature: float = 0.7,
+        stream: bool = False,
+        adapter_name: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "prompt": prompt,
+            "max_new_tokens": max_new_tokens,
+            "temperature": temperature,
+            "stream": stream,
+        }
+        if adapter_name:
+            payload["adapter_name"] = adapter_name
+        if system_prompt:
+            payload["system_prompt"] = system_prompt
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            try:
+                resp = await client.post(
+                    f"{self._base_url}/inference/generate",
+                    json=payload,
+                    headers=self._headers,
+                )
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine text generation failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine generation request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
+    async def generate_text_stream(
+        self,
+        prompt: str,
+        max_new_tokens: int = 512,
+        temperature: float = 0.7,
+        adapter_name: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+    ) -> AsyncGenerator[str, None]:
+        payload: dict[str, Any] = {
+            "prompt": prompt,
+            "max_new_tokens": max_new_tokens,
+            "temperature": temperature,
+            "stream": True,
+        }
+        if adapter_name:
+            payload["adapter_name"] = adapter_name
+        if system_prompt:
+            payload["system_prompt"] = system_prompt
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            try:
+                async with client.stream(
+                    "POST",
+                    f"{self._base_url}/inference/generate/stream",
+                    json=payload,
+                    headers=self._headers,
+                ) as resp:
+                    resp.raise_for_status()
+                    async for line in resp.aiter_lines():
+                        if line.startswith("data: "):
+                            data = line[6:]
+                            if data.strip() == "[DONE]":
+                                break
+                            yield data
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine streaming failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine stream request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
+    async def ingest_document(
+        self,
+        text: str,
+        source_name: str,
+        metadata: dict[str, Any] = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "text": text,
+            "source_name": source_name,
+            "metadata": metadata or {},
+        }
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            try:
+                resp = await client.post(
+                    f"{self._base_url}/rag/documents/ingest-text",
+                    json=payload,
+                    headers=self._headers,
+                )
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine document ingestion failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine ingestion request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
+    async def search_documents(
+        self,
+        query: str,
+        top_k: int = 5,
+        filters: dict[str, Any] = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "query": query,
+            "top_k": top_k,
+            "filters": filters or {},
+        }
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            try:
+                resp = await client.post(
+                    f"{self._base_url}/rag/search",
+                    json=payload,
+                    headers=self._headers,
+                )
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine RAG search failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine RAG search request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
+    async def record_conversation(
+        self,
+        user_id: str,
+        tenant_id: str,
+        turns: list[dict[str, Any]],
+        feedback: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "user_id": user_id,
+            "tenant_id": tenant_id,
+            "turns": turns,
+        }
+        if feedback:
+            payload["feedback"] = feedback
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            try:
+                resp = await client.post(
+                    f"{self._base_url}/conversations/record",
+                    json=payload,
+                    headers=self._headers,
+                )
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine conversation record failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine conversation record request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
+    async def execute_e2e_unlearning(
+        self,
+        tenant_id: str,
+        user_id: str,
+        target_data_ids: list[str],
+        model_name: str,
+        reason: str,
+        regulatory: str,
+        priority: str,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "tenant_id": tenant_id,
+            "user_id": user_id,
+            "target_data_ids": target_data_ids,
+            "model_name": model_name,
+            "reason": reason,
+            "regulatory": regulatory,
+            "priority": priority,
+        }
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            try:
+                resp = await client.post(
+                    f"{self._base_url}/unlearn/e2e",
+                    json=payload,
+                    headers=self._headers,
+                )
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine E2E unlearning failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine E2E unlearning request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
+    async def train_lora(
+        self,
+        conversations: list[dict[str, Any]],
+        model_name: str,
+        lora_r: int = 16,
+        num_epochs: int = 3,
+        batch_size: int = 8,
+        learning_rate: float = 1e-4,
+        remove_data_ids: list[str] = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "conversations": conversations,
+            "model_name": model_name,
+            "lora_r": lora_r,
+            "num_epochs": num_epochs,
+            "batch_size": batch_size,
+            "learning_rate": learning_rate,
+            "remove_data_ids": remove_data_ids or [],
+        }
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            try:
+                resp = await client.post(
+                    f"{self._base_url}/train/lora",
+                    json=payload,
+                    headers=self._headers,
+                )
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine LoRA training failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine LoRA training request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
+    async def get_controller_health(self) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=10) as client:
+            try:
+                resp = await client.get(
+                    f"{self._base_url}/controller/health",
+                    headers=self._headers,
+                )
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine controller health failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine controller health request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
+    async def get_registry_stats(self) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=10) as client:
+            try:
+                resp = await client.get(
+                    f"{self._base_url}/registry/stats",
+                    headers=self._headers,
+                )
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine registry stats failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine registry stats request failed: %s", str(e))
                 raise MLEngineClientError(f"ML Engine request failed: {e}")
 
     async def health(self) -> dict[str, Any]:
