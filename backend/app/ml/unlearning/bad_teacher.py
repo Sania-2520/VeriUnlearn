@@ -12,6 +12,13 @@ from app.ml.model_manager import ModelManager
 
 
 class BadTeacherUnlearning:
+    """Bad Teacher unlearning via gradient ascent on deleted samples.
+
+    Algorithm: Maximizes loss on deleted samples to "forget" their influence
+    on the model. This is a gradient ascent approach where we invert the
+    training objective for the samples to be forgotten.
+    """
+
     def __init__(self) -> None:
         self.model_mgr = ModelManager()
         self._model = None
@@ -33,6 +40,7 @@ class BadTeacherUnlearning:
         deleted_sample_ids: list[int],
         shard_id: str,
         base_adapter_path: str | None = None,
+        deleted_content: list[str] | None = None,
     ) -> dict[str, Any]:
         logger.info(f"bad_teacher: shard={shard_id}, deleted={len(deleted_sample_ids)}")
 
@@ -48,25 +56,31 @@ class BadTeacherUnlearning:
             else:
                 peft_model = self.model_mgr.create_lora_adapter(model)
 
-            peft_model.train()
-            optimizer = torch.optim.AdamW(peft_model.parameters(), lr=1e-4)
-
-            if not deleted_sample_ids:
-                logger.warning("bad_teacher: no deleted samples, skipping ascent")
-            else:
+            forget_texts: list[str] = []
+            if deleted_content:
+                forget_texts = [c for c in deleted_content if c]
+            if not forget_texts:
                 forget_texts = [
                     s.get("content", "") for s in retained_samples
                     if s.get("id") in deleted_sample_ids
                 ]
-                if not forget_texts:
-                    forget_texts = [f"forget_{sid}" for sid in deleted_sample_ids]
+            if not forget_texts:
+                forget_texts = [f"forget_{sid}" for sid in deleted_sample_ids]
 
-                for _ in range(3):
+            if not forget_texts:
+                logger.warning("bad_teacher: no forget texts available")
+            else:
+                peft_model.train()
+                optimizer = torch.optim.AdamW(peft_model.parameters(), lr=1e-4)
+
+                for epoch in range(3):
                     total_loss = 0.0
                     for text in forget_texts:
                         if not text:
                             continue
-                        inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
+                        inputs = tokenizer(
+                            text, return_tensors="pt", truncation=True, max_length=512
+                        )
                         inputs = {k: v.to(peft_model.device) for k, v in inputs.items()}
                         outputs = peft_model(**inputs, labels=inputs["input_ids"])
                         loss = -outputs.loss
@@ -74,6 +88,7 @@ class BadTeacherUnlearning:
                         loss.backward()
                     optimizer.step()
                     optimizer.zero_grad()
+                    logger.debug(f"bad_teacher epoch {epoch+1}: loss={total_loss:.4f}")
 
             adapter_name = f"bad_teacher_{shard_id}"
             save_path = self.model_mgr.save_adapter(peft_model, adapter_name)
@@ -95,7 +110,10 @@ class BadTeacherUnlearning:
 
     def _virtual_result(self, shard_id: str, deleted_ids: list[int]) -> dict[str, Any]:
         fingerprint = hashlib.sha256(
-            json.dumps({"shard_id": shard_id, "deleted_ids": sorted(deleted_ids), "algorithm": "bad_teacher"}, sort_keys=True).encode()
+            json.dumps(
+                {"shard_id": shard_id, "deleted_ids": sorted(deleted_ids), "algorithm": "bad_teacher"},
+                sort_keys=True,
+            ).encode()
         ).hexdigest()
         return {
             "shard_id": shard_id,
