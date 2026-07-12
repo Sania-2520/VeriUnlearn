@@ -38,6 +38,8 @@ type Tab = "users" | "audit";
 export default function AdminPage() {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<Tab>("users");
+  const [auditFilter, setAuditFilter] = useState("");
+  const [auditSearch, setAuditSearch] = useState("");
 
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["admin", "users"],
@@ -168,26 +170,62 @@ export default function AdminPage() {
               <p className="text-gray-400">Loading...</p>
             ) : (
               <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 text-sm text-gray-500">
-                  {audit?.total ?? 0} total entries
+                <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={auditSearch}
+                    onChange={(e) => setAuditSearch(e.target.value)}
+                    placeholder="Search events..."
+                    className="flex-1 text-sm border border-gray-200 rounded px-3 py-1.5"
+                  />
+                  <select
+                    value={auditFilter}
+                    onChange={(e) => setAuditFilter(e.target.value)}
+                    className="text-sm border border-gray-200 rounded px-3 py-1.5"
+                  >
+                    <option value="">All events</option>
+                    <option value="user_created">User Created</option>
+                    <option value="user_deleted">User Deleted</option>
+                    <option value="login">Login</option>
+                    <option value="unlearning_request_created">Unlearning Request</option>
+                    <option value="unlearning_completed">Unlearning Completed</option>
+                  </select>
+                  <span className="text-sm text-gray-500">
+                    {audit?.total ?? 0} entries
+                  </span>
                 </div>
                 <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
                   {(audit?.entries ?? []).length === 0 ? (
                     <div className="p-8 text-center text-gray-400">No audit entries yet</div>
                   ) : (
-                    (audit?.entries ?? []).map((entry) => (
-                      <div key={entry.id} className="px-4 py-3 text-sm">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-gray-900">{entry.event_type}</span>
-                          <span className="text-xs text-gray-400">
-                            {new Date(entry.created_at).toLocaleString()}
-                          </span>
+                    (audit?.entries ?? [])
+                      .filter((entry) => !auditFilter || entry.event_type === auditFilter)
+                      .filter((entry) => !auditSearch || JSON.stringify(entry).toLowerCase().includes(auditSearch.toLowerCase()))
+                      .map((entry) => (
+                        <div key={entry.id} className="px-4 py-3 text-sm">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                entry.event_type.includes("delete") ? "bg-red-100 text-red-700" :
+                                entry.event_type.includes("create") ? "bg-green-100 text-green-700" :
+                                entry.event_type.includes("unlearning") ? "bg-blue-100 text-blue-700" :
+                                "bg-gray-100 text-gray-700"
+                              }`}>
+                                {entry.event_type}
+                              </span>
+                              {entry.user_id && (
+                                <span className="text-xs text-gray-400">User #{entry.user_id}</span>
+                              )}
+                            </div>
+                            <span className="text-xs text-gray-400">
+                              {new Date(entry.created_at).toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="mt-1 text-xs text-gray-500 font-mono whitespace-pre-wrap">
+                            {JSON.stringify(entry.event_data, null, 2)}
+                          </div>
                         </div>
-                        <div className="mt-1 text-xs text-gray-500 font-mono whitespace-pre-wrap">
-                          {JSON.stringify(entry.event_data, null, 2)}
-                        </div>
-                      </div>
-                    ))
+                      ))
                   )}
                 </div>
               </div>

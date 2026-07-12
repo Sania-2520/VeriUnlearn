@@ -67,12 +67,31 @@ async def get_dataset(dataset_id: int, user: CurrentUser, db: DatabaseDep):
 
 @router.post("/start", response_model=dict)
 async def start_training(body: TrainingStartRequest, user: CurrentUser, db: DatabaseDep):
+    service = TrainingService(db)
+
+    dataset = await service.get_dataset(body.dataset_id)
+    if dataset is None:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+
+    service.write_dataset_json(body.dataset_id)
+
+    sample_count = await service.get_sample_count(body.dataset_id)
+    if sample_count == 0:
+        raise HTTPException(status_code=400, detail="Dataset has no training samples")
+
+    version = await service.create_model_version(
+        dataset_id=body.dataset_id,
+        adapter_path="pending",
+        model_hash="pending",
+        num_samples=sample_count,
+    )
+
     task = train_model_task.delay(
         dataset_id=body.dataset_id,
-        model_version_id=body.model_version_id,
+        model_version_id=version.id,
         hyperparameters=body.hyperparameters,
     )
-    return {"task_id": task.id, "status": "started"}
+    return {"task_id": task.id, "model_version_id": version.id, "status": "started"}
 
 
 @router.get("/versions", response_model=ModelVersionList)

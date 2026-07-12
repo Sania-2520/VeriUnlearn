@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -45,12 +47,26 @@ class TrainingService:
         count = 0
         for msg in messages:
             conv = msg.conversation
+
+            user_prompt = None
+            prev_msg_result = await self.db.execute(
+                select(Message)
+                .where(Message.conversation_id == msg.conversation_id)
+                .where(Message.created_at < msg.created_at)
+                .order_by(Message.created_at.desc())
+                .limit(1)
+            )
+            prev_msg = prev_msg_result.scalar_one_or_none()
+            if prev_msg and prev_msg.role == "user":
+                user_prompt = prev_msg.content
+
             sample = TrainingSample(
                 dataset_id=dataset_id,
                 conversation_id=msg.conversation_id,
                 message_id=msg.id,
                 user_id=conv.user_id,
                 content=msg.content,
+                user_prompt=user_prompt,
                 version=1,
             )
             self.db.add(sample)
@@ -64,6 +80,30 @@ class TrainingService:
             await self.db.flush()
 
         return count
+
+    def write_dataset_json(self, dataset_id: int) -> Path:
+        import sqlite3
+        adapter_dir = Path(settings.adapter_dir)
+        adapter_dir.mkdir(parents=True, exist_ok=True)
+        json_path = adapter_dir / f"dataset_{dataset_id}.json"
+
+        conn = sqlite3.connect(settings.sqlite_path)
+        cursor = conn.execute(
+            "SELECT user_prompt, content FROM training_samples WHERE dataset_id = ? AND user_prompt IS NOT NULL",
+            (dataset_id,),
+        )
+        rows = cursor.fetchall()
+        conn.close()
+
+        samples = []
+        for user_prompt, assistant_content in rows:
+            samples.append({"role": "user", "content": user_prompt})
+            samples.append({"role": "assistant", "content": assistant_content})
+
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(samples, f, indent=2, ensure_ascii=False)
+
+        return json_path
 
     async def get_model_versions(self) -> list[ModelVersion]:
         result = await self.db.execute(

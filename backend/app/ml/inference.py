@@ -16,11 +16,14 @@ class InferenceEngine:
         self.model_mgr = ModelManager()
         self._model_ready = False
         self._load_error = None
+        self._active_adapter_path: str | None = None
 
-    def _ensure_model_loaded(self) -> bool:
-        if self._model_ready:
+    def _ensure_model_loaded(self, adapter_path: str | None = None) -> bool:
+        if adapter_path is None:
+            adapter_path = self._active_adapter_path
+        if self._model_ready and self._active_adapter_path == adapter_path:
             return True
-        if self._load_error:
+        if self._load_error and self._active_adapter_path == adapter_path:
             return False
         try:
             import threading
@@ -31,6 +34,9 @@ class InferenceEngine:
             def load():
                 try:
                     self.model_mgr.load_base_model()
+                    if adapter_path:
+                        self.model_mgr.load_adapter(adapter_path)
+                        self._active_adapter_path = adapter_path
                     result[0] = True
                 except Exception as e:
                     error[0] = e
@@ -51,6 +57,16 @@ class InferenceEngine:
         except Exception as e:
             self._load_error = str(e)
             return False
+
+    def _reload_with_adapter(self, adapter_path: str | None) -> None:
+        self._model_ready = False
+        self._load_error = None
+        self._active_adapter_path = None
+        try:
+            self.model_mgr.unload_model()
+        except Exception:
+            pass
+        self._ensure_model_loaded(adapter_path=adapter_path)
 
     async def generate(
         self,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from typing import AsyncGenerator
 from unittest.mock import patch
 
@@ -28,11 +29,13 @@ def event_loop():
 
 @pytest_asyncio.fixture(autouse=True)
 async def setup_database():
+    os.environ["RATE_LIMIT_DISABLED"] = "1"
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+    os.environ.pop("RATE_LIMIT_DISABLED", None)
 
 
 async def override_get_db() -> AsyncGenerator[AsyncSession, None]:

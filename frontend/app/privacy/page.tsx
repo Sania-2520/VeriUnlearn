@@ -26,6 +26,10 @@ export default function PrivacyPage() {
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [executingId, setExecutingId] = useState<number | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const parseIds = () =>
     sampleIds
@@ -77,6 +81,41 @@ export default function PrivacyPage() {
       if (res.ok) fetchRequests();
     } catch {}
     setExecutingId(null);
+  };
+
+  const exportData = async () => {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/v1/gdpr/export", { headers: authHeaders() });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `veriunlearn_export.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch {}
+    setExporting(false);
+  };
+
+  const deleteAccount = async () => {
+    if (deleteConfirm !== "DELETE") return;
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/v1/gdpr/delete-account", {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+      if (res.ok) {
+        localStorage.removeItem("access_token");
+        window.location.href = "/login";
+      }
+    } catch {}
+    setDeleting(false);
   };
 
   useEffect(() => {
@@ -138,6 +177,60 @@ export default function PrivacyPage() {
             >
               {submitting ? "Submitting..." : "Submit Request"}
             </button>
+          </div>
+
+          <div className="rounded-xl border border-gray-200 bg-white p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">GDPR Data Rights</h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="font-medium text-gray-900">Export My Data</p>
+                  <p className="text-sm text-gray-500">Download all your personal data as JSON (Article 20 - Data Portability)</p>
+                </div>
+                <button
+                  onClick={exportData}
+                  disabled={exporting}
+                  className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+                >
+                  {exporting ? "Exporting..." : "Export Data"}
+                </button>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
+                <div>
+                  <p className="font-medium text-red-900">Delete My Account</p>
+                  <p className="text-sm text-red-600">Permanently delete your account and all associated data (Article 17 - Right to be Forgotten)</p>
+                </div>
+                <button
+                  onClick={() => setShowDeleteConfirm(!showDeleteConfirm)}
+                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                >
+                  Delete Account
+                </button>
+              </div>
+              {showDeleteConfirm && (
+                <div className="p-4 bg-red-50 rounded-lg border border-red-300">
+                  <p className="text-sm text-red-800 mb-2">
+                    Type <span className="font-bold">DELETE</span> to confirm. This action is irreversible.
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={deleteConfirm}
+                      onChange={(e) => setDeleteConfirm(e.target.value)}
+                      placeholder="Type DELETE"
+                      className="flex-1 rounded-lg border border-red-300 px-3 py-2 text-sm"
+                    />
+                    <button
+                      onClick={deleteAccount}
+                      disabled={deleteConfirm !== "DELETE" || deleting}
+                      className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                    >
+                      {deleting ? "Deleting..." : "Confirm Delete"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="rounded-xl border border-gray-200 bg-white p-6">

@@ -29,6 +29,7 @@ class TrainingSample(Base, TimestampMixin):
     shard_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     slice_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    user_prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
     version: Mapped[int] = mapped_column(Integer, default=1)
 
     dataset = relationship("TrainingDataset", back_populates="samples")

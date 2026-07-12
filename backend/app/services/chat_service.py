@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.models.conversation import Conversation, Message
-from app.models.training import ModelVersion
+from app.models.training import ModelVersion, TrainingSample
 from app.models.user import User
 from app.ml.inference import InferenceEngine
 from app.services.rag_service import RAGService
@@ -62,7 +62,17 @@ class ChatService:
             .where(Message.conversation_id == conversation_id, Conversation.user_id == user.id)
             .order_by(Message.created_at)
         )
-        return list(result.scalars().all())
+        messages = list(result.scalars().all())
+        if not messages:
+            conv_result = await self.db.execute(
+                select(Conversation).where(Conversation.id == conversation_id)
+            )
+            conv = conv_result.scalar_one_or_none()
+            if conv is None:
+                raise ValueError("Conversation not found")
+            if conv.user_id != user.id:
+                raise ValueError("Conversation not found")
+        return messages
 
     async def rename_conversation(self, conversation_id: int, user: User, title: str) -> Conversation:
         result = await self.db.execute(
@@ -107,6 +117,9 @@ class ChatService:
 
         model_version = await self._get_active_model_version()
 
+        adapter_path = model_version.adapter_path if model_version and model_version.adapter_path else None
+        self.inference._reload_with_adapter(adapter_path)
+
         assistant_content = await self.inference.generate(
             prompt=content,
             history=history,
@@ -129,7 +142,9 @@ class ChatService:
 
         conv_hash = hashlib.sha256(str(conversation_id).encode()).hexdigest()
 
-        sample = await self._create_training_sample(conversation_id, user, assistant_msg, conv_hash)
+        sample = await self._create_training_sample(
+            conversation_id, user, assistant_msg, conv_hash, user_prompt=content
+        )
 
         return {
             "message": assistant_msg,
@@ -159,6 +174,9 @@ class ChatService:
 
         model_version = await self._get_active_model_version()
 
+        adapter_path = model_version.adapter_path if model_version and model_version.adapter_path else None
+        self.inference._reload_with_adapter(adapter_path)
+
         full_response = ""
         async for token in self.inference.generate_stream(
             prompt=content,
@@ -182,7 +200,7 @@ class ChatService:
         await self.db.flush()
 
         conv_hash = hashlib.sha256(str(conversation_id).encode()).hexdigest()
-        await self._create_training_sample(conversation_id, user, assistant_msg, conv_hash)
+        await self._create_training_sample(conversation_id, user, assistant_msg, conv_hash, user_prompt=content)
 
         yield f"data: {json.dumps({'done': True, 'message_id': assistant_msg.id, 'model_version': model_version.base_model + '/v' + str(model_version.id) if model_version else None})}\n\n"
 
@@ -216,9 +234,9 @@ class ChatService:
         )
 
     async def _create_training_sample(
-        self, conversation_id: int, user: User, assistant_msg: Message, conv_hash: str
-    ) -> None:
-        from app.models.training import TrainingSample
+        self, conversation_id: int, user: User, assistant_msg: Message, conv_hash: str,
+        user_prompt: str | None = None,
+    ) -> TrainingSample:
         sample = TrainingSample(
             dataset_id=None,
             conversation_id=conversation_id,
@@ -227,6 +245,7 @@ class ChatService:
             shard_id=conv_hash[:8],
             slice_id=None,
             content=assistant_msg.content,
+            user_prompt=user_prompt,
             version=1,
         )
         self.db.add(sample)

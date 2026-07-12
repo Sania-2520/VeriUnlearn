@@ -10,7 +10,8 @@ from prometheus_client import make_asgi_app
 
 from app.core.config import settings
 from app.core.logging import setup_logging
-from app.api.v1 import auth, chat, training, unlearning, documents, admin, api_keys
+from app.api.v1 import auth, chat, training, unlearning, documents, admin, api_keys, gdpr, usage, webhooks, backup, registry, experiments
+from app.middleware.rate_limit import RateLimitMiddleware
 
 
 @asynccontextmanager
@@ -23,12 +24,33 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="VeriUnlearn Pro API",
-    description="An End-to-End Framework for Verifiable Machine Unlearning with Cryptographic Proofs",
+    description=(
+        "An End-to-End Framework for Verifiable Machine Unlearning with Cryptographic Proofs.\n\n"
+        "## Features\n"
+        "- **Conversational AI** with RAG retrieval and streaming\n"
+        "- **Real LoRA Training** with dataset management\n"
+        "- **7 Unlearning Algorithms** with adaptive selection\n"
+        "- **Cryptographic Proofs** (Merkle tree, Ed25519 signatures)\n"
+        "- **GDPR Compliance** (data export, account deletion)\n"
+        "- **RBAC** (admin, user, auditor roles)\n"
+    ),
     version="1.0.0",
     lifespan=lifespan,
     docs_url="/api/docs",
     redoc_url="/api/redoc",
     openapi_url="/api/openapi.json",
+    openapi_tags=[
+        {"name": "Auth", "description": "Authentication and user management"},
+        {"name": "Chat", "description": "Conversational AI with RAG"},
+        {"name": "Training", "description": "Dataset management and model training"},
+        {"name": "Unlearning", "description": "Machine unlearning with verification"},
+        {"name": "Documents", "description": "Document upload and RAG indexing"},
+        {"name": "Admin", "description": "Admin panel and user management"},
+        {"name": "API Keys", "description": "API key management"},
+        {"name": "GDPR", "description": "Data export and deletion rights"},
+        {"name": "Usage", "description": "Usage quotas and limits"},
+        {"name": "Webhooks", "description": "Event notifications"},
+    ],
 )
 
 app.add_middleware(
@@ -38,6 +60,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(RateLimitMiddleware)
+
+
+@app.middleware("http")
+async def add_version_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-API-Version"] = "1.0.0"
+    response.headers["X-API-Deprecated"] = "false"
+    return response
 
 metrics_app = make_asgi_app()
 app.mount("/metrics", metrics_app)
@@ -64,3 +96,9 @@ app.include_router(unlearning.router, prefix="/api/v1")
 app.include_router(documents.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(api_keys.router, prefix="/api/v1")
+app.include_router(gdpr.router, prefix="/api/v1")
+app.include_router(usage.router, prefix="/api/v1")
+app.include_router(webhooks.router, prefix="/api/v1")
+app.include_router(backup.router, prefix="/api/v1")
+app.include_router(registry.router, prefix="/api/v1")
+app.include_router(experiments.router, prefix="/api/v1")

@@ -115,6 +115,16 @@ class RAGService:
         except Exception as e:
             logger.warning(f"Qdrant deletion failed: {e}")
 
+    async def delete_point(self, point_id: str) -> None:
+        client = await self._get_client()
+        try:
+            await client.delete(
+                collection_name=COLLECTION_NAME,
+                points_selector=models.PointIdsList(points=[point_id]),
+            )
+        except Exception as e:
+            logger.warning(f"Qdrant point deletion failed: {e}")
+
     async def close(self) -> None:
         if self._client:
             await self._client.close()

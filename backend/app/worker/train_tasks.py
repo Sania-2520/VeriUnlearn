@@ -1,12 +1,53 @@
 from __future__ import annotations
 
+import sqlite3
 from typing import Any
 
 from loguru import logger
 
+from app.core.config import settings
 from app.ml.model_manager import ModelManager
 from app.ml.trainer import Trainer
 from app.worker.celery_app import celery_app
+
+try:
+    from app.metrics import TRAINING_JOBS_TOTAL, TRAINING_DURATION
+except ImportError:
+    TRAINING_JOBS_TOTAL = None
+    TRAINING_DURATION = None
+
+
+def _update_model_version(
+    model_version_id: int,
+    adapter_path: str | None = None,
+    model_hash: str | None = None,
+    status: str | None = None,
+    num_samples: int | None = None,
+    train_loss: float | None = None,
+) -> None:
+    conn = sqlite3.connect(settings.sqlite_path)
+    sets: list[str] = []
+    params: list[Any] = []
+    if adapter_path is not None:
+        sets.append("adapter_path = ?")
+        params.append(adapter_path)
+    if model_hash is not None:
+        sets.append("hash = ?")
+        params.append(model_hash)
+    if status is not None:
+        sets.append("status = ?")
+        params.append(status)
+    if num_samples is not None:
+        sets.append("num_samples = ?")
+        params.append(num_samples)
+    if train_loss is not None:
+        sets.append("train_loss = ?")
+        params.append(train_loss)
+    if sets:
+        params.append(model_version_id)
+        conn.execute(f"UPDATE model_versions SET {', '.join(sets)} WHERE id = ?", params)
+        conn.commit()
+    conn.close()
 
 
 @celery_app.task(bind=True, name="train_model")
@@ -18,6 +59,9 @@ def train_model_task(
 ) -> dict[str, Any]:
     task_id = self.request.id
     logger.info(f"Training task started: {task_id}, dataset={dataset_id}")
+
+    import time
+    start_time = time.time()
 
     self.update_state(state="PROGRESS", meta={"progress": 0.0, "status": "preparing_dataset"})
 
@@ -72,7 +116,39 @@ def train_model_task(
         save_path = model_mgr.save_adapter(peft_model, adapter_name)
         model_hash = model_mgr.compute_model_hash(save_path)
 
+        if model_version_id is not None:
+            _update_model_version(
+                model_version_id,
+                adapter_path=save_path,
+                model_hash=model_hash,
+                status="completed",
+                num_samples=len(samples),
+                train_loss=metrics.get("train_loss", 0.0),
+            )
+
+            try:
+                from app.services.webhook_service import webhook_service
+                import asyncio
+                asyncio.get_event_loop().run_until_complete(
+                    webhook_service.dispatch("training.completed", {
+                        "model_version_id": model_version_id,
+                        "dataset_id": dataset_id,
+                        "adapter_path": save_path,
+                        "model_hash": model_hash,
+                        "train_loss": metrics.get("train_loss", 0.0),
+                        "num_samples": len(samples),
+                    })
+                )
+            except Exception as e:
+                logger.warning(f"Webhook dispatch failed: {e}")
+
         self.update_state(state="PROGRESS", meta={"progress": 1.0, "status": "completed"})
+
+        duration = time.time() - start_time
+        if TRAINING_JOBS_TOTAL:
+            TRAINING_JOBS_TOTAL.labels(status="completed").inc()
+        if TRAINING_DURATION:
+            TRAINING_DURATION.observe(duration)
 
         return {
             "task_id": task_id,
@@ -88,7 +164,28 @@ def train_model_task(
 
     except Exception as e:
         logger.error(f"Training failed: {e}")
+
+        if model_version_id is not None:
+            _update_model_version(model_version_id, status="failed")
+
+            try:
+                from app.services.webhook_service import webhook_service
+                import asyncio
+                asyncio.get_event_loop().run_until_complete(
+                    webhook_service.dispatch("training.failed", {
+                        "model_version_id": model_version_id,
+                        "dataset_id": dataset_id,
+                        "error": str(e),
+                    })
+                )
+            except Exception:
+                pass
+
         self.update_state(state="FAILURE", meta={"progress": 0.0, "status": "failed", "error": str(e)})
+
+        if TRAINING_JOBS_TOTAL:
+            TRAINING_JOBS_TOTAL.labels(status="failed").inc()
+
         return {
             "task_id": task_id,
             "dataset_id": dataset_id,
@@ -103,39 +200,43 @@ def build_dataset_task(self, dataset_id: int) -> dict[str, Any]:
     task_id = self.request.id
     logger.info(f"Dataset build task started: {task_id}, dataset={dataset_id}")
 
-    from app.models.training import TrainingSample, TrainingDataset
-    from sqlalchemy import create_engine, select
+    conn = sqlite3.connect(settings.sqlite_path)
+    cursor = conn.execute(
+        "SELECT id, conversation_id, message_id, user_id, content, user_prompt "
+        "FROM training_samples WHERE dataset_id = ? AND user_prompt IS NOT NULL",
+        (dataset_id,),
+    )
+    rows = cursor.fetchall()
+    conn.close()
 
-    db_path = "data/veriunlearn.db"
+    from pathlib import Path
+    adapter_dir = Path(settings.adapter_dir)
+    adapter_dir.mkdir(parents=True, exist_ok=True)
 
-    engine = create_engine(f"sqlite:///{db_path}")
-    from sqlalchemy.orm import Session
-    with Session(engine) as session:
-        result = session.execute(select(TrainingSample).where(TrainingSample.dataset_id == dataset_id))
-        samples = result.scalars().all()
+    import json as _json
+    dataset_path = adapter_dir / f"dataset_{dataset_id}.json"
 
-        from app.ml.model_manager import ModelManager
-        model_mgr = ModelManager()
+    sample_data = []
+    for row in rows:
+        user_prompt = row[5]
+        assistant_content = row[4]
+        if user_prompt:
+            sample_data.append({"role": "user", "content": user_prompt})
+        sample_data.append({"role": "assistant", "content": assistant_content})
 
-        import json as _json
-        dataset_path = model_mgr.adapter_dir / f"dataset_{dataset_id}.json"
-        sample_data = [
-            {"role": "assistant", "content": s.content} for s in samples if s.content
-        ]
-        with open(dataset_path, "w") as f:
-            _json.dump(sample_data, f)
+    with open(dataset_path, "w", encoding="utf-8") as f:
+        _json.dump(sample_data, f, indent=2, ensure_ascii=False)
 
-        result = session.execute(select(TrainingDataset).where(TrainingDataset.id == dataset_id))
-        dataset = result.scalar_one_or_none()
-        if dataset:
-            dataset.status = "ready"
-            session.commit()
-
-    engine.dispose()
+    conn = sqlite3.connect(settings.sqlite_path)
+    conn.execute(
+        "UPDATE training_datasets SET status = 'ready' WHERE id = ?", (dataset_id,)
+    )
+    conn.commit()
+    conn.close()
 
     return {
         "task_id": task_id,
         "dataset_id": dataset_id,
         "status": "completed",
-        "sample_count": len(samples),
+        "sample_count": len(rows),
     }

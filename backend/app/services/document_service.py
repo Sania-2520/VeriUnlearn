@@ -147,6 +147,11 @@ class DocumentService:
         doc = result.scalar_one_or_none()
         if doc is None:
             return False
+
+        from app.services.rag_service import RAGService
+        rag = RAGService(self.db)
+        await rag.delete_document_chunks(document_id)
+
         if os.path.exists(doc.storage_path):
             os.remove(doc.storage_path)
         await self.db.delete(doc)
