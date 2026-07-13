@@ -110,6 +110,29 @@ class TenantSlidingWindowRateLimiter(SlidingWindowRateLimiter):
             )
 
 
+def parse_rate_limit(spec: str) -> tuple[int, int]:
+    """Parse '100/minute' into (100, 60)."""
+    parts = spec.split("/")
+    count = int(parts[0])
+    unit = parts[1] if len(parts) > 1 else "minute"
+    window = {"second": 1, "minute": 60, "hour": 3600, "day": 86400}.get(unit, 60)
+    return count, window
+
+
+def make_rate_limiter(
+    max_requests: int = 60,
+    window_seconds: int = 60,
+    group: str = "default",
+    by_tenant: bool = False,
+) -> SlidingWindowRateLimiter:
+    cls = TenantSlidingWindowRateLimiter if by_tenant else SlidingWindowRateLimiter
+    return cls(
+        max_requests=max_requests,
+        window_seconds=window_seconds,
+        group=group,
+    )
+
+
 class PerEndpointRateLimiter:
     """Routes requests to per-endpoint limiters based on path prefix.
 
@@ -178,29 +201,6 @@ class TenantPerEndpointRateLimiter(PerEndpointRateLimiter):
     async def __call__(self, request: Request) -> None:
         limiter = self._resolve_limiter(request.url.path)
         await limiter(request)
-
-
-def make_rate_limiter(
-    max_requests: int = 60,
-    window_seconds: int = 60,
-    group: str = "default",
-    by_tenant: bool = False,
-) -> SlidingWindowRateLimiter:
-    cls = TenantSlidingWindowRateLimiter if by_tenant else SlidingWindowRateLimiter
-    return cls(
-        max_requests=max_requests,
-        window_seconds=window_seconds,
-        group=group,
-    )
-
-
-def parse_rate_limit(spec: str) -> tuple[int, int]:
-    """Parse '100/minute' into (100, 60)."""
-    parts = spec.split("/")
-    count = int(parts[0])
-    unit = parts[1] if len(parts) > 1 else "minute"
-    window = {"second": 1, "minute": 60, "hour": 3600, "day": 86400}.get(unit, 60)
-    return count, window
 
 
 _default_count, _default_window = parse_rate_limit(settings.rate_limit_default)

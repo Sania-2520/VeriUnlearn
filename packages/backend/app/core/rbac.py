@@ -27,6 +27,8 @@ class Permission(str, Enum):
     SETTINGS_WRITE = "settings:write"
     WEBHOOKS_READ = "webhooks:read"
     WEBHOOKS_WRITE = "webhooks:write"
+    EXPLAIN_READ = "explain:read"
+    EXPLAIN_WRITE = "explain:write"
 
 
 ROLE_PERMISSIONS: dict[str, set[Permission]] = {
@@ -55,6 +57,8 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
         Permission.SETTINGS_WRITE,
         Permission.WEBHOOKS_READ,
         Permission.WEBHOOKS_WRITE,
+        Permission.EXPLAIN_READ,
+        Permission.EXPLAIN_WRITE,
     },
     "compliance_officer": {
         Permission.UNLEARNING_READ,
@@ -69,6 +73,7 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
         Permission.SETTINGS_WRITE,
         Permission.WEBHOOKS_READ,
         Permission.WEBHOOKS_WRITE,
+        Permission.EXPLAIN_READ,
     },
     "unlearning_auditor": {
         Permission.UNLEARNING_CREATE,
@@ -94,6 +99,7 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
         Permission.SECURITY_CREATE,
         Permission.SECURITY_READ,
         Permission.SETTINGS_READ,
+        Permission.EXPLAIN_READ,
     },
     "viewer": {
         Permission.UNLEARNING_READ,

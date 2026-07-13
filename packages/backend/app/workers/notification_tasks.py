@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 
 import httpx
@@ -15,7 +16,7 @@ def send_email(self, to: str, subject: str, body: str) -> dict:
     from app.infrastructure.external.email_service import email_service
 
     try:
-        email_service.send_email(to, subject, body)
+        asyncio.run(email_service.send_email(to, subject, body))
         return {"to": to, "subject": subject, "status": "sent"}
     except Exception as e:
         logger.error("Failed to send email to %s: %s", to, str(e))

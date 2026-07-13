@@ -13,6 +13,7 @@ from app.api.v1.audit import router as audit_router
 from app.api.v1.compliance import router as compliance_router
 from app.api.v1.admin import router as admin_router
 from app.api.v1.api_keys import router as api_keys_router
+from app.api.v1.explainability import router as explainability_router
 
 router = APIRouter()
 
@@ -29,3 +30,4 @@ router.include_router(security_router, prefix="/security", tags=["Security"])
 router.include_router(audit_router, prefix="/audit", tags=["Audit"])
 router.include_router(compliance_router, prefix="/compliance", tags=["Compliance"])
 router.include_router(admin_router, prefix="/admin", tags=["Admin"])
+router.include_router(explainability_router, prefix="/explain", tags=["Explainability"])

@@ -25,6 +25,8 @@ import {
   Cpu,
   FileSearch,
   Activity,
+  BarChart3,
+  FlaskConical,
 } from "lucide-react"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -81,6 +83,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: "/dashboard/unlearning", label: "Unlearning", icon: Trash2 },
     { href: "/dashboard/rag", label: "RAG Documents", icon: FileSearch },
     { href: "/dashboard/models", label: "Model Registry", icon: Database },
+    { href: "/dashboard/explainability", label: "Explainability", icon: BarChart3 },
+    { href: "/dashboard/adapters", label: "Adapter Lifecycle", icon: Cpu },
+    { href: "/dashboard/benchmarks", label: "Benchmarks", icon: FlaskConical },
     { href: "/dashboard/training", label: "Training", icon: Cpu },
     { href: "/dashboard/audit", label: "Audit Log", icon: FileText },
     { href: "/dashboard/webhooks", label: "Webhooks", icon: Webhook },

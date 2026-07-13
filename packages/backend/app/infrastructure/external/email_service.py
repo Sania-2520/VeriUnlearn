@@ -55,6 +55,9 @@ class EmailService:
         body = self._render_template("welcome", name=full_name)
         return await self._send(to_email, subject, body)
 
+    async def send_email(self, to_email: str, subject: str, body: str) -> bool:
+        return await self._send(to_email, subject, body)
+
     async def send_deletion_confirmation(
         self, to_email: str, full_name: str, proof_id: str
     ) -> bool:

@@ -385,3 +385,160 @@ class WebhookEventLogModel(Base):
         Index("idx_webhook_logs_webhook", "webhook_id", "created_at"),
         Index("idx_webhook_logs_retry", "status", "next_retry_at"),
     )
+
+
+class ChatSessionModel(Base):
+    __tablename__ = "chat_sessions"
+
+    id = Column(String(36), primary_key=True)
+    user_id = Column(String(36), nullable=False, index=True)
+    tenant_id = Column(String(36), nullable=False, index=True)
+    title = Column(String(255), nullable=False, default="New Chat")
+    folder_id = Column(String(36), nullable=True)
+    ai_provider_id = Column(String(36), nullable=True)
+    model = Column(String(255), nullable=True)
+    system_prompt = Column(Text, nullable=True)
+    temperature = Column(Float, nullable=False, default=0.7)
+    max_tokens = Column(Integer, nullable=False, default=4096)
+    is_pinned = Column(Boolean, nullable=False, default=False)
+    is_archived = Column(Boolean, nullable=False, default=False)
+    is_deleted = Column(Boolean, nullable=False, default=False)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    message_count = Column(Integer, nullable=False, default=0)
+    total_tokens = Column(Integer, nullable=False, default=0)
+    total_cost = Column(Float, nullable=False, default=0.0)
+    event_metadata = Column("metadata", JSON, nullable=False, default=dict)
+    last_activity_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_chat_sessions_user", "user_id", "tenant_id"),
+        Index("idx_chat_sessions_activity", "tenant_id", "last_activity_at"),
+    )
+
+
+class ChatMessageModel(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(String(36), primary_key=True)
+    session_id = Column(String(36), ForeignKey("chat_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
+    parent_id = Column(String(36), nullable=True)
+    role = Column(String(20), nullable=False, default="user")
+    content = Column(Text, nullable=False, default="")
+    content_type = Column(String(20), nullable=False, default="text")
+    content_rendered = Column(Text, nullable=True)
+    event_metadata = Column("metadata", JSON, nullable=False, default=dict)
+    is_streaming = Column(Boolean, nullable=False, default=False)
+    is_regenerated = Column(Boolean, nullable=False, default=False)
+    is_edited = Column(Boolean, nullable=False, default=False)
+    feedback = Column(String(20), nullable=True)
+    tokens_input = Column(Integer, nullable=False, default=0)
+    tokens_output = Column(Integer, nullable=False, default=0)
+    cost = Column(Float, nullable=False, default=0.0)
+    latency_ms = Column(Integer, nullable=True)
+    model_used = Column(String(255), nullable=True)
+    provider_used = Column(String(255), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("idx_chat_messages_session", "session_id", "created_at"),
+    )
+
+
+class MemoryEntryModel(Base):
+    __tablename__ = "memory_entries"
+
+    id = Column(String(36), primary_key=True)
+    tenant_id = Column(String(36), nullable=False, index=True)
+    user_id = Column(String(36), nullable=True, index=True)
+    session_id = Column(String(36), nullable=True)
+    memory_type = Column(String(20), nullable=False, default="persistent")
+    category = Column(String(50), nullable=True)
+    content = Column(JSON, nullable=False, default=dict)
+    importance = Column(Float, nullable=False, default=1.0)
+    access_count = Column(Integer, nullable=False, default=0)
+    last_accessed_at = Column(DateTime(timezone=True), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    event_metadata = Column("metadata", JSON, nullable=False, default=dict)
+    is_deleted = Column(Boolean, nullable=False, default=False)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_memory_entries_user", "tenant_id", "user_id", "memory_type"),
+    )
+
+
+class MemoryConfigModel(Base):
+    __tablename__ = "memory_config"
+
+    id = Column(String(36), primary_key=True)
+    tenant_id = Column(String(36), unique=True, nullable=False, index=True)
+    persistent_memory_enabled = Column(Boolean, nullable=False, default=True)
+    retention_days = Column(Integer, nullable=False, default=90)
+    max_entries = Column(Integer, nullable=False, default=1000)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=datetime.utcnow)
+
+
+class ChatFolderModel(Base):
+    __tablename__ = "chat_folders"
+
+    id = Column(String(36), primary_key=True)
+    user_id = Column(String(36), nullable=False, index=True)
+    tenant_id = Column(String(36), nullable=False)
+    name = Column(String(255), nullable=False)
+    parent_id = Column(String(36), nullable=True)
+    sort_order = Column(Integer, nullable=False, default=0)
+    is_deleted = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_chat_folders_user", "user_id", "tenant_id"),
+    )
+
+
+class RagDocumentModel(Base):
+    __tablename__ = "rag_documents"
+
+    id = Column(String(36), primary_key=True)
+    tenant_id = Column(String(36), nullable=False, index=True)
+    user_id = Column(String(36), nullable=True)
+    filename = Column(String(512), nullable=False)
+    original_filename = Column(String(512), nullable=False)
+    file_type = Column(String(20), nullable=False, default="txt")
+    file_size_bytes = Column(Integer, nullable=False, default=0)
+    storage_path = Column(String(1024), nullable=False, default="")
+    storage_bucket = Column(String(255), nullable=True)
+    mime_type = Column(String(100), nullable=True)
+    page_count = Column(Integer, nullable=True)
+    status = Column(String(20), nullable=False, default="pending")
+    error_message = Column(Text, nullable=True)
+    chunk_count = Column(Integer, nullable=False, default=0)
+    event_metadata = Column("metadata", JSON, nullable=False, default=dict)
+    content_hash = Column(String(128), nullable=True)
+    is_deleted = Column(Boolean, nullable=False, default=False)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_rag_documents_tenant", "tenant_id", "status"),
+    )
+
+
+class RagDocumentChunkModel(Base):
+    __tablename__ = "rag_document_chunks"
+
+    id = Column(String(36), primary_key=True)
+    document_id = Column(String(36), ForeignKey("rag_documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    chunk_index = Column(Integer, nullable=False)
+    content = Column(Text, nullable=False)
+    content_hash = Column(String(128), nullable=False, default="")
+    token_count = Column(Integer, nullable=False, default=0)
+    event_metadata = Column("metadata", JSON, nullable=False, default=dict)
+    embedding_id = Column(String(255), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))

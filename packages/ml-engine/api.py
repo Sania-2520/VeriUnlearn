@@ -3,6 +3,8 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Any, Optional
 import json
+import uuid
+import numpy as np
 
 from unlearning.hybrid_controller import HybridAdaptiveController
 from unlearning.algorithms.base import UnlearningContext, UnlearningResult
@@ -148,6 +150,74 @@ class AdapterSwapRequest(BaseModel):
 
 
 # ──────────────────────────────────────────────────────────────
+# Explainability Pydantic Models
+# ──────────────────────────────────────────────────────────────
+
+class ExplainSamplesRequest(BaseModel):
+    samples: list[list[float]]
+    feature_names: Optional[list[str]] = None
+    method: str = "shap"
+    model_type: str = "default"
+
+
+class ExplainFeaturesRequest(BaseModel):
+    dataset: list[list[float]]
+    feature_names: Optional[list[str]] = None
+    method: str = "shap"
+
+
+class ExplainCompareRequest(BaseModel):
+    pre_unlearn_samples: list[list[float]]
+    post_unlearn_samples: list[list[float]]
+    feature_names: Optional[list[str]] = None
+    method: str = "shap"
+
+
+class PrivacyHeatmapRequest(BaseModel):
+    samples: list[list[float]]
+    privacy_scores: list[float]
+    feature_names: Optional[list[str]] = None
+
+
+class DriftRequest(BaseModel):
+    pre_confidences: list[float]
+    post_confidences: list[float]
+    pre_importances: list[dict[str, float]]
+    post_importances: list[dict[str, float]]
+
+
+# ──────────────────────────────────────────────────────────────
+# Adapter Lifecycle Pydantic Models
+# ──────────────────────────────────────────────────────────────
+
+class RegisterAdapterRequest(BaseModel):
+    adapter_name: str
+    adapter_path: str
+    base_model_name: str = ""
+    config: dict = {}
+    tags: dict = {}
+
+
+class AdapterVersionActionRequest(BaseModel):
+    adapter_name: str
+    version_id: str
+
+
+class CanarySetupRequest(BaseModel):
+    adapter_name: str
+    stable_version_id: str
+    canary_version_id: str
+    canary_traffic_pct: Optional[float] = None
+
+
+class RecordMetricsRequest(BaseModel):
+    adapter_name: str
+    version_id: str
+    latency_ms: float = 0.0
+    success: bool = True
+
+
+# ──────────────────────────────────────────────────────────────
 # Lazy-initialized singletons for new components
 # ──────────────────────────────────────────────────────────────
 
@@ -158,6 +228,10 @@ _inference_service = None
 _conversational_pipeline = None
 _mlflow_tracker = None
 _e2e_pipeline = None
+_explainer_manager = None
+_adapter_lifecycle = None
+_continual_learning = None
+_benchmark_runner = None
 
 
 def get_lora_trainer():
@@ -200,6 +274,22 @@ def get_conversational_pipeline():
     return _conversational_pipeline
 
 
+def get_continual_learning():
+    global _continual_learning
+    if _continual_learning is None:
+        from training.continual_learning import ContinualLearningManager
+        _continual_learning = ContinualLearningManager()
+    return _continual_learning
+
+
+def get_benchmark_runner():
+    global _benchmark_runner
+    if _benchmark_runner is None:
+        from training.benchmarks import BenchmarkRunner, BenchmarkConfig
+        _benchmark_runner = BenchmarkRunner(BenchmarkConfig())
+    return _benchmark_runner
+
+
 def get_mlflow_tracker():
     global _mlflow_tracker
     if _mlflow_tracker is None:
@@ -214,6 +304,59 @@ def get_e2e_pipeline():
         from unlearning.e2e_pipeline import E2EUnlearningPipeline
         _e2e_pipeline = E2EUnlearningPipeline()
     return _e2e_pipeline
+
+
+def get_explainer_manager():
+    global _explainer_manager
+    if _explainer_manager is None:
+        from explainability.shap_explainer import SHAPExplainer
+        from explainability.lime_explainer import LIMEExplainer
+        from explainability.integrated_gradients import IntegratedGradientsExplainer
+        from explainability.feature_attribution import FeatureAttribution
+
+        class ExplainerManager:
+            def __init__(self):
+                self._shap: Optional[SHAPExplainer] = None
+                self._lime: Optional[LIMEExplainer] = None
+                self._ig: Optional[IntegratedGradientsExplainer] = None
+                self._attr: Optional[FeatureAttribution] = None
+
+            def get_shap(self, model=None) -> SHAPExplainer:
+                if self._shap is None:
+                    self._shap = SHAPExplainer(model or self._dummy_model())
+                return self._shap
+
+            def get_lime(self, model=None) -> LIMEExplainer:
+                if self._lime is None:
+                    self._lime = LIMEExplainer(model or self._dummy_model())
+                return self._lime
+
+            def get_ig(self, model=None) -> IntegratedGradientsExplainer:
+                if self._ig is None:
+                    self._ig = IntegratedGradientsExplainer(model or self._dummy_model())
+                return self._ig
+
+            def get_attr(self, model=None, method="gradient") -> FeatureAttribution:
+                if self._attr is None or self._attr._method != method:
+                    self._attr = FeatureAttribution(model or self._dummy_model(), method=method)
+                return self._attr
+
+            @staticmethod
+            def _dummy_model():
+                def model_fn(X):
+                    return np.mean(X, axis=1, keepdims=True)
+                return model_fn
+
+        _explainer_manager = ExplainerManager()
+    return _explainer_manager
+
+
+def get_adapter_lifecycle():
+    global _adapter_lifecycle
+    if _adapter_lifecycle is None:
+        from training.adapter_lifecycle import AdapterLifecycleManager, LifecycleConfig
+        _adapter_lifecycle = AdapterLifecycleManager(LifecycleConfig())
+    return _adapter_lifecycle
 
 
 # ──────────────────────────────────────────────────────────────
@@ -483,6 +626,190 @@ async def load_checkpoint(checkpoint_id: str):
     trainer = get_lora_trainer()
     result = trainer.load_checkpoint(checkpoint_id)
     return result
+
+
+# ──────────────────────────────────────────────────────────────
+# New Endpoints: Adapter Lifecycle
+# ──────────────────────────────────────────────────────────────
+
+class AdapterLifecycleRouter:
+    def __init__(self) -> None:
+        self._manager = get_adapter_lifecycle()
+
+    def register(self, request: RegisterAdapterRequest) -> dict:
+        version = self._manager.register_adapter(
+            adapter_name=request.adapter_name,
+            adapter_path=request.adapter_path,
+            base_model_name=request.base_model_name,
+            config=request.config,
+            tags=request.tags,
+        )
+        return {
+            "adapter_name": version.adapter_name,
+            "version_id": version.version_id,
+            "version_number": version.version_number,
+            "status": version.status.value,
+        }
+
+    def activate(self, request: AdapterVersionActionRequest) -> dict:
+        success = self._manager.activate_version(request.adapter_name, request.version_id)
+        return {"success": success}
+
+    def deactivate(self, request: AdapterVersionActionRequest) -> dict:
+        success = self._manager.deactivate_version(request.adapter_name, request.version_id)
+        return {"success": success}
+
+    def mark_failed(self, request: AdapterVersionActionRequest) -> dict:
+        success = self._manager.mark_failed(request.adapter_name, request.version_id)
+        return {"success": success}
+
+    def rollback(self, adapter_name: str, version_id: Optional[str] = None) -> dict:
+        target = self._manager.rollback(adapter_name, version_id)
+        if target is None:
+            raise HTTPException(status_code=404, detail=f"No rollback target for '{adapter_name}'")
+        return {
+            "adapter_name": target.adapter_name,
+            "version_id": target.version_id,
+            "version_number": target.version_number,
+            "status": target.status.value,
+        }
+
+    def list_adapters(self) -> list[dict]:
+        return self._manager.list_adapters()
+
+    def get_versions(self, adapter_name: str) -> list[dict]:
+        return self._manager.get_versions(adapter_name)
+
+    def get_active(self, adapter_name: str) -> dict:
+        version = self._manager.get_active_version(adapter_name)
+        if version is None:
+            raise HTTPException(status_code=404, detail=f"No active version for '{adapter_name}'")
+        return {
+            "adapter_name": version.adapter_name,
+            "version_id": version.version_id,
+            "version_number": version.version_number,
+            "status": version.status.value,
+            "avg_latency_ms": version.avg_latency_ms,
+            "total_requests": version.total_requests,
+        }
+
+    def setup_canary(self, request: CanarySetupRequest) -> dict:
+        self._manager.setup_canary(
+            request.adapter_name,
+            request.stable_version_id,
+            request.canary_version_id,
+            request.canary_traffic_pct,
+        )
+        return {"success": True, "strategy": "canary"}
+
+    def promote_canary(self, adapter_name: str) -> dict:
+        version = self._manager.promote_canary(adapter_name)
+        if version is None:
+            raise HTTPException(status_code=400, detail=f"No canary deployment for '{adapter_name}'")
+        return {
+            "adapter_name": version.adapter_name,
+            "version_id": version.version_id,
+            "version_number": version.version_number,
+            "status": version.status.value,
+        }
+
+    def get_routing(self, adapter_name: str) -> dict:
+        rule = self._manager.get_routing_rule(adapter_name)
+        if rule is None:
+            raise HTTPException(status_code=404, detail=f"No routing rule for '{adapter_name}'")
+        return rule
+
+    def record_metrics(self, request: RecordMetricsRequest) -> dict:
+        self._manager.record_request(
+            request.adapter_name, request.version_id, request.latency_ms, request.success
+        )
+        return {"success": True}
+
+    def get_latency(self, adapter_name: str) -> dict:
+        return self._manager.get_latency_stats(adapter_name)
+
+    def health(self, adapter_name: str) -> dict:
+        return self._manager.get_adapter_health(adapter_name)
+
+
+_lifecycle_router = None
+
+
+def get_lifecycle_router():
+    global _lifecycle_router
+    if _lifecycle_router is None:
+        _lifecycle_router = AdapterLifecycleRouter()
+    return _lifecycle_router
+
+
+@app.post("/adapters/register")
+async def register_adapter(request: RegisterAdapterRequest):
+    return get_lifecycle_router().register(request)
+
+
+@app.post("/adapters/activate")
+async def activate_adapter(request: AdapterVersionActionRequest):
+    return get_lifecycle_router().activate(request)
+
+
+@app.post("/adapters/deactivate")
+async def deactivate_adapter(request: AdapterVersionActionRequest):
+    return get_lifecycle_router().deactivate(request)
+
+
+@app.post("/adapters/mark-failed")
+async def mark_adapter_failed(request: AdapterVersionActionRequest):
+    return get_lifecycle_router().mark_failed(request)
+
+
+@app.post("/adapters/{adapter_name}/rollback")
+async def rollback_adapter(adapter_name: str, version_id: Optional[str] = None):
+    return get_lifecycle_router().rollback(adapter_name, version_id)
+
+
+@app.get("/adapters")
+async def list_adapters():
+    return get_lifecycle_router().list_adapters()
+
+
+@app.get("/adapters/{adapter_name}/versions")
+async def get_adapter_versions(adapter_name: str):
+    return get_lifecycle_router().get_versions(adapter_name)
+
+
+@app.get("/adapters/{adapter_name}/active")
+async def get_active_adapter(adapter_name: str):
+    return get_lifecycle_router().get_active(adapter_name)
+
+
+@app.post("/adapters/canary/setup")
+async def setup_canary(request: CanarySetupRequest):
+    return get_lifecycle_router().setup_canary(request)
+
+
+@app.post("/adapters/{adapter_name}/canary/promote")
+async def promote_canary(adapter_name: str):
+    return get_lifecycle_router().promote_canary(adapter_name)
+
+
+@app.get("/adapters/{adapter_name}/routing")
+async def get_routing_rule(adapter_name: str):
+    return get_lifecycle_router().get_routing(adapter_name)
+
+
+@app.post("/adapters/metrics")
+async def record_adapter_metrics(request: RecordMetricsRequest):
+    return get_lifecycle_router().record_metrics(request)
+
+
+@app.get("/adapters/{adapter_name}/latency")
+async def get_adapter_latency(adapter_name: str):
+    return get_lifecycle_router().get_latency(adapter_name)
+
+
+@app.get("/adapters/{adapter_name}/health")
+async def adapter_health(adapter_name: str):
+    return get_lifecycle_router().health(adapter_name)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -765,6 +1092,116 @@ async def train_from_conversations():
 
 
 # ──────────────────────────────────────────────────────────────
+# New Endpoints: Continual Learning (EWC + Replay + Drift)
+# ──────────────────────────────────────────────────────────────
+
+@app.get("/continual/stats")
+async def continual_learning_stats():
+    cl = get_continual_learning()
+    return cl.get_stats()
+
+
+@app.post("/continual/tasks")
+async def add_continual_task(request: dict):
+    cl = get_continual_learning()
+    task = cl.add_task(request.get("task_id", str(uuid.uuid4())), request.get("metadata"))
+    return task
+
+
+@app.get("/continual/tasks")
+async def list_continual_tasks():
+    cl = get_continual_learning()
+    return {"tasks": [cl.get_task(tid) for tid in cl.get_stats().get("tasks", [])]}
+
+
+@app.get("/continual/tasks/{task_id}")
+async def get_continual_task(task_id: str):
+    cl = get_continual_learning()
+    task = cl.get_task(task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+    return task
+
+
+@app.post("/continual/samples")
+async def record_continual_sample(request: dict):
+    cl = get_continual_learning()
+    cl.record_sample(
+        input_data=request.get("input_data", []),
+        target=request.get("target"),
+        task_id=request.get("task_id", "default"),
+        importance=request.get("importance", 0.5),
+        confidence=request.get("confidence", 0.0),
+        loss=request.get("loss", 0.0),
+        metadata=request.get("metadata"),
+    )
+    return {"success": True}
+
+
+@app.post("/continual/ewc/estimate")
+async def estimate_ewc(request: dict):
+    cl = get_continual_learning()
+    dataset = request.get("dataset", [])
+    task_id = request.get("task_id", "default")
+    num_samples = request.get("num_samples", min(len(dataset), 200))
+    result = cl.estimate_ewc(task_id, dataset, num_samples=num_samples)
+    return result
+
+
+@app.get("/continual/ewc/state")
+async def ewc_state():
+    cl = get_continual_learning()
+    stats = cl.get_stats()
+    return stats.get("ewc", {})
+
+
+@app.post("/continual/replay/sample")
+async def sample_replay(request: dict):
+    cl = get_continual_learning()
+    samples = cl.sample_replay(
+        n=request.get("n", 32),
+        task_id=request.get("task_id"),
+    )
+    return {"samples": samples, "count": len(samples)}
+
+
+@app.get("/continual/replay/stats")
+async def replay_stats():
+    cl = get_continual_learning()
+    stats = cl.get_stats()
+    return stats.get("replay_buffer", {})
+
+
+@app.post("/continual/drift/record")
+async def record_drift(request: dict):
+    cl = get_continual_learning()
+    result = cl.detect_drift(
+        metric_name=request.get("metric_name", "confidence"),
+        value=request.get("value", 0.0),
+    )
+    return result
+
+
+@app.get("/continual/drift/alerts")
+async def drift_alerts(n: int = 10):
+    cl = get_continual_learning()
+    return {"alerts": cl.get_drift_alerts(n)}
+
+
+@app.get("/continual/drift/state")
+async def drift_state(metric: str = "confidence"):
+    cl = get_continual_learning()
+    return cl.get_drift_state(metric)
+
+
+@app.get("/continual/drift/stats")
+async def drift_stats():
+    cl = get_continual_learning()
+    stats = cl.get_stats()
+    return stats.get("drift_detector", {})
+
+
+# ──────────────────────────────────────────────────────────────
 # New Endpoints: E2E Unlearning
 # ──────────────────────────────────────────────────────────────
 
@@ -807,10 +1244,77 @@ async def verify_deletion_certificate(request: dict):
 
 
 # ──────────────────────────────────────────────────────────────
-# New Endpoints: MLflow
+# New Endpoints: Research Benchmarks
 # ──────────────────────────────────────────────────────────────
 
-@app.get("/mlflow/experiment-stats")
+@app.post("/benchmarks/run")
+async def run_benchmarks(request: dict):
+    runner = get_benchmark_runner()
+    from training.benchmarks import BenchmarkConfig
+    cfg = BenchmarkConfig(**{k: v for k, v in request.items() if hasattr(BenchmarkConfig, k)})
+    runner._config = cfg
+    import asyncio
+    results = await asyncio.to_thread(runner.run_all)
+    return {
+        "total": len(results),
+        "completed": sum(1 for r in results if r.status == "completed"),
+        "failed": sum(1 for r in results if r.status == "failed"),
+        "results": [
+            {
+                "dataset": r.dataset,
+                "algorithm": r.algorithm,
+                "data_size": r.data_size,
+                "deletion_fraction": r.deletion_fraction,
+                "trial": r.trial,
+                "metrics": r.metrics,
+                "status": r.status,
+            }
+            for r in results
+        ],
+    }
+
+
+@app.get("/benchmarks/summary")
+async def benchmark_summary():
+    runner = get_benchmark_runner()
+    return runner.get_summary()
+
+
+@app.get("/benchmarks/results")
+async def benchmark_results():
+    runner = get_benchmark_runner()
+    results = runner.get_results()
+    return [
+        {
+            "benchmark_id": r.benchmark_id,
+            "dataset": r.dataset,
+            "algorithm": r.algorithm,
+            "data_size": r.data_size,
+            "deletion_fraction": r.deletion_fraction,
+            "trial": r.trial,
+            "metrics": r.metrics,
+            "status": r.status,
+        }
+        for r in results
+    ]
+
+
+@app.get("/benchmarks/config")
+async def benchmark_config():
+    runner = get_benchmark_runner()
+    from training.benchmarks import BenchmarkDataset
+    return {
+        "datasets": [d.value for d in BenchmarkDataset],
+        "data_sizes": runner._config.data_sizes,
+        "deletion_fractions": runner._config.deletion_fractions,
+        "algorithms": runner._config.algorithms,
+        "num_trials": runner._config.num_trials,
+    }
+
+
+# ──────────────────────────────────────────────────────────────
+# New Endpoints: MLflow
+# ──────────────────────────────────────────────────────────────
 async def mlflow_experiment_stats():
     tracker = get_mlflow_tracker()
     return tracker.get_experiment_stats()
@@ -846,6 +1350,157 @@ async def mlflow_compare_runs(request: dict):
     run_ids = request.get("run_ids", [])
     result = tracker.compare_runs(run_ids)
     return result
+
+
+# ──────────────────────────────────────────────────────────────
+# New Endpoints: Explainability
+# ──────────────────────────────────────────────────────────────
+
+@app.post("/explain/samples")
+async def explain_samples(request: ExplainSamplesRequest):
+    mgr = get_explainer_manager()
+    samples_np = [np.array(s, dtype=np.float32) for s in request.samples]
+    method = request.method.lower()
+
+    if method == "shap":
+        explainer = mgr.get_shap()
+    elif method == "lime":
+        explainer = mgr.get_lime()
+    elif method == "integrated_gradients" or method == "ig":
+        explainer = mgr.get_ig()
+    elif method in ("gradient", "occlusion", "perturbation"):
+        explainer = mgr.get_attr(method=method)
+    else:
+        explainer = mgr.get_shap()
+
+    from explainability.visualization import ExplanationVisualizer
+
+    results = explainer.explain_batch(samples_np)
+    chart_data = [ExplanationVisualizer.importance_chart_data(r) for r in results]
+    return {
+        "method": method,
+        "count": len(results),
+        "results": [
+            {
+                "feature_importances": [
+                    {"feature": fi.feature_name, "importance": fi.importance_score, "direction": fi.direction}
+                    for fi in r.feature_importances
+                ],
+                "prediction": r.prediction,
+                "confidence": r.confidence,
+                "runtime_ms": r.runtime_ms,
+            }
+            for r in results
+        ],
+        "chart_data": chart_data,
+    }
+
+
+@app.post("/explain/features")
+async def explain_features(request: ExplainFeaturesRequest):
+    mgr = get_explainer_manager()
+    dataset_np = np.array(request.dataset, dtype=np.float32)
+    method = request.method.lower()
+
+    if method == "shap":
+        explainer = mgr.get_shap()
+        global_importance = explainer.global_feature_importance(dataset_np)
+    else:
+        explainer = mgr.get_attr(method=method if method in ("gradient", "occlusion", "perturbation") else "gradient")
+        results = explainer.explain_batch([row for row in dataset_np])
+        agg = explainer.aggregate_attributions(results)
+        global_importance = {k: v["mean"] for k, v in agg.items()}
+
+    return {
+        "method": method,
+        "samples": len(request.dataset),
+        "features": len(request.feature_names or global_importance),
+        "feature_names": request.feature_names or list(global_importance.keys()),
+        "global_importance": global_importance,
+    }
+
+
+@app.post("/explain/compare")
+async def compare_explanations(request: ExplainCompareRequest):
+    mgr = get_explainer_manager()
+    pre_samples = [np.array(s, dtype=np.float32) for s in request.pre_unlearn_samples]
+    post_samples = [np.array(s, dtype=np.float32) for s in request.post_unlearn_samples]
+    method = request.method.lower()
+
+    if method == "shap":
+        explainer = mgr.get_shap()
+    elif method == "lime":
+        explainer = mgr.get_lime()
+    elif method in ("integrated_gradients", "ig"):
+        explainer = mgr.get_ig()
+    elif method in ("gradient", "occlusion", "perturbation"):
+        explainer = mgr.get_attr(method=method)
+    else:
+        explainer = mgr.get_shap()
+
+    pre_results = explainer.explain_batch(pre_samples)
+    post_results = explainer.explain_batch(post_samples)
+
+    from explainability.visualization import ExplanationVisualizer
+
+    comparisons = []
+    for pre, post in zip(pre_results, post_results):
+        comparisons.append(ExplanationVisualizer.comparison_chart_data(pre, post))
+
+    return {
+        "method": method,
+        "pair_count": min(len(pre_results), len(post_results)),
+        "comparisons": comparisons,
+    }
+
+
+@app.post("/explain/privacy-heatmap")
+async def privacy_heatmap(request: PrivacyHeatmapRequest):
+    from explainability.visualization import ExplanationVisualizer
+
+    mgr = get_explainer_manager()
+    samples_np = [np.array(s, dtype=np.float32) for s in request.samples]
+    explainer = mgr.get_shap()
+    results = explainer.explain_batch(samples_np)
+
+    importances = []
+    for r in results:
+        row = {}
+        for fi in r.feature_importances:
+            row[fi.feature_name] = fi.importance_score
+        importances.append(row)
+
+    heatmap = ExplanationVisualizer.privacy_risk_heatmap(
+        importances, request.privacy_scores, request.feature_names
+    )
+    return heatmap
+
+
+@app.post("/explain/drift")
+async def model_drift(request: DriftRequest):
+    from explainability.visualization import ExplanationVisualizer
+
+    summary = ExplanationVisualizer.drift_summary(
+        request.pre_confidences,
+        request.post_confidences,
+        request.pre_importances,
+        request.post_importances,
+    )
+    return summary
+
+
+@app.get("/explain/methods")
+async def list_explain_methods():
+    return {
+        "methods": [
+            {"id": "shap", "name": "SHAP", "description": "SHAP (SHapley Additive exPlanations) — game-theoretic feature importance"},
+            {"id": "lime", "name": "LIME", "description": "Local Interpretable Model-agnostic Explanations — local surrogate models"},
+            {"id": "integrated_gradients", "name": "Integrated Gradients", "description": "Attribution via path integral of gradients"},
+            {"id": "gradient", "name": "Gradient Attribution", "description": "Simple gradient-based feature attribution"},
+            {"id": "occlusion", "name": "Occlusion", "description": "Feature occlusion / ablation-based attribution"},
+            {"id": "perturbation", "name": "Perturbation", "description": "Random perturbation-based feature importance"},
+        ]
+    }
 
 
 # ──────────────────────────────────────────────────────────────
@@ -899,6 +1554,7 @@ async def health():
         "conversational_pipeline": _conversational_pipeline is not None,
         "mlflow_tracker": _mlflow_tracker is not None,
         "e2e_pipeline": _e2e_pipeline is not None,
+        "explainer_manager": _explainer_manager is not None,
     }
     return {
         "status": "healthy",

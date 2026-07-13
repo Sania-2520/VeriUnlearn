@@ -16,7 +16,9 @@ from app.domain.audit.services import AuditService
 from app.domain.audit.entities import EventType, ActorType, EventStatus
 from app.domain.unlearning.services import UnlearningService
 from app.domain.verification.services import VerificationService
+from app.domain.chat.services import ChatService
 from app.domain.compliance.services import TenantService
+from app.domain.memory.services import MemoryService
 from app.infrastructure.database.repositories.auth import (
     SQLAlchemyUserRepository,
     SQLAlchemySessionRepository,
@@ -24,6 +26,12 @@ from app.infrastructure.database.repositories.auth import (
     SQLAlchemyApiKeyRepository,
 )
 from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
+from app.infrastructure.database.repositories.chat import (
+    SQLAlchemyChatSessionRepository,
+    SQLAlchemyMessageRepository,
+    SQLAlchemyChatFolderRepository,
+)
+from app.infrastructure.database.repositories.memory import SQLAlchemyMemoryRepository
 from app.infrastructure.database.repositories.unlearning import (
     SQLAlchemyUnlearningRequestRepository,
     SQLAlchemyUnlearningJobRepository,
@@ -237,6 +245,22 @@ async def get_verification_service(
     )
 
 
+async def get_memory_service(
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> MemoryService:
+    return MemoryService(repo=SQLAlchemyMemoryRepository(session))
+
+
+async def get_chat_service(
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> ChatService:
+    return ChatService(
+        session_repo=SQLAlchemyChatSessionRepository(session),
+        message_repo=SQLAlchemyMessageRepository(session),
+        folder_repo=SQLAlchemyChatFolderRepository(session),
+    )
+
+
 async def get_tenant_service(
     session: Annotated[AsyncSession, Depends(get_db)],
     audit_service: Annotated[AuditService, Depends(get_audit_service)],
@@ -254,6 +278,8 @@ OptionalCurrentUser = Annotated[dict[str, Any] | None, Depends(get_optional_curr
 DatabaseSession = Annotated[AsyncSession, Depends(get_db)]
 TenantID = Annotated[str, Depends(get_tenant_id)]
 RequestID = Annotated[str | None, Depends(get_request_id)]
+ChatServiceDep = Annotated[ChatService, Depends(get_chat_service)]
+MemoryServiceDep = Annotated[MemoryService, Depends(get_memory_service)]
 AuditServiceDep = Annotated[AuditService, Depends(get_audit_service)]
 UnlearningServiceDep = Annotated[UnlearningService, Depends(get_unlearning_service)]
 VerificationServiceDep = Annotated[VerificationService, Depends(get_verification_service)]

@@ -39,7 +39,7 @@ def _event_to_response(event: Any) -> dict:
 @router.get("/events")
 async def list_events(
     current_user: CurrentUser,
-    audit: AuditServiceDep,
+    session: DatabaseSession,
     event_type: Optional[str] = None,
     resource_type: Optional[str] = None,
     actor_id: Optional[str] = None,
@@ -48,7 +48,7 @@ async def list_events(
     page: int = Query(1, ge=1),
     page_size: int = Query(25, ge=1, le=100),
 ):
-    repo = SQLAlchemyAuditEventRepository(audit._repo._session if hasattr(audit, "_repo") else None)
+    repo = SQLAlchemyAuditEventRepository(session)
     events, total = await repo.list_by_tenant(
         tenant_id=current_user["tenant_id"],
         limit=page_size,

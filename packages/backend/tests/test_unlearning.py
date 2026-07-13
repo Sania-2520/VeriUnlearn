@@ -195,8 +195,9 @@ class TestUnlearningAPI:
         resp = await client.get("/api/v1/unlearning/queue", headers=headers)
         assert resp.status_code == 200
         data = resp.json()
-        assert "pending" in data
-        assert "processing" in data
+        assert "queue" in data
+        assert "pending" in data["queue"]
+        assert "processing" in data["queue"]
 
     async def test_create_unlearning_request_unauthorized(self, client: AsyncClient):
         resp = await client.post(
