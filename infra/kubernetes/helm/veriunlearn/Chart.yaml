@@ -1,0 +1,18 @@
+apiVersion: v2
+name: veriunlearn
+description: Helm chart for VeriUnlearn - Federated Unlearning Platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+maintainers:
+  - name: veriunlearn-team
+    email: team@veriunlearn.com
+keywords:
+  - machine-learning
+  - federated-learning
+  - unlearning
+  - privacy
+home: https://veriunlearn.com
+sources:
+  - https://github.com/veriunlearn/veriunlearn
+dependencies: []

@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "veriunlearn.fullname" . }}-backend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "veriunlearn.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  type: {{ .Values.service.backend.type }}
+  selector:
+    {{- include "veriunlearn.backend.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.service.backend.port }}
+      targetPort: http
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "veriunlearn.fullname" . }}-ml-engine
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "veriunlearn.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ml-engine
+spec:
+  type: {{ .Values.service.mlEngine.type }}
+  selector:
+    {{- include "veriunlearn.mlEngine.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.service.mlEngine.port }}
+      targetPort: http
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "veriunlearn.fullname" . }}-frontend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "veriunlearn.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  type: {{ .Values.service.frontend.type }}
+  selector:
+    {{- include "veriunlearn.frontend.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.service.frontend.port }}
+      targetPort: http
+      protocol: TCP

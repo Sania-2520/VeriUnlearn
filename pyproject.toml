@@ -1,0 +1,60 @@
+[project]
+name = "veriunlearn"
+version = "1.0.0"
+description = "Verifiable Machine Unlearning Framework with Cryptographic Proofs for GDPR-Compliant AI Systems"
+requires-python = ">=3.12"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "VeriUnlearn Team", email = "team@veriunlearn.com"},
+]
+readme = "README.md"
+
+dependencies = []
+
+[project.urls]
+homepage = "https://veriunlearn.com"
+repository = "https://github.com/veriunlearn/veriunlearn"
+documentation = "https://docs.veriunlearn.com"
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "ARG", "PTH", "ERA", "RUF"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore-missing-imports = true
+allow-untyped-decorators = true
+
+[tool.pytest.ini_options]
+testpaths = ["packages/backend/tests", "packages/ml-engine/tests"]
+python_files = ["test_*.py"]
+addopts = "-v --cov --cov-report=term-missing --cov-report=html"
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["packages/backend", "packages/ml-engine"]
+omit = ["*/tests/*", "*/migrations/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]

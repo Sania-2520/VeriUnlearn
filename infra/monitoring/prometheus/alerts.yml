@@ -1,0 +1,133 @@
+groups:
+  - name: veriunlearn_alerts
+    interval: 30s
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "High HTTP error rate ({{ $value | humanizePercentage }})"
+          description: "Error rate is above 1% for the last 5 minutes."
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 2
+        for: 5m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "High p99 latency ({{ $value }}s)"
+          description: "p99 latency is above 2 seconds for the last 5 minutes."
+
+      - alert: UnlearningQueueGrowing
+        expr: unlearning_queue_size > 100
+        for: 10m
+        labels:
+          severity: warning
+          team: ml-engine
+        annotations:
+          summary: "Unlearning queue growing ({{ $value }} items)"
+          description: "More than 100 pending unlearning jobs for 10 minutes."
+
+      - alert: DiskSpaceLow
+        expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} < 0.2
+        for: 5m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "Low disk space ({{ $value | humanizePercentage }} available)"
+          description: "Less than 20% disk space available."
+
+      - alert: ServiceDown
+        expr: up{job=~"veriunlearn-.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} has been unreachable for 1 minute."
+
+      - alert: DatabaseConnectionsHigh
+        expr: pg_stat_activity_count > 100
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High database connections ({{ $value }})"
+          description: "More than 100 active database connections."
+
+      - alert: CertificateExpiring
+        expr: deletion_certificate_expiry_days < 30
+        for: 1h
+        labels:
+          severity: warning
+          team: compliance
+        annotations:
+          summary: "Deletion certificate expiring soon"
+          description: "Certificate {{ $labels.certificate_id }} expires in {{ $value }} days."
+
+      - alert: GPUMemoryHigh
+        expr: (nvidia_gpu_memory_used_bytes / nvidia_gpu_memory_total_bytes) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+          team: ml-engine
+        annotations:
+          summary: "GPU memory usage above 90% ({{ $value | humanizePercentage }})"
+          description: "GPU {{ $labels.gpu }} on {{ $labels.instance }} has critical memory usage."
+
+      - alert: TrainingJobFailed
+        expr: training_status == "failed"
+        for: 0m
+        labels:
+          severity: critical
+          team: ml-engine
+        annotations:
+          summary: "Training job {{ $labels.job_name }} failed"
+          description: "Training job {{ $labels.job_name }} has entered failed state."
+
+      - alert: InferenceLatencyHigh
+        expr: histogram_quantile(0.99, sum(rate(inference_request_duration_seconds_bucket[5m])) by (le)) > 5
+        for: 5m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "Inference p99 latency above 5s ({{ $value }}s)"
+          description: "Inference p99 latency has exceeded 5 seconds for 5 minutes."
+
+      - alert: DeletionQueueGrowing
+        expr: unlearning_queue_size > 50
+        for: 10m
+        labels:
+          severity: warning
+          team: compliance
+        annotations:
+          summary: "Deletion queue growing ({{ $value }} items)"
+          description: "More than 50 pending deletion requests for 10 minutes. Data deletion SLA may be breached."
+
+      - alert: MLflowServiceDown
+        expr: up{job="mlflow"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "MLflow service is down"
+          description: "MLflow tracking server has been unreachable for 2 minutes."
+
+      - alert: ModelRegistryStorageLow
+        expr: (mlflow_registry_disk_usage_bytes / mlflow_registry_disk_total_bytes) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "Model registry storage low ({{ $value | humanizePercentage }} used)"
+          description: "Model registry disk usage is above 90%. Less than 10% free space remains."

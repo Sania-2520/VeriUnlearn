@@ -1,0 +1,16 @@
+aws_region   = "us-east-1"
+cluster_version = "1.29"
+vpc_cidr       = "10.0.0.0/16"
+
+cluster_endpoint_public_access = false
+
+standard_instance_types = ["m6i.xlarge", "m6i.2xlarge"]
+standard_capacity_type  = "ON_DEMAND"
+standard_desired_size   = 3
+standard_min_size       = 2
+standard_max_size       = 10
+
+gpu_instance_types = ["p3.2xlarge", "p3.8xlarge"]
+gpu_desired_size   = 2
+gpu_min_size       = 1
+gpu_max_size       = 5

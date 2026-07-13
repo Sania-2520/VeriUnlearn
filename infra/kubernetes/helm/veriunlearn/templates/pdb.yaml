@@ -1,0 +1,63 @@
+{{- if .Values.podDisruptionBudget.backend.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "veriunlearn.fullname" . }}-backend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "veriunlearn.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.backend.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "veriunlearn.backend.selectorLabels" . | nindent 6 }}
+{{- end }}
+---
+{{- if .Values.podDisruptionBudget.mlEngine.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "veriunlearn.fullname" . }}-ml-engine
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "veriunlearn.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ml-engine
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.mlEngine.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "veriunlearn.mlEngine.selectorLabels" . | nindent 6 }}
+{{- end }}
+---
+{{- if .Values.podDisruptionBudget.frontend.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "veriunlearn.fullname" . }}-frontend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "veriunlearn.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.frontend.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "veriunlearn.frontend.selectorLabels" . | nindent 6 }}
+{{- end }}
+---
+{{- if .Values.podDisruptionBudget.celeryWorker.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "veriunlearn.fullname" . }}-celery-worker
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "veriunlearn.labels" . | nindent 4 }}
+    app.kubernetes.io/component: celery-worker
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.celeryWorker.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "veriunlearn.celeryWorker.selectorLabels" . | nindent 6 }}
+{{- end }}

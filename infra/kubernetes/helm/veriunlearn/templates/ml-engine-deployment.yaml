@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "veriunlearn.fullname" . }}-ml-engine
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "veriunlearn.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ml-engine
+spec:
+  {{- if not .Values.autoscaling.mlEngine.enabled }}
+  replicas: {{ .Values.replicaCount.mlEngine }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "veriunlearn.mlEngine.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "veriunlearn.mlEngine.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "veriunlearn.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: ml-engine
+          image: {{ include "veriunlearn.image" (dict "global" .Values.image "repository" .Values.image.mlEngine.repository "tag" .Values.image.mlEngine.tag) }}
+          imagePullPolicy: {{ .Values.image.mlEngine.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.mlEngine.port }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "veriunlearn.fullname" . }}-config
+            - secretRef:
+                name: {{ include "veriunlearn.fullname" . }}-secret
+          env:
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: all
+            - name: NVIDIA_DRIVER_CAPABILITIES
+              value: compute,utility
+            - name: CUDA_VISIBLE_DEVICES
+              value: "0"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          resources:
+            {{- toYaml .Values.resources.mlEngine | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 30
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+            readOnlyRootFilesystem: false
+          volumeMounts:
+            - name: ml-engine-data
+              mountPath: /app/checkpoints
+            - name: ml-engine-models
+              mountPath: /app/models
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: ml-engine-data
+          persistentVolumeClaim:
+            claimName: {{ include "veriunlearn.fullname" . }}-ml-engine-checkpoints
+        - name: ml-engine-models
+          persistentVolumeClaim:
+            claimName: {{ include "veriunlearn.fullname" . }}-ml-engine-models
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.nodeSelector.mlEngine }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations.mlEngine }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

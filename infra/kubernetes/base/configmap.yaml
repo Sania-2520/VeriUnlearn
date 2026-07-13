@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: veriunlearn-config
+  namespace: veriunlearn
+  labels:
+    app.kubernetes.io/name: veriunlearn
+    app.kubernetes.io/part-of: veriunlearn
+data:
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  BACKEND_HOST: "0.0.0.0"
+  BACKEND_PORT: "8000"
+  ML_ENGINE_HOST: "0.0.0.0"
+  ML_ENGINE_PORT: "8001"
+  CELERY_BROKER_URL: "redis://redis-master:6379/0"
+  CELERY_RESULT_BACKEND: "redis://redis-master:6379/1"
+  DATABASE_HOST: "postgresql-primary"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "veriunlearn"
+  REDIS_HOST: "redis-master"
+  REDIS_PORT: "6379"
+  CORS_ORIGINS: "https://veriunlearn.example.com"
+  MAX_UPLOAD_SIZE_MB: "100"
+  MODEL_CHECKPOINT_DIR: "/app/checkpoints"
+  MLFLOW_TRACKING_URI: "http://mlflow:5000"
+  PROMETHEUS_ENABLED: "true"
+  SENTRY_DSN: ""
+  FRONTEND_URL: "https://veriunlearn.example.com"

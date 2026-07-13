@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: veriunlearn-base
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secret.yaml
+  - backend-deployment.yaml
+  - backend-service.yaml
+  - ml-engine-deployment.yaml
+  - ml-engine-service.yaml
+  - frontend-deployment.yaml
+  - frontend-service.yaml
+  - celery-worker-deployment.yaml
+
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/version: latest
+
+commonAnnotations:
+  team: veriunlearn
