@@ -611,7 +611,7 @@ class DatasetRegistryModel(Base):
     feature_names = Column(JSON, nullable=True)
     class_names = Column(JSON, nullable=True)
     tags = Column(JSON, nullable=False, default=list)
-    metadata = Column(JSON, nullable=False, default=dict)
+    dataset_metadata = Column("metadata", JSON, nullable=False, default=dict)
     storage_path = Column(String(512), nullable=True)
     checksum = Column(String(128), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
@@ -621,4 +621,48 @@ class DatasetRegistryModel(Base):
 
     __table_args__ = (
         Index("idx_dataset_registry_tenant", "tenant_id", "name"),
+    )
+
+
+class SecurityAssessmentModel(Base):
+    __tablename__ = "security_assessments"
+
+    id = Column(String(36), primary_key=True)
+    tenant_id = Column(String(36), nullable=False, index=True)
+    user_id = Column(String(36), nullable=True)
+    model_version_id = Column(String(255), nullable=False)
+    tests = Column(JSON, nullable=False, default=list)
+    config = Column(JSON, nullable=False, default=dict)
+    status = Column(String(20), nullable=False, default="queued")
+    scores = Column(JSON, nullable=False, default=dict)
+    results = Column(JSON, nullable=True)
+    recommendations = Column(JSON, nullable=False, default=list)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_security_assessments_tenant", "tenant_id", "status"),
+    )
+
+
+class AIProviderModel(Base):
+    __tablename__ = "ai_providers"
+
+    id = Column(String(36), primary_key=True)
+    tenant_id = Column(String(36), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    provider_type = Column(String(50), nullable=False)
+    api_key_encrypted = Column(String(1024), nullable=True)
+    models = Column(JSON, nullable=False, default=list)
+    config = Column(JSON, nullable=False, default=dict)
+    is_active = Column(Boolean, nullable=False, default=True)
+    is_deleted = Column(Boolean, nullable=False, default=False)
+    created_by = Column(String(36), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=datetime.utcnow)
+    last_tested_at = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index("idx_ai_providers_tenant", "tenant_id", "name"),
     )

@@ -107,9 +107,9 @@ async def deactivate_adapter(
 @router.post("/rollback", status_code=status.HTTP_200_OK)
 async def rollback_adapter(
     adapter_name: str,
+    current_user: CurrentUser,
+    session: DatabaseSession,
     request: Optional[dict] = None,
-    current_user: CurrentUser = None,
-    session: DatabaseSession = None,
 ) -> Any:
     target_version_id = (request or {}).get("version_id") if request else None
     try:

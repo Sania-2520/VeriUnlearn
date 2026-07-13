@@ -55,6 +55,7 @@ async def list_events(
         offset=(page - 1) * page_size,
         event_type=event_type,
         actor_id=actor_id,
+        resource_type=resource_type,
     )
     return {
         "data": [_event_to_response(e) for e in events],

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useAuthStore } from "@/lib/store/auth-store"
+import { apiRequest } from "@/lib/api/client"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import {
   Brain,
@@ -71,15 +72,13 @@ export default function ExplainabilityPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch("/api/v1/explain/samples", {
+      const data = await apiRequest<{ results: { feature_importances: ExplainResult[] }[] }>("/api/v1/explain/samples", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("access_token")}` },
         body: JSON.stringify({
           samples: [[1.0, 0.5, 0.2, 0.8, 0.3]],
           method: selectedMethod,
         }),
       })
-      const data = await res.json()
       if (data.results?.[0]?.feature_importances) {
         setSampleResults(data.results[0].feature_importances)
       }
@@ -94,21 +93,19 @@ export default function ExplainabilityPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch("/api/v1/explain/features", {
+      const data = await apiRequest<{ global_importance: Record<string, number> }>("/api/v1/explain/features", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("access_token")}` },
         body: JSON.stringify({
           dataset: [[1.0, 0.5, 0.2], [0.8, 0.3, 0.9], [0.1, 0.7, 0.4]],
           method: selectedMethod,
         }),
       })
-      const data = await res.json()
       if (data.global_importance) {
         setSampleResults(
           Object.entries(data.global_importance).map(([feature, importance]) => ({
             feature,
-            importance: importance as number,
-            direction: (importance as number) >= 0 ? "positive" : "negative",
+            importance,
+            direction: importance >= 0 ? "positive" : "negative",
           }))
         )
       }
@@ -123,16 +120,14 @@ export default function ExplainabilityPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch("/api/v1/explain/compare", {
+      const data = await apiRequest<{ comparisons: { shifts: ComparisonResult[] }[] }>("/api/v1/explain/compare", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("access_token")}` },
         body: JSON.stringify({
           pre_unlearn_samples: [[1.0, 0.5, 0.2]],
           post_unlearn_samples: [[0.9, 0.6, 0.1]],
           method: selectedMethod,
         }),
       })
-      const data = await res.json()
       if (data.comparisons?.[0]?.shifts) {
         setComparisonResults(data.comparisons[0].shifts)
       }
@@ -147,9 +142,8 @@ export default function ExplainabilityPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch("/api/v1/explain/drift", {
+      const data = await apiRequest<Record<string, unknown>>("/api/v1/explain/drift", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("access_token")}` },
         body: JSON.stringify({
           pre_confidences: [0.85, 0.82, 0.88, 0.84, 0.86],
           post_confidences: [0.79, 0.75, 0.81, 0.77, 0.80],

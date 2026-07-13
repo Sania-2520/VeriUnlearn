@@ -67,6 +67,7 @@ class SQLAlchemyAuditEventRepository(AuditEventRepository):
         offset: int = 0,
         event_type: Optional[str] = None,
         actor_id: Optional[str] = None,
+        resource_type: Optional[str] = None,
     ) -> tuple[list[AuditEvent], int]:
         query = select(AuditEventModel).where(AuditEventModel.tenant_id == tenant_id)
         count_query = select(func.count(AuditEventModel.id)).where(AuditEventModel.tenant_id == tenant_id)
@@ -77,6 +78,9 @@ class SQLAlchemyAuditEventRepository(AuditEventRepository):
         if actor_id:
             query = query.where(AuditEventModel.actor_id == actor_id)
             count_query = count_query.where(AuditEventModel.actor_id == actor_id)
+        if resource_type:
+            query = query.where(AuditEventModel.resource_type == resource_type)
+            count_query = count_query.where(AuditEventModel.resource_type == resource_type)
 
         count_result = await self._session.execute(count_query)
         total = count_result.scalar() or 0

@@ -12,7 +12,7 @@ from app.infrastructure.database.models import DatasetRegistryModel
 
 logger = get_logger(__name__)
 
-router = APIRouter(dependencies=[Depends(default_rate_limiter), Depends(require_permission(Permission.BENCHMARKS_WRITE))])
+router = APIRouter(dependencies=[Depends(default_rate_limiter)])
 
 
 class CreateDatasetRequest(BaseModel):
@@ -51,8 +51,9 @@ class UpdateDatasetRequest(BaseModel):
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def register_dataset(
     request: CreateDatasetRequest,
-    current_user: CurrentUser,
-    session: DatabaseSession,
+    _: None = Depends(require_permission(Permission.TRAINING_WRITE)),
+    current_user: CurrentUser = ...,
+    session: DatabaseSession = ...,
 ):
     from sqlalchemy import select, func
 
@@ -71,7 +72,7 @@ async def register_dataset(
         feature_names=request.feature_names,
         class_names=request.class_names,
         tags=request.tags,
-        metadata=request.metadata,
+        dataset_metadata=request.metadata,
         storage_path=request.storage_path,
         checksum=request.checksum,
         created_by=current_user["user_id"],
@@ -95,22 +96,30 @@ async def list_datasets(
     current_user: CurrentUser,
     session: DatabaseSession,
     dataset_type: Optional[str] = Query(None),
-    limit: int = Query(50, le=200),
-    offset: int = Query(0, ge=0),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(25, ge=1, le=200),
+    _: None = Depends(require_permission(Permission.BENCHMARKS_READ)),
 ):
-    from sqlalchemy import select, desc
+    from sqlalchemy import select, desc, func
 
     query = select(DatasetRegistryModel).where(
         DatasetRegistryModel.tenant_id == current_user["tenant_id"],
         DatasetRegistryModel.is_active == True,
     )
+    count_query = select(func.count(DatasetRegistryModel.id)).where(
+        DatasetRegistryModel.tenant_id == current_user["tenant_id"],
+        DatasetRegistryModel.is_active == True,
+    )
     if dataset_type:
         query = query.where(DatasetRegistryModel.dataset_type == dataset_type)
-    query = query.order_by(desc(DatasetRegistryModel.created_at)).offset(offset).limit(limit)
+        count_query = count_query.where(DatasetRegistryModel.dataset_type == dataset_type)
+    total_result = await session.execute(count_query)
+    total = total_result.scalar() or 0
+    query = query.order_by(desc(DatasetRegistryModel.created_at)).offset((page - 1) * page_size).limit(page_size)
 
     result = await session.execute(query)
     datasets = result.scalars().all()
-    return [
+    return {"data": [
         {
             "id": d.id,
             "name": d.name,
@@ -132,7 +141,7 @@ async def list_datasets(
             "updated_at": d.updated_at.isoformat(),
         }
         for d in datasets
-    ]
+    ], "meta": {"page": page, "page_size": page_size, "total": total}}
 
 
 @router.get("/{dataset_id}")
@@ -165,7 +174,7 @@ async def get_dataset(
         "feature_names": dataset.feature_names,
         "class_names": dataset.class_names,
         "tags": dataset.tags,
-        "metadata": dataset.metadata,
+        "metadata": dataset.dataset_metadata,
         "storage_path": dataset.storage_path,
         "checksum": dataset.checksum,
         "is_active": dataset.is_active,

@@ -348,8 +348,12 @@ async def list_folders(current_user: CurrentUser, chat_service: ChatServiceDep):
 
 
 @router.post("/folders", status_code=status.HTTP_201_CREATED)
-async def create_folder(current_user: CurrentUser, chat_service: ChatServiceDep):
-    folder = await chat_service.create_folder(current_user["user_id"], current_user["tenant_id"])
+async def create_folder(
+    name: Optional[str] = None,
+    current_user: CurrentUser = ...,
+    chat_service: ChatServiceDep = ...,
+):
+    folder = await chat_service.create_folder(current_user["user_id"], current_user["tenant_id"], name=name or "New Folder")
     return {"folder": {"id": folder.id, "name": folder.name, "created_at": folder.created_at.isoformat() if folder.created_at else None}}
 
 

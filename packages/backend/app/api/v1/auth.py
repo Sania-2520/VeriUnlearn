@@ -262,9 +262,9 @@ async def oauth_login(provider: str):
 async def oauth_callback(
     provider: str,
     code: str,
+    auth: AuthServiceDep,
+    req: Request,
     state: str | None = None,
-    auth: AuthServiceDep = None,
-    req: Request = None,
 ):
     token_data = await oauth_service.exchange_code(provider, code)
     user_info = await oauth_service.get_user_info(provider, token_data.get("access_token", ""))

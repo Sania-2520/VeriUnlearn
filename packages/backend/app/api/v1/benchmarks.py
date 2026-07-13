@@ -10,7 +10,7 @@ from app.infrastructure.external.ml_engine import ml_engine_client, MLEngineClie
 
 logger = get_logger(__name__)
 
-router = APIRouter(dependencies=[Depends(default_rate_limiter), Depends(require_permission(Permission.BENCHMARKS_WRITE))])
+router = APIRouter(dependencies=[Depends(default_rate_limiter)])
 
 
 class RunBenchmarkRequest(BaseModel):
@@ -26,15 +26,10 @@ async def run_benchmarks(
     request: RunBenchmarkRequest,
     current_user: CurrentUser,
     session: DatabaseSession,
+    _: None = Depends(require_permission(Permission.BENCHMARKS_WRITE)),
 ):
     try:
-        result = await ml_engine_client.run_benchmarks(
-            dataset=request.dataset,
-            data_sizes=request.data_sizes,
-            deletion_fractions=request.deletion_fractions,
-            algorithms=request.algorithms,
-            num_trials=request.num_trials,
-        )
+        result = await ml_engine_client.run_benchmarks(config=request.model_dump())
         return result
     except MLEngineClientError as e:
         logger.error("Run benchmarks failed for user %s: %s", current_user["user_id"], str(e))
@@ -45,6 +40,7 @@ async def run_benchmarks(
 async def get_benchmark_summary(
     current_user: CurrentUser,
     session: DatabaseSession,
+    _: None = Depends(require_permission(Permission.BENCHMARKS_READ)),
 ):
     try:
         return await ml_engine_client.get_benchmark_summary()
@@ -59,8 +55,7 @@ async def list_benchmark_results(
     offset: int = Query(0, ge=0),
     algorithm: Optional[str] = Query(None),
     dataset: Optional[str] = Query(None),
-    current_user: CurrentUser = None,
-    session: DatabaseSession = None,
+    _: None = Depends(require_permission(Permission.BENCHMARKS_READ)),
 ):
     try:
         params = {"limit": limit, "offset": offset}
@@ -85,8 +80,7 @@ async def list_benchmark_results(
 async def get_leaderboard(
     metric: str = Query("utility_retained"),
     limit: int = Query(10, le=50),
-    current_user: CurrentUser = None,
-    session: DatabaseSession = None,
+    _: None = Depends(require_permission(Permission.BENCHMARKS_READ)),
 ):
     try:
         async with httpx.AsyncClient(timeout=30) as client:
@@ -105,8 +99,7 @@ async def get_leaderboard(
 @router.get("/export/{format}", status_code=status.HTTP_200_OK)
 async def export_benchmarks(
     format: str,
-    current_user: CurrentUser,
-    session: DatabaseSession,
+    _: None = Depends(require_permission(Permission.BENCHMARKS_READ)),
 ):
     if format not in ("csv", "json"):
         raise HTTPException(status_code=400, detail="Format must be 'csv' or 'json'")

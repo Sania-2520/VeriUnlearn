@@ -1,6 +1,6 @@
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
 from app.api.deps import CurrentUser, DatabaseSession, default_rate_limiter, require_permission
@@ -60,7 +60,7 @@ async def explain_samples(
         return result
     except MLEngineClientError as e:
         logger.error("Explain samples failed for user %s: %s", current_user["user_id"], str(e))
-        return {"error": str(e), "method": request.method, "samples": len(request.samples)}
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
 
 
 @router.post("/features", status_code=status.HTTP_200_OK)
@@ -78,7 +78,7 @@ async def explain_features(
         return result
     except MLEngineClientError as e:
         logger.error("Explain features failed for user %s: %s", current_user["user_id"], str(e))
-        return {"error": str(e), "method": request.method, "samples": len(request.dataset)}
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
 
 
 @router.post("/compare", status_code=status.HTTP_200_OK)
@@ -97,7 +97,7 @@ async def compare_explanations(
         return result
     except MLEngineClientError as e:
         logger.error("Compare explanations failed for user %s: %s", current_user["user_id"], str(e))
-        return {"error": str(e), "method": request.method}
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
 
 
 @router.post("/privacy-heatmap", status_code=status.HTTP_200_OK)
@@ -115,7 +115,7 @@ async def privacy_heatmap(
         return result
     except MLEngineClientError as e:
         logger.error("Privacy heatmap failed for user %s: %s", current_user["user_id"], str(e))
-        return {"error": str(e)}
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
 
 
 @router.post("/drift", status_code=status.HTTP_200_OK)
@@ -134,7 +134,7 @@ async def model_drift(
         return result
     except MLEngineClientError as e:
         logger.error("Model drift failed for user %s: %s", current_user["user_id"], str(e))
-        return {"error": str(e)}
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
 
 
 @router.get("/methods", status_code=status.HTTP_200_OK)
@@ -147,4 +147,4 @@ async def list_methods(
         return result
     except MLEngineClientError as e:
         logger.error("List explain methods failed: %s", str(e))
-        return {"methods": []}
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useAuthStore } from "@/lib/store/auth-store"
+import { apiRequest } from "@/lib/api/client"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { FlaskConical, Play, Loader2, CheckCircle2, XCircle, BarChart3 } from "lucide-react"
 import { clsx } from "clsx"
@@ -28,20 +29,17 @@ export default function BenchmarksPage() {
     setRunning(true)
     setResults([])
     try {
-      const res = await fetch("/api/v1/benchmarks/run", {
+      const data = await apiRequest<{ results: BenchmarkResult[] }>("/api/v1/benchmarks/run", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("access_token")}` },
         body: JSON.stringify({ data_sizes: [100, 500], deletion_fractions: [0.05, 0.1], num_trials: 1 }),
       })
-      const data = await res.json()
       if (data.results) setResults(data.results)
     } catch { /* ignore */ } finally { setRunning(false) }
   }
 
   const fetchSummary = async () => {
     try {
-      const res = await fetch("/api/v1/benchmarks/summary", { headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` } })
-      const data = await res.json()
+      const data = await apiRequest<Record<string, unknown>>("/api/v1/benchmarks/summary")
       setSummary(data)
     } catch { /* ignore */ }
   }

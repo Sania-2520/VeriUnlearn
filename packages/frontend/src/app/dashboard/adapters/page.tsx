@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuthStore } from "@/lib/store/auth-store"
+import { apiRequest } from "@/lib/api/client"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Cpu, Plus, RotateCcw, CheckCircle2, XCircle, Loader2, RefreshCw } from "lucide-react"
 import { clsx } from "clsx"
@@ -27,9 +28,8 @@ export default function AdaptersPage() {
   const fetchAdapters = async () => {
     setLoading(true)
     try {
-      const res = await fetch("/api/v1/adapters", { headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` } })
-      const data = await res.json()
-      setAdapters(Array.isArray(data) ? data : [])
+      const data = await apiRequest<Adapter[] | { data: Adapter[] }>("/api/v1/adapters")
+      setAdapters(Array.isArray(data) ? data : (data as any).data || [])
     } catch { /* ignore */ } finally { setLoading(false) }
   }
 
@@ -41,25 +41,19 @@ export default function AdaptersPage() {
     if (!newName || !newPath) return
     setRegistering(true)
     try {
-      const res = await fetch("/api/v1/adapters/register", {
+      await apiRequest("/api/v1/adapters/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("access_token")}` },
         body: JSON.stringify({ adapter_name: newName, adapter_path: newPath }),
       })
-      if (res.ok) {
-        setNewName("")
-        setNewPath("")
-        await fetchAdapters()
-      }
+      setNewName("")
+      setNewPath("")
+      await fetchAdapters()
     } catch { /* ignore */ } finally { setRegistering(false) }
   }
 
   const rollback = async (name: string) => {
     try {
-      await fetch(`/api/v1/adapters/${encodeURIComponent(name)}/rollback`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-      })
+      await apiRequest(`/api/v1/adapters/${encodeURIComponent(name)}/rollback`, { method: "POST" })
       await fetchAdapters()
     } catch { /* ignore */ }
   }

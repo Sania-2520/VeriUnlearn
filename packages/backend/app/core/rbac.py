@@ -31,6 +31,7 @@ class Permission(str, Enum):
     EXPLAIN_WRITE = "explain:write"
     ADAPTERS_WRITE = "adapters:write"
     TRAINING_WRITE = "training:write"
+    BENCHMARKS_READ = "benchmarks:read"
     BENCHMARKS_WRITE = "benchmarks:write"
     CONTINUAL_LEARNING_WRITE = "continual_learning:write"
 
@@ -65,6 +66,7 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
         Permission.EXPLAIN_WRITE,
         Permission.ADAPTERS_WRITE,
         Permission.TRAINING_WRITE,
+        Permission.BENCHMARKS_READ,
         Permission.BENCHMARKS_WRITE,
         Permission.CONTINUAL_LEARNING_WRITE,
     },
@@ -91,6 +93,7 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
         Permission.VERIFICATION_VERIFY,
         Permission.AUDIT_READ,
         Permission.USERS_READ,
+        Permission.BENCHMARKS_READ,
     },
     "member": {
         Permission.UNLEARNING_CREATE,
@@ -108,6 +111,7 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
         Permission.SECURITY_READ,
         Permission.SETTINGS_READ,
         Permission.EXPLAIN_READ,
+        Permission.BENCHMARKS_READ,
     },
     "viewer": {
         Permission.UNLEARNING_READ,
@@ -115,6 +119,7 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
         Permission.AUDIT_READ,
         Permission.CHAT,
         Permission.MEMORY,
+        Permission.BENCHMARKS_READ,
     },
 }
 
