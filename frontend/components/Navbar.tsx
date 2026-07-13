@@ -24,6 +24,9 @@ export default function Navbar() {
               <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-700">
                 Dashboard
               </Link>
+              <Link href="/lineage" className="text-sm text-gray-500 hover:text-gray-700">
+                Lineage
+              </Link>
               <Link href="/benchmarks" className="text-sm text-gray-500 hover:text-gray-700">
                 Benchmarks
               </Link>
