@@ -95,6 +95,25 @@ class TestPrivacyEvaluator:
         assert d["dp_estimate"]["epsilon"] == 0.5
         assert d["risk_level"] in ("low", "medium", "high")
 
+    async def test_evaluate_with_inversion_and_extraction(self, trained_model):
+        model, data = trained_model
+        unlearned_ids = {"data_000000", "data_000001"}
+        retained = data.remove_by_ids(unlearned_ids)
+        evaluator = PrivacyEvaluator()
+        report = evaluator.evaluate(
+            model=model,
+            original_dataset=data,
+            retained_dataset=retained,
+            unlearned_ids=unlearned_ids,
+            run_inversion=True,
+            run_extraction=True,
+        )
+        d = report.to_dict()
+        assert "model_inversion" in d
+        assert "model_extraction" in d
+        assert d["model_inversion"]["attack_name"] == "model-inversion-gradient"
+        assert d["model_extraction"]["attack_name"] == "model-extraction"
+
     async def test_evaluate_without_epsilon(self, trained_model):
         model, data = trained_model
         retained = data.remove_by_ids({"data_000000"})

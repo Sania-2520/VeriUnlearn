@@ -6,6 +6,8 @@ import torch
 from models.single_model import SingleModel
 from models.sharded_classifier import ShardedModel
 from security.attacks.membership_inference import LossBasedMIA, MembershipInferenceAttack
+from security.attacks.model_inversion import ModelInversionAttack
+from security.attacks.model_extraction import ModelExtractionAttack
 from training.data import Dataset
 
 
@@ -19,6 +21,8 @@ class PrivacyEvaluationReport:
         reid_risk: float,
         attribute_disclosure_risk: float,
         overall_score: float,
+        inversion_risk: Optional[dict] = None,
+        extraction_risk: Optional[dict] = None,
     ):
         self.mia_risk = mia_risk
         self.loss_mia_risk = loss_mia_risk
@@ -27,9 +31,11 @@ class PrivacyEvaluationReport:
         self.reid_risk = reid_risk
         self.attribute_disclosure_risk = attribute_disclosure_risk
         self.overall_score = overall_score
+        self.inversion_risk = inversion_risk
+        self.extraction_risk = extraction_risk
 
     def to_dict(self) -> dict:
-        return {
+        result = {
             "membership_inference": {
                 "confidence_based": {
                     "overall_accuracy": self.mia_risk.get("overall_accuracy", 0),
@@ -49,6 +55,11 @@ class PrivacyEvaluationReport:
             "overall_privacy_score": self.overall_score,
             "risk_level": self._risk_level(),
         }
+        if self.inversion_risk is not None:
+            result["model_inversion"] = self.inversion_risk
+        if self.extraction_risk is not None:
+            result["model_extraction"] = self.extraction_risk
+        return result
 
     def _risk_level(self) -> str:
         if self.overall_score < 0.3:
@@ -67,6 +78,8 @@ class PrivacyEvaluator:
         unlearned_ids: set[str],
         epsilon: Optional[float] = None,
         delta: Optional[float] = None,
+        run_inversion: bool = False,
+        run_extraction: bool = False,
     ) -> PrivacyEvaluationReport:
         confidence_mia = MembershipInferenceAttack(threshold_percentile=5.0)
         loss_mia = LossBasedMIA(threshold_percentile=10.0)
@@ -131,6 +144,41 @@ class PrivacyEvaluator:
             min(1.0, loss_result.get("recall", 0)),
         )
 
+        inversion_risk: Optional[dict] = None
+        extraction_risk: Optional[dict] = None
+
+        if run_inversion:
+            try:
+                num_classes = len(original_dataset.labels.unique())
+                inv_attack = ModelInversionAttack(iterations=200)
+                target_classes = list(range(min(num_classes, 3)))
+                inv_result = inv_attack.attack(
+                    model, target_classes, original_dataset=original_dataset
+                )
+                inversion_risk = inv_result
+            except Exception:
+                inversion_risk = {"error": "model inversion attack failed"}
+
+        if run_extraction:
+            try:
+                input_dim = (
+                    model.input_dim
+                    if isinstance(model, SingleModel)
+                    else model.input_dim
+                )
+                num_classes = (
+                    model.num_classes
+                    if isinstance(model, SingleModel)
+                    else model.num_classes
+                )
+                ext_attack = ModelExtractionAttack(extraction_epochs=100)
+                ext_result = ext_attack.attack(
+                    model, input_dim, num_classes, test_dataset=original_dataset
+                )
+                extraction_risk = ext_result
+            except Exception:
+                extraction_risk = {"error": "model extraction attack failed"}
+
         return PrivacyEvaluationReport(
             mia_risk=conf_result,
             loss_mia_risk=loss_result,
@@ -139,4 +187,6 @@ class PrivacyEvaluator:
             reid_risk=reid_risk,
             attribute_disclosure_risk=attr_risk,
             overall_score=privacy_score,
+            inversion_risk=inversion_risk,
+            extraction_risk=extraction_risk,
         )

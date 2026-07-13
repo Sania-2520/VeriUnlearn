@@ -1936,8 +1936,287 @@ async def list_model_versions(model_name: str = "", limit: int = 50):
 
 
 # ──────────────────────────────────────────────────────────────
+# New Endpoints: Advanced Security Attacks
+# ──────────────────────────────────────────────────────────────
+
+
+class InversionAttackRequest(BaseModel):
+    target_classes: list[int]
+    num_samples: int = 1
+    input_dim: int = 20
+    iterations: int = 500
+    learning_rate: float = 0.1
+
+
+class ShadowMIARequest(BaseModel):
+    num_shadow_models: int = 5
+    shadow_data_size: int = 200
+    shadow_epochs: int = 50
+
+
+class ExtractionAttackRequest(BaseModel):
+    input_dim: int = 20
+    num_classes: int = 2
+    num_queries: int = 1000
+    extraction_epochs: int = 200
+
+
+@app.post("/attacks/model-inversion")
+async def run_model_inversion(request: InversionAttackRequest):
+    from security.attacks.model_inversion import ModelInversionAttack
+    from training.data import generate_synthetic_data
+    from unlearning.algorithms.sisa import SISAUnlearning
+    from unlearning.algorithms.base import UnlearningContext
+
+    data = generate_synthetic_data(num_samples=200, num_features=request.input_dim, seed=42)
+    ctx = UnlearningContext(
+        target_data_ids=["data_000000"],
+        model_name="inversion_target",
+        data_size=200,
+    )
+    algo = SISAUnlearning(num_shards=4)
+    await algo.unlearn(ctx)
+
+    attack = ModelInversionAttack(
+        iterations=request.iterations,
+        learning_rate=request.learning_rate,
+    )
+    result = attack.attack(
+        model=algo.model,
+        target_classes=request.target_classes,
+        original_dataset=data,
+    )
+    return result
+
+
+@app.post("/attacks/shadow-mia")
+async def run_shadow_mia(request: ShadowMIARequest):
+    from security.attacks.shadow_mia import ShadowModelMIA
+    from training.data import generate_synthetic_data
+    from unlearning.algorithms.sisa import SISAUnlearning
+    from unlearning.algorithms.base import UnlearningContext
+
+    data = generate_synthetic_data(num_samples=400, num_features=20, seed=42)
+    ctx = UnlearningContext(
+        target_data_ids=["data_000000"],
+        model_name="shadow_mia_target",
+        data_size=400,
+    )
+    algo = SISAUnlearning(num_shards=4)
+    await algo.unlearn(ctx)
+
+    split = data.size // 2
+    member_data = data.get_subset(list(range(5, split)))
+    nonmember_data = data.get_subset(list(range(split, data.size)))
+    target_data = data.get_subset(list(range(5)))
+
+    attack = ShadowModelMIA(
+        num_shadow_models=request.num_shadow_models,
+        shadow_data_size=request.shadow_data_size,
+        shadow_model_epochs=request.shadow_epochs,
+    )
+    result = attack.attack(algo.model, target_data, member_data, nonmember_data)
+    return result
+
+
+@app.post("/attacks/model-extraction")
+async def run_model_extraction(request: ExtractionAttackRequest):
+    from security.attacks.model_extraction import ModelExtractionAttack
+    from training.data import generate_synthetic_data
+    from unlearning.algorithms.sisa import SISAUnlearning
+    from unlearning.algorithms.base import UnlearningContext
+
+    data = generate_synthetic_data(
+        num_samples=200, num_features=request.input_dim,
+        num_classes=request.num_classes, seed=42,
+    )
+    ctx = UnlearningContext(
+        target_data_ids=["data_000000"],
+        model_name="extraction_target",
+        data_size=200,
+    )
+    algo = SISAUnlearning(num_shards=4)
+    await algo.unlearn(ctx)
+
+    attack = ModelExtractionAttack(
+        extraction_epochs=request.extraction_epochs,
+        num_queries=request.num_queries,
+    )
+    result = attack.attack(
+        victim_model=algo.model,
+        input_dim=request.input_dim,
+        num_classes=request.num_classes,
+        test_dataset=data,
+    )
+    return result
+
+
+@app.get("/attacks/methods")
+async def list_attack_methods():
+    return {
+        "methods": [
+            {
+                "id": "model-inversion",
+                "name": "Model Inversion Attack",
+                "description": "Gradient-based optimization to reconstruct training data from model parameters",
+            },
+            {
+                "id": "shadow-mia",
+                "name": "Shadow Model Membership Inference",
+                "description": "Ensemble of shadow models to train a binary attack classifier for membership inference",
+            },
+            {
+                "id": "model-extraction",
+                "name": "Model Extraction Attack",
+                "description": "Train a substitute model by querying the victim model on synthetic inputs",
+            },
+        ]
+    }
+
+
+# ──────────────────────────────────────────────────────────────
 # Health Endpoint (extended with new component status)
 # ──────────────────────────────────────────────────────────────
+
+# ──────────────────────────────────────────────────────────────
+# New Endpoints: Hyperparameter Optimization
+# ──────────────────────────────────────────────────────────────
+
+
+class HPORequest(BaseModel):
+    n_trials: int = 10
+    direction: str = "maximize"
+    param_space: dict = {}
+    study_name: Optional[str] = None
+
+
+@app.post("/hpo/optimize")
+async def run_hpo(request: HPORequest):
+    from training.hpo import HPOptimizer, create_default_param_space
+    from training.data import generate_synthetic_data, accuracy_score
+    from models.single_model import SingleModel
+    import torch
+
+    param_space = request.param_space or create_default_param_space()
+
+    def objective(params: dict) -> float:
+        lr = params.get("learning_rate", 0.01)
+        epochs = params.get("num_epochs", 50)
+        hidden_dim = params.get("hidden_dim", 64)
+        batch_size = params.get("batch_size", 32)
+
+        data = generate_synthetic_data(num_samples=200, num_features=20, seed=42)
+        model = SingleModel(input_dim=20, hidden_dim=hidden_dim, num_classes=2, learning_rate=lr)
+        model.train(data.features, data.labels, epochs=epochs)
+
+        preds = model.predict(data.features)
+        acc = accuracy_score(data, preds)
+        return acc
+
+    optimizer = HPOptimizer(
+        n_trials=request.n_trials,
+        direction=request.direction,
+    )
+    result = optimizer.optimize(param_space, objective, study_name=request.study_name)
+    return {
+        "study_id": result.study_id,
+        "best_params": result.best_params,
+        "best_value": result.best_value,
+        "num_trials": result.num_trials,
+        "status": result.status,
+        "trials": result.trials,
+    }
+
+
+@app.get("/hpo/studies")
+async def list_hpo_studies():
+    import os
+    studies = []
+    if os.path.exists("./hpo_studies"):
+        for f in os.listdir("./hpo_studies"):
+            if f.endswith(".db"):
+                name = f.replace(".db", "")
+                size = os.path.getsize(os.path.join("./hpo_studies", f))
+                studies.append({"name": name, "storage": f"sqlite:///./hpo_studies/{f}", "size_bytes": size})
+    return {"studies": studies}
+
+
+@app.get("/hpo/param-spaces/default")
+async def default_param_space():
+    from training.hpo import create_default_param_space
+    return create_default_param_space()
+
+
+# ──────────────────────────────────────────────────────────────
+# New Endpoints: Model Export
+# ──────────────────────────────────────────────────────────────
+
+
+class ModelExportRequest(BaseModel):
+    format: str = "onnx"
+    model_name: str = "model"
+    input_dim: int = 20
+    num_classes: int = 2
+    fp16: bool = False
+
+
+@app.post("/model/export")
+async def export_model(request: ModelExportRequest):
+    from inference.model_export import ModelExportService
+    from unlearning.algorithms.sisa import SISAUnlearning
+    from unlearning.algorithms.base import UnlearningContext
+
+    ctx = UnlearningContext(
+        target_data_ids=["data_000000"],
+        model_name="export_target",
+        data_size=200,
+    )
+    algo = SISAUnlearning(num_shards=4)
+    await algo.unlearn(ctx)
+
+    service = ModelExportService()
+    fmt = request.format.lower()
+    if fmt in ("tensorrt", "trt"):
+        result = service.export_tensorrt(algo.model, request.model_name, fp16=request.fp16)
+    elif fmt in ("openvino", "ov"):
+        result = service.export_openvino(algo.model, request.model_name, fp16=request.fp16)
+    else:
+        result = service.export_onnx(algo.model, request.model_name)
+
+    return {
+        "format": result.format,
+        "export_path": result.export_path,
+        "success": result.success,
+        "error": result.error,
+        "metadata": result.metadata,
+    }
+
+
+@app.get("/model/export/formats")
+async def list_export_formats():
+    return {
+        "formats": [
+            {
+                "id": "onnx",
+                "name": "ONNX",
+                "description": "Open Neural Network Exchange format — portable, widely supported",
+                "available": True,
+            },
+            {
+                "id": "tensorrt",
+                "name": "TensorRT",
+                "description": "NVIDIA TensorRT optimized inference — requires tensorrt package",
+                "available": True,
+            },
+            {
+                "id": "openvino",
+                "name": "OpenVINO",
+                "description": "Intel OpenVINO optimized inference — requires openvino package",
+                "available": True,
+            },
+        ]
+    }
+
 
 @app.get("/health")
 async def health():

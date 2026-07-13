@@ -18,6 +18,8 @@ from app.api.v1.adapters import router as adapters_router
 from app.api.v1.training import router as training_router
 from app.api.v1.continual_learning import router as continual_learning_router
 from app.api.v1.benchmarks import router as benchmarks_router
+from app.api.v1.experiments import router as experiments_router
+from app.api.v1.datasets import router as datasets_router
 
 router = APIRouter()
 
@@ -39,3 +41,5 @@ router.include_router(adapters_router, prefix="/adapters", tags=["Adapters"])
 router.include_router(training_router, prefix="/training", tags=["Training"])
 router.include_router(continual_learning_router, prefix="/continual-learning", tags=["Continual Learning"])
 router.include_router(benchmarks_router, prefix="/benchmarks", tags=["Benchmarks"])
+router.include_router(experiments_router, prefix="/experiments", tags=["Experiments"])
+router.include_router(datasets_router, prefix="/datasets", tags=["Datasets"])

@@ -895,6 +895,160 @@ class MLEngineClient:
                 logger.error("ML Engine canary promote request failed: %s", str(e))
                 raise MLEngineClientError(f"ML Engine request failed: {e}")
 
+    async def run_model_inversion(
+        self,
+        target_classes: list[int],
+        input_dim: int = 20,
+        num_samples: int = 1,
+        iterations: int = 500,
+        learning_rate: float = 0.1,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "target_classes": target_classes,
+            "input_dim": input_dim,
+            "num_samples": num_samples,
+            "iterations": iterations,
+            "learning_rate": learning_rate,
+        }
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            try:
+                resp = await client.post(
+                    f"{self._base_url}/attacks/model-inversion",
+                    json=payload,
+                    headers=self._headers,
+                )
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine model inversion failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine model inversion request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
+    async def run_shadow_mia(
+        self,
+        num_shadow_models: int = 5,
+        shadow_data_size: int = 200,
+        shadow_epochs: int = 50,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "num_shadow_models": num_shadow_models,
+            "shadow_data_size": shadow_data_size,
+            "shadow_epochs": shadow_epochs,
+        }
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            try:
+                resp = await client.post(
+                    f"{self._base_url}/attacks/shadow-mia",
+                    json=payload,
+                    headers=self._headers,
+                )
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine shadow MIA failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine shadow MIA request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
+    async def run_model_extraction(
+        self,
+        input_dim: int = 20,
+        num_classes: int = 2,
+        num_queries: int = 1000,
+        extraction_epochs: int = 200,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "input_dim": input_dim,
+            "num_classes": num_classes,
+            "num_queries": num_queries,
+            "extraction_epochs": extraction_epochs,
+        }
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            try:
+                resp = await client.post(
+                    f"{self._base_url}/attacks/model-extraction",
+                    json=payload,
+                    headers=self._headers,
+                )
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine model extraction failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine model extraction request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
+    async def get_attack_methods(self) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=10) as client:
+            try:
+                resp = await client.get(
+                    f"{self._base_url}/attacks/methods",
+                    headers=self._headers,
+                )
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine attack methods failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine attack methods request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
+    async def run_hpo(
+        self,
+        n_trials: int = 10,
+        direction: str = "maximize",
+        param_space: Optional[dict[str, Any]] = None,
+        study_name: Optional[str] = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {"n_trials": n_trials, "direction": direction}
+        if param_space:
+            payload["param_space"] = param_space
+        if study_name:
+            payload["study_name"] = study_name
+        async with httpx.AsyncClient(timeout=600) as client:
+            try:
+                resp = await client.post(f"{self._base_url}/hpo/optimize", json=payload, headers=self._headers)
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine HPO failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine HPO request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
+    async def export_model(
+        self,
+        export_format: str = "onnx",
+        model_name: str = "model",
+        input_dim: int = 20,
+        num_classes: int = 2,
+        fp16: bool = False,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "format": export_format,
+            "model_name": model_name,
+            "input_dim": input_dim,
+            "num_classes": num_classes,
+            "fp16": fp16,
+        }
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            try:
+                resp = await client.post(f"{self._base_url}/model/export", json=payload, headers=self._headers)
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine model export failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine model export request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
     async def get_controller_health(self) -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=10) as client:
             try:

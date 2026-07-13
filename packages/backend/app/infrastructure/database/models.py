@@ -542,3 +542,83 @@ class RagDocumentChunkModel(Base):
     event_metadata = Column("metadata", JSON, nullable=False, default=dict)
     embedding_id = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+
+
+class ExperimentModel(Base):
+    __tablename__ = "experiments"
+
+    id = Column(String(36), primary_key=True)
+    tenant_id = Column(String(36), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    experiment_type = Column(String(50), nullable=False, default="benchmark")
+    status = Column(String(20), nullable=False, default="draft")
+    config = Column(JSON, nullable=False, default=dict)
+    metrics = Column(JSON, nullable=True)
+    tags = Column(JSON, nullable=False, default=list)
+    dataset_ids = Column(JSON, nullable=False, default=list)
+    model_version_ids = Column(JSON, nullable=False, default=list)
+    algorithm = Column(String(50), nullable=True)
+    num_trials = Column(Integer, nullable=False, default=1)
+    created_by = Column(String(36), nullable=True)
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_experiments_tenant", "tenant_id", "status"),
+        Index("idx_experiments_type", "tenant_id", "experiment_type"),
+    )
+
+
+class ExperimentRunModel(Base):
+    __tablename__ = "experiment_runs"
+
+    id = Column(String(36), primary_key=True)
+    experiment_id = Column(String(36), ForeignKey("experiments.id", ondelete="CASCADE"), nullable=False, index=True)
+    run_index = Column(Integer, nullable=False, default=0)
+    algorithm = Column(String(50), nullable=False)
+    dataset_name = Column(String(255), nullable=True)
+    data_size = Column(Integer, nullable=True)
+    deletion_fraction = Column(Float, nullable=True)
+    status = Column(String(20), nullable=False, default="pending")
+    metrics = Column(JSON, nullable=True)
+    error_message = Column(Text, nullable=True)
+    processing_time_ms = Column(Integer, nullable=True)
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("idx_experiment_runs_experiment", "experiment_id", "run_index"),
+    )
+
+
+class DatasetRegistryModel(Base):
+    __tablename__ = "dataset_registry"
+
+    id = Column(String(36), primary_key=True)
+    tenant_id = Column(String(36), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    dataset_type = Column(String(50), nullable=False, default="synthetic")
+    source = Column(String(255), nullable=True)
+    version = Column(String(20), nullable=False, default="1.0")
+    num_samples = Column(Integer, nullable=False, default=0)
+    num_features = Column(Integer, nullable=False, default=0)
+    num_classes = Column(Integer, nullable=False, default=2)
+    feature_names = Column(JSON, nullable=True)
+    class_names = Column(JSON, nullable=True)
+    tags = Column(JSON, nullable=False, default=list)
+    metadata = Column(JSON, nullable=False, default=dict)
+    storage_path = Column(String(512), nullable=True)
+    checksum = Column(String(128), nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_by = Column(String(36), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_dataset_registry_tenant", "tenant_id", "name"),
+    )

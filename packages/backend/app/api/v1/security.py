@@ -89,3 +89,87 @@ async def get_assessment(
         "created_at": assessment.get("created_at"),
         "updated_at": assessment.get("updated_at"),
     }
+    
+
+class ModelInversionRequest(BaseModel):
+    target_classes: list[int] = [0, 1]
+    input_dim: int = 20
+    iterations: int = 500
+    learning_rate: float = 0.1
+
+
+class ShadowMIARequest(BaseModel):
+    num_shadow_models: int = 5
+    shadow_data_size: int = 200
+    shadow_epochs: int = 50
+
+
+class ModelExtractionRequest(BaseModel):
+    input_dim: int = 20
+    num_classes: int = 2
+    num_queries: int = 1000
+    extraction_epochs: int = 200
+
+
+@router.post("/attacks/model-inversion")
+async def model_inversion_attack(
+    request: ModelInversionRequest,
+    current_user: CurrentUser,
+    session: DatabaseSession,
+):
+    try:
+        result = await ml_engine_client.run_model_inversion(
+            target_classes=request.target_classes,
+            input_dim=request.input_dim,
+            iterations=request.iterations,
+            learning_rate=request.learning_rate,
+        )
+        return result
+    except MLEngineClientError as e:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
+
+
+@router.post("/attacks/shadow-mia")
+async def shadow_mia_attack(
+    request: ShadowMIARequest,
+    current_user: CurrentUser,
+    session: DatabaseSession,
+):
+    try:
+        result = await ml_engine_client.run_shadow_mia(
+            num_shadow_models=request.num_shadow_models,
+            shadow_data_size=request.shadow_data_size,
+            shadow_epochs=request.shadow_epochs,
+        )
+        return result
+    except MLEngineClientError as e:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
+
+
+@router.post("/attacks/model-extraction")
+async def model_extraction_attack(
+    request: ModelExtractionRequest,
+    current_user: CurrentUser,
+    session: DatabaseSession,
+):
+    try:
+        result = await ml_engine_client.run_model_extraction(
+            input_dim=request.input_dim,
+            num_classes=request.num_classes,
+            num_queries=request.num_queries,
+            extraction_epochs=request.extraction_epochs,
+        )
+        return result
+    except MLEngineClientError as e:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
+
+
+@router.get("/attacks/methods")
+async def list_attack_methods(
+    current_user: CurrentUser,
+    session: DatabaseSession,
+):
+    try:
+        return await ml_engine_client.get_attack_methods()
+    except MLEngineClientError as e:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
