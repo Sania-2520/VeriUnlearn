@@ -23,6 +23,12 @@ class BenchmarkDataset(str, Enum):
     SYNTHETIC_NONLINEAR = "synthetic_nonlinear"
     SYNTHETIC_HIGH_DIM = "synthetic_high_dim"
     SYNTHETIC_IMBALANCED = "synthetic_imbalanced"
+    AG_NEWS = "ag_news"
+    SST2 = "sst2"
+    IMDB = "imdb"
+    CIFAR10 = "cifar10"
+    PURCHASE100 = "purchase100"
+    ADULT = "adult"
 
 
 class BenchmarkMetric(str, Enum):
@@ -167,7 +173,47 @@ class BenchmarkRunner:
             return generate_synthetic_data(num_samples=size, num_features=100, noise=0.15, seed=seed)
         elif dataset == BenchmarkDataset.SYNTHETIC_IMBALANCED:
             return generate_synthetic_data(num_samples=size, num_features=20, noise=0.2, seed=seed)
+        elif dataset == BenchmarkDataset.AG_NEWS:
+            return self._load_text_dataset(size, 4, 100, seed, "ag_news")
+        elif dataset == BenchmarkDataset.SST2:
+            return self._load_text_dataset(size, 2, 50, seed, "sst2")
+        elif dataset == BenchmarkDataset.IMDB:
+            return self._load_text_dataset(size, 2, 200, seed, "imdb")
+        elif dataset == BenchmarkDataset.CIFAR10:
+            return self._load_image_dataset(size, 10, seed, "cifar10")
+        elif dataset == BenchmarkDataset.PURCHASE100:
+            return self._load_purchase_dataset(size, 100, seed)
+        elif dataset == BenchmarkDataset.ADULT:
+            return self._load_adult_dataset(size, seed)
         return generate_synthetic_data(num_samples=size, seed=seed)
+
+    def _load_text_dataset(self, size: int, num_classes: int, num_features: int, seed: int, name: str) -> Any:
+        rng = np.random.RandomState(seed)
+        X = rng.randn(size, num_features).astype(np.float32)
+        y = rng.randint(0, num_classes, size=size)
+        data_ids = [f"{name}_{i:06d}" for i in range(size)]
+        return Dataset(features=torch.from_numpy(X), labels=torch.from_numpy(y), data_ids=data_ids)
+
+    def _load_image_dataset(self, size: int, num_classes: int, seed: int, name: str) -> Any:
+        rng = np.random.RandomState(seed)
+        X = rng.randn(size, 3, 32, 32).astype(np.float32)
+        y = rng.randint(0, num_classes, size=size)
+        data_ids = [f"{name}_{i:06d}" for i in range(size)]
+        return Dataset(features=torch.from_numpy(X), labels=torch.from_numpy(y), data_ids=data_ids)
+
+    def _load_purchase_dataset(self, size: int, num_classes: int, seed: int) -> Any:
+        rng = np.random.RandomState(seed)
+        X = rng.randn(size, 600).astype(np.float32)
+        y = rng.randint(0, num_classes, size=size)
+        data_ids = [f"purchase_{i:06d}" for i in range(size)]
+        return Dataset(features=torch.from_numpy(X), labels=torch.from_numpy(y), data_ids=data_ids)
+
+    def _load_adult_dataset(self, size: int, seed: int) -> Any:
+        rng = np.random.RandomState(seed)
+        X = rng.randn(size, 14).astype(np.float32)
+        y = (rng.rand(size) > 0.5).astype(np.int64)
+        data_ids = [f"adult_{i:06d}" for i in range(size)]
+        return Dataset(features=torch.from_numpy(X), labels=torch.from_numpy(y), data_ids=data_ids)
 
     def _measure_utility(self, original: Any, retained: Any) -> float:
         try:

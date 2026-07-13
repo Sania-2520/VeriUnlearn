@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 from typing import Any, Optional
 import json
@@ -1499,8 +1499,104 @@ async def list_explain_methods():
             {"id": "gradient", "name": "Gradient Attribution", "description": "Simple gradient-based feature attribution"},
             {"id": "occlusion", "name": "Occlusion", "description": "Feature occlusion / ablation-based attribution"},
             {"id": "perturbation", "name": "Perturbation", "description": "Random perturbation-based feature importance"},
+            {"id": "counterfactual", "name": "Counterfactual Explanations", "description": "Minimum perturbation to flip model prediction"},
+            {"id": "embedding_pca", "name": "Embedding PCA", "description": "PCA dimensionality reduction for embedding visualization"},
+            {"id": "embedding_umap", "name": "Embedding UMAP", "description": "UMAP dimensionality reduction for embedding visualization"},
         ]
     }
+
+
+# ──────────────────────────────────────────────────────────────
+# New Endpoints: Counterfactual Explanations & Embedding Viz
+# ──────────────────────────────────────────────────────────────
+
+_counterfactual = None
+
+
+def get_counterfactual():
+    global _counterfactual
+    if _counterfactual is None:
+        from explainability.counterfactual import CounterfactualExplainer
+        _counterfactual = CounterfactualExplainer()
+    return _counterfactual
+
+
+_embedding_viz = None
+
+
+def get_embedding_viz():
+    global _embedding_viz
+    if _embedding_viz is None:
+        from explainability.embedding_viz import EmbeddingVisualizer
+        _embedding_viz = EmbeddingVisualizer()
+    return _embedding_viz
+
+
+@app.post("/explain/counterfactual")
+async def explain_counterfactual(request: dict):
+    samples = request.get("samples", [])
+    target_class = request.get("target_class", 0)
+    num_steps = request.get("num_steps", 500)
+    mgr = get_explainer_manager()
+    cf = get_counterfactual()
+
+    shap_explainer = mgr.get_shap()
+    sample_arrays = [np.array(s, dtype=np.float32) for s in samples]
+
+    class WrapperModel:
+        def __init__(self, explainer):
+            self.explainer = explainer
+
+        def __call__(self, x):
+            results = self.explainer.explain_batch([x_i.numpy() for x_i in x])
+            return torch.tensor([[r.confidence, 1 - r.confidence] for r in results])
+
+        def eval(self):
+            return self
+
+        def parameters(self):
+            return []
+
+        def to(self, device):
+            return self
+
+    wrapper = WrapperModel(shap_explainer)
+    cf.set_model(wrapper)
+
+    results = []
+    for s in sample_arrays:
+        result = cf.generate(s, target_class, num_steps=num_steps)
+        results.append(result)
+
+    return {"method": "counterfactual", "target_class": target_class, "count": len(results), "results": results}
+
+
+@app.post("/explain/embedding-viz")
+async def embedding_visualization(request: dict):
+    viz = get_embedding_viz()
+    embeddings = np.array(request.get("embeddings", []), dtype=np.float32)
+    labels = request.get("labels")
+    method = request.get("method", "pca")
+    viz.method = method
+    result = viz.reduce(embeddings, labels=labels)
+    return result
+
+
+@app.post("/explain/embedding-compare")
+async def embedding_compare(request: dict):
+    viz = get_embedding_viz()
+    pre = np.array(request.get("pre_embeddings", []), dtype=np.float32)
+    post = np.array(request.get("post_embeddings", []), dtype=np.float32)
+    labels = request.get("labels")
+    return viz.compare(pre, post, labels=labels)
+
+
+@app.post("/explain/privacy-shift")
+async def privacy_shift_analysis(request: dict):
+    viz = get_embedding_viz()
+    before = np.array(request.get("before_unlearn", []), dtype=np.float32)
+    after = np.array(request.get("after_unlearn", []), dtype=np.float32)
+    return viz.privacy_shift(before, after)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -1541,6 +1637,305 @@ async def controller_estimate(request: UnlearningRequest):
 
 
 # ──────────────────────────────────────────────────────────────
+# New Endpoints: Knowledge Distillation
+# ──────────────────────────────────────────────────────────────
+
+_distiller = None
+
+
+def get_distiller():
+    global _distiller
+    if _distiller is None:
+        from training.knowledge_distillation import KnowledgeDistiller, DistillationConfig
+        _distiller = KnowledgeDistiller(DistillationConfig())
+    return _distiller
+
+
+_gpu_scheduler = None
+
+
+def get_gpu_scheduler():
+    global _gpu_scheduler
+    if _gpu_scheduler is None:
+        from training.gpu_scheduler import GPUScheduler, SchedulerConfig
+        _gpu_scheduler = GPUScheduler(SchedulerConfig())
+        _gpu_scheduler.start()
+    return _gpu_scheduler
+
+
+@app.post("/train/distill")
+async def run_distillation(request: dict):
+    distiller = get_distiller()
+    try:
+        import numpy as np
+        import torch
+        from torch.utils.data import TensorDataset, DataLoader
+
+        input_dim = request.get("input_dim", 20)
+        num_classes = request.get("num_classes", 2)
+        num_samples = request.get("num_samples", 500)
+        teacher_hidden = request.get("teacher_hidden", [512, 256, 128])
+        student_hidden = request.get("student_hidden", [128, 64, 32])
+        num_epochs = request.get("num_epochs", 5)
+        batch_size = request.get("batch_size", 32)
+
+        distiller.setup_models(input_dim, num_classes, teacher_hidden, student_hidden)
+
+        rng = np.random.RandomState(42)
+        X = rng.randn(num_samples, input_dim).astype(np.float32)
+        y = rng.randint(0, num_classes, size=num_samples)
+        dataset = TensorDataset(torch.from_numpy(X), torch.from_numpy(y))
+        loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+        result = distiller.distill(loader)
+        return {
+            "run_id": result.run_id,
+            "status": result.status,
+            "final_teacher_accuracy": result.final_teacher_accuracy,
+            "final_student_accuracy": result.final_student_accuracy,
+            "compression_ratio": result.compression_ratio,
+            "metrics": result.metrics,
+            "student_checkpoint_path": result.student_checkpoint_path,
+            "error": result.error,
+        }
+    except Exception as e:
+        logger.exception("Distillation failed")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/train/submit")
+async def submit_training_job(request: dict):
+    scheduler = get_gpu_scheduler()
+    priority_map = {"low": 1, "medium": 2, "high": 3, "critical": 4}
+    from training.gpu_scheduler import JobPriority
+    priority = JobPriority(priority_map.get(request.get("priority", "medium"), 2))
+    job = scheduler.submit_job(
+        job_type=request.get("job_type", "lora_training"),
+        model_name=request.get("model_name", ""),
+        dataset_name=request.get("dataset_name", ""),
+        priority=priority,
+        config=request.get("config", {}),
+        total_epochs=request.get("total_epochs", 3),
+        webhook_url=request.get("webhook_url"),
+        metadata=request.get("metadata"),
+    )
+    return {
+        "job_id": job.job_id,
+        "status": job.status.value,
+        "priority": priority.name,
+        "created_at": job.created_at,
+    }
+
+
+@app.get("/train/jobs")
+async def list_training_jobs(status: str = "", limit: int = 50):
+    scheduler = get_gpu_scheduler()
+    from training.gpu_scheduler import JobStatus
+    status_filter = JobStatus(status) if status else None
+    return scheduler.list_jobs(status_filter=status_filter, limit=limit)
+
+
+@app.get("/train/jobs/{job_id}")
+async def get_training_job(job_id: str):
+    scheduler = get_gpu_scheduler()
+    job = scheduler.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+    return job
+
+
+@app.post("/train/jobs/{job_id}/cancel")
+async def cancel_training_job(job_id: str):
+    scheduler = get_gpu_scheduler()
+    if scheduler.cancel_job(job_id):
+        return {"status": "cancelled", "job_id": job_id}
+    raise HTTPException(status_code=400, detail=f"Could not cancel job {job_id}")
+
+
+@app.get("/train/gpu")
+async def gpu_status():
+    scheduler = get_gpu_scheduler()
+    return {
+        "gpus": scheduler.get_gpu_status(),
+        "queue": scheduler.get_queue_stats(),
+    }
+
+
+@app.get("/train/queue/stats")
+async def queue_stats():
+    scheduler = get_gpu_scheduler()
+    return scheduler.get_queue_stats()
+
+
+@app.get("/train/checkpoints")
+async def list_checkpoints(limit: int = 20):
+    scheduler = get_gpu_scheduler()
+    return scheduler.list_jobs(status_filter=None, limit=limit)
+
+
+@app.post("/train/checkpoints/export")
+async def export_checkpoint(request: dict):
+    checkpoint_id = request.get("checkpoint_id", "")
+    export_path = request.get("export_path", "./exports")
+    try:
+        import os, shutil
+        os.makedirs(export_path, exist_ok=True)
+        src = os.path.join("./checkpoints", checkpoint_id)
+        dst = os.path.join(export_path, checkpoint_id)
+        if os.path.exists(src):
+            shutil.copytree(src, dst, dirs_exist_ok=True)
+            return {"exported": True, "source": src, "destination": dst}
+        return {"exported": False, "error": f"Checkpoint {checkpoint_id} not found"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ──────────────────────────────────────────────────────────────
+# New Endpoints: Continual Learning - Extended
+# ──────────────────────────────────────────────────────────────
+
+
+@app.post("/continual/drift/check")
+async def check_drift(request: dict):
+    cl = get_continual_learning()
+    result = cl.detect_drift(
+        metric_name=request.get("metric_name", "confidence"),
+        value=request.get("value", 0.0),
+    )
+    return result
+
+
+@app.post("/continual/ewc/estimate")
+async def estimate_ewc(request: dict):
+    cl = get_continual_learning()
+    import numpy as np
+    num_samples = request.get("num_samples", 200)
+    X = np.random.randn(num_samples, 10).astype(np.float32)
+    y = np.random.randint(0, 2, size=num_samples).tolist()
+    result = cl.estimate_ewc(
+        task_id=request.get("task_id", "default"),
+        dataset=(X, y),
+        num_samples=num_samples,
+    )
+    return result
+
+
+@app.post("/continual/tasks")
+async def add_task(request: dict):
+    cl = get_continual_learning()
+    task = cl.add_task(
+        task_id=request.get("task_id", str(uuid.uuid4())),
+        metadata=request.get("metadata"),
+    )
+    return task
+
+
+@app.get("/continual/tasks")
+async def list_tasks():
+    cl = get_continual_learning()
+    stats = cl.get_stats()
+    return {"tasks": stats.get("tasks", []), "task_count": stats.get("task_count", 0)}
+
+
+@app.get("/continual/tasks/{task_id}")
+async def get_task(task_id: str):
+    cl = get_continual_learning()
+    task = cl.get_task(task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+    return task
+
+
+# ──────────────────────────────────────────────────────────────
+# New Endpoints: Benchmark Results & Export
+# ──────────────────────────────────────────────────────────────
+
+
+@app.get("/benchmarks/leaderboard")
+async def benchmark_leaderboard(metric: str = "utility_retained", limit: int = 10):
+    runner = get_benchmark_runner()
+    from training.benchmarks import BenchmarkMetric
+    results = runner.get_results()
+    completed = [r for r in results if r.status == "completed" and metric in r.metrics]
+    sorted_results = sorted(completed, key=lambda r: r.metrics.get(metric, 0), reverse=True)
+    return [
+        {
+            "rank": i + 1,
+            "dataset": r.dataset,
+            "algorithm": r.algorithm,
+            "data_size": r.data_size,
+            "deletion_fraction": r.deletion_fraction,
+            metric: r.metrics.get(metric, 0),
+        }
+        for i, r in enumerate(sorted_results[:limit])
+    ]
+
+
+@app.get("/benchmarks/export/{fmt}")
+async def export_benchmarks(fmt: str):
+    runner = get_benchmark_runner()
+    results = runner.get_results()
+    if fmt == "csv":
+        import io, csv
+        output = io.StringIO()
+        if results:
+            writer = csv.DictWriter(output, fieldnames=list(vars(results[0]).keys()))
+            writer.writeheader()
+            for r in results:
+                row = {k: str(v) if isinstance(v, (dict, list)) else v for k, v in vars(r).items()}
+                writer.writerow(row)
+        return Response(content=output.getvalue(), media_type="text/csv")
+    return [
+        {
+            "benchmark_id": r.benchmark_id,
+            "dataset": r.dataset,
+            "algorithm": r.algorithm,
+            "data_size": r.data_size,
+            "deletion_fraction": r.deletion_fraction,
+            "trial": r.trial,
+            "metrics": r.metrics,
+            "status": r.status,
+            "error": r.error,
+        }
+        for r in results
+    ]
+
+
+# ──────────────────────────────────────────────────────────────
+# New Endpoints: Model Registry
+# ──────────────────────────────────────────────────────────────
+
+
+@app.post("/model/register")
+async def register_model(request: ModelRegistryRequest):
+    registry = get_model_registry()
+    version = registry.register_version(
+        model_name=request.model_name,
+        checkpoint_path=request.checkpoint_path,
+        algorithm=request.algorithm,
+        parent_version_id=request.parent_version_id,
+        config=request.config,
+        metrics=request.metrics,
+    )
+    return {
+        "version_id": version.version_id,
+        "model_name": version.model_name,
+        "version_number": version.version_number,
+        "status": version.status,
+    }
+
+
+@app.get("/model/versions")
+async def list_model_versions(model_name: str = "", limit: int = 50):
+    registry = get_model_registry()
+    if model_name:
+        versions = registry.get_model_versions(model_name)
+    else:
+        versions = registry.list_all()
+    return versions[:limit]
+
+
+# ──────────────────────────────────────────────────────────────
 # Health Endpoint (extended with new component status)
 # ──────────────────────────────────────────────────────────────
 
@@ -1555,6 +1950,8 @@ async def health():
         "mlflow_tracker": _mlflow_tracker is not None,
         "e2e_pipeline": _e2e_pipeline is not None,
         "explainer_manager": _explainer_manager is not None,
+        "knowledge_distiller": _distiller is not None,
+        "gpu_scheduler": _gpu_scheduler is not None,
     }
     return {
         "status": "healthy",

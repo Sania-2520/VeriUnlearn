@@ -14,6 +14,10 @@ from app.api.v1.compliance import router as compliance_router
 from app.api.v1.admin import router as admin_router
 from app.api.v1.api_keys import router as api_keys_router
 from app.api.v1.explainability import router as explainability_router
+from app.api.v1.adapters import router as adapters_router
+from app.api.v1.training import router as training_router
+from app.api.v1.continual_learning import router as continual_learning_router
+from app.api.v1.benchmarks import router as benchmarks_router
 
 router = APIRouter()
 
@@ -31,3 +35,7 @@ router.include_router(audit_router, prefix="/audit", tags=["Audit"])
 router.include_router(compliance_router, prefix="/compliance", tags=["Compliance"])
 router.include_router(admin_router, prefix="/admin", tags=["Admin"])
 router.include_router(explainability_router, prefix="/explain", tags=["Explainability"])
+router.include_router(adapters_router, prefix="/adapters", tags=["Adapters"])
+router.include_router(training_router, prefix="/training", tags=["Training"])
+router.include_router(continual_learning_router, prefix="/continual-learning", tags=["Continual Learning"])
+router.include_router(benchmarks_router, prefix="/benchmarks", tags=["Benchmarks"])

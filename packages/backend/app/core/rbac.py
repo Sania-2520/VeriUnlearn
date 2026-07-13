@@ -29,6 +29,10 @@ class Permission(str, Enum):
     WEBHOOKS_WRITE = "webhooks:write"
     EXPLAIN_READ = "explain:read"
     EXPLAIN_WRITE = "explain:write"
+    ADAPTERS_WRITE = "adapters:write"
+    TRAINING_WRITE = "training:write"
+    BENCHMARKS_WRITE = "benchmarks:write"
+    CONTINUAL_LEARNING_WRITE = "continual_learning:write"
 
 
 ROLE_PERMISSIONS: dict[str, set[Permission]] = {
@@ -59,6 +63,10 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
         Permission.WEBHOOKS_WRITE,
         Permission.EXPLAIN_READ,
         Permission.EXPLAIN_WRITE,
+        Permission.ADAPTERS_WRITE,
+        Permission.TRAINING_WRITE,
+        Permission.BENCHMARKS_WRITE,
+        Permission.CONTINUAL_LEARNING_WRITE,
     },
     "compliance_officer": {
         Permission.UNLEARNING_READ,
