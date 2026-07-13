@@ -1,3 +1,5 @@
+name: veriunlearn
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -14,18 +16,23 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - veriunlearn-network
 
   redis:
     image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-veriunlearn_secret}
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-veriunlearn_secret}", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - veriunlearn-network
 
   qdrant:
     image: qdrant/qdrant:v1.18.2
@@ -34,11 +41,12 @@ services:
       - "6334:6334"
     volumes:
       - qdrant-data:/qdrant/storage
-    environment:
-      QDRANT__SERVICE__GRPC_PORT: 6334
+    networks:
+      - veriunlearn-network
 
   minio:
     image: minio/minio:latest
+    command: server /data --console-address ":9001"
     ports:
       - "${MINIO_PORT:-9000}:9000"
       - "9001:9001"
@@ -47,32 +55,29 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-veriunlearn_secret}
     volumes:
       - minio-data:/data
-    command: server /data --console-address ":9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
       timeout: 5s
       retries: 3
+    networks:
+      - veriunlearn-network
 
   backend:
     build:
-      context: .
-      dockerfile: Dockerfile.backend
+      context: ./packages/backend
+      dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     environment:
       APP_ENV: production
-      DATABASE_URL: postgresql+asyncpg://veriunlearn:veriunlearn_secret@postgres:5432/veriunlearn
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      QDRANT_HOST: qdrant
-      QDRANT_PORT: 6333
-      MINIO_HOST: minio
-      MINIO_PORT: 9000
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-veriunlearn}:${POSTGRES_PASSWORD:-veriunlearn_secret}@postgres:5432/${POSTGRES_DB:-veriunlearn}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-veriunlearn_secret}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-veriunlearn_secret}@redis:6379/1
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-veriunlearn_secret}@redis:6379/2
+      ML_ENGINE_URL: http://ml-engine:8000
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-replace-with-strong-random-key}
+      APP_SECRET_KEY: ${APP_SECRET_KEY:-replace-with-secret}
     depends_on:
       postgres:
         condition: service_healthy
@@ -83,31 +88,29 @@ services:
       minio:
         condition: service_started
     volumes:
-      - ./backend:/app
-    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+      - backend-data:/data
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - veriunlearn-network
 
   worker:
     build:
-      context: .
-      dockerfile: Dockerfile.backend
+      context: ./packages/backend
+      dockerfile: Dockerfile
     environment:
       APP_ENV: production
-      DATABASE_URL: postgresql+asyncpg://veriunlearn:veriunlearn_secret@postgres:5432/veriunlearn
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      QDRANT_HOST: qdrant
-      QDRANT_PORT: 6333
-      MINIO_HOST: minio
-      MINIO_PORT: 9000
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-veriunlearn}:${POSTGRES_PASSWORD:-veriunlearn_secret}@postgres:5432/${POSTGRES_DB:-veriunlearn}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-veriunlearn_secret}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-veriunlearn_secret}@redis:6379/1
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-veriunlearn_secret}@redis:6379/2
+      ML_ENGINE_URL: http://ml-engine:8000
     depends_on:
       postgres:
         condition: service_healthy
@@ -116,37 +119,159 @@ services:
       backend:
         condition: service_healthy
     volumes:
-      - ./backend:/app
-    command: celery -A app.worker.celery_app worker --loglevel=info --concurrency=1
+      - backend-data:/data
+    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=4
     healthcheck:
-      test: ["CMD", "celery", "-A", "app.worker.celery_app", "status"]
+      test: ["CMD-SHELL", "celery -A app.workers.celery_app inspect ping || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - veriunlearn-network
+
+  ml-engine:
+    build:
+      context: ./packages/ml-engine
+      dockerfile: Dockerfile
+    ports:
+      - "${ML_ENGINE_PORT:-8001}:8000"
+    environment:
+      APP_ENV: production
+      QDRANT_URL: http://qdrant:6333
+      MINIO_ENDPOINT: minio:9000
+    depends_on:
+      qdrant:
+        condition: service_started
+    volumes:
+      - ml-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - veriunlearn-network
+
+  frontend:
+    build:
+      context: ./packages/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - veriunlearn-network
 
   nginx:
     image: nginx:alpine
     ports:
       - "80:80"
+      - "443:443"
     volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - nginx-logs:/var/log/nginx
     depends_on:
-      - backend
-      - frontend
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - veriunlearn-network
 
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
+  prometheus:
+    image: prom/prometheus:v2.54.1
     ports:
-      - "3000:3000"
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./infra/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+    restart: unless-stopped
+    networks:
+      - veriunlearn-network
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    ports:
+      - "${ALERTMANAGER_PORT:-9093}:9093"
+    volumes:
+      - ./infra/monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+    restart: unless-stopped
+    networks:
+      - veriunlearn-network
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    volumes:
+      - ./infra/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./infra/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - grafana-data:/var/lib/grafana
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
-    depends_on:
-      - backend
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_INSTALL_PLUGINS: grafana-piechart-panel
+    restart: unless-stopped
+    networks:
+      - veriunlearn-network
+
+  loki:
+    image: grafana/loki:3.2.1
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    volumes:
+      - ./infra/monitoring/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki-data:/loki
+    command: -config.file=/etc/loki/loki.yml
+    restart: unless-stopped
+    networks:
+      - veriunlearn-network
+
+networks:
+  veriunlearn-network:
+    driver: bridge
 
 volumes:
   postgres-data:
   redis-data:
   qdrant-data:
   minio-data:
+  backend-data:
+  ml-data:
+  prometheus-data:
+  alertmanager-data:
+  grafana-data:
+  loki-data:
+  nginx-logs:

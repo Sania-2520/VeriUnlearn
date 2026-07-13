@@ -3,19 +3,23 @@
 help:
 	@echo "VeriUnlearn Development Commands"
 	@echo "================================"
-	@echo "make install     - Install Python and Node.js dependencies"
-	@echo "make dev         - Start development environment (Docker + backend + frontend)"
-	@echo "make dev-backend - Start FastAPI backend only"
-	@echo "make dev-frontend- Start Next.js frontend only"
-	@echo "make worker      - Start Celery worker"
-	@echo "make lint        - Run linting checks"
-	@echo "make test        - Run all tests"
-	@echo "make test-unit   - Run unit tests"
-	@echo "make test-int    - Run integration tests"
-	@echo "make db-migrate  - Run Alembic migrations"
-	@echo "make db-revision - Create new Alembic migration"
-	@echo "make build       - Build Docker images"
-	@echo "make clean       - Clean temporary files"
+	@echo "make install       - Install Python and Node.js dependencies"
+	@echo "make dev           - Start development environment (Docker + backend + frontend)"
+	@echo "make dev-backend   - Start FastAPI backend only"
+	@echo "make dev-frontend  - Start Next.js frontend only"
+	@echo "make worker        - Start Celery worker"
+	@echo "make lint          - Run linting checks"
+	@echo "make test          - Run all tests"
+	@echo "make test-unit     - Run unit tests"
+	@echo "make test-int      - Run integration tests"
+	@echo "make db-migrate    - Run Alembic migrations"
+	@echo "make db-revision   - Create new Alembic migration"
+	@echo "make build         - Build Docker images"
+	@echo "make deploy        - Full production deployment"
+	@echo "make seed          - Seed demo data"
+	@echo "make benchmark     - Run benchmark suite"
+	@echo "make graphs        - Generate research graphs"
+	@echo "make clean         - Clean temporary files"
 
 install:
 	pip install -r backend/requirements.txt
@@ -57,6 +61,20 @@ db-revision:
 
 build:
 	docker compose build
+
+deploy:
+	docker compose build
+	docker compose up -d
+	@echo "Deployment complete. Check: http://localhost:8000/health"
+
+seed:
+	python infra/scripts/seed_demo_data.py
+
+benchmark:
+	python infra/scripts/run_benchmarks.py
+
+graphs:
+	python infra/scripts/generate_graphs.py
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
