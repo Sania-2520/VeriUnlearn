@@ -1,4 +1,5 @@
 # ─── Build Stage ────────────────────────────────────────────
+ARG BASE_IMAGE=python:3.12-slim
 FROM python:3.12-slim AS builder
 
 WORKDIR /app
@@ -11,17 +12,15 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt
 
 # ─── Runtime Stage ─────────────────────────────────────────
-FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04 AS runtime
+# Default is a slim CPU image (BASE_IMAGE ARG set above). Pass --build-arg BASE_IMAGE=nvidia/cuda:... for GPU support.
+FROM ${BASE_IMAGE} AS runtime
 
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3.12 python3-pip curl libgl1-mesa-glx libglib2.0-0 \
-    tesseract-ocr && \
+    curl libgl1-mesa-glx libglib2.0-0 tesseract-ocr && \
     rm -rf /var/lib/apt/lists/* && \
-    ln -s /usr/bin/python3.12 /usr/bin/python
-
-RUN groupadd -r veriunlearn && useradd -r -g veriunlearn -d /app -s /sbin/nologin veriunlearn
+    groupadd -r veriunlearn && useradd -r -g veriunlearn -d /app -s /sbin/nologin veriunlearn
 
 COPY --from=builder /root/.local /root/.local
 COPY --chown=veriunlearn:veriunlearn . .
@@ -29,7 +28,7 @@ COPY --chown=veriunlearn:veriunlearn . .
 ENV PATH=/root/.local/bin:$PATH \
     PYTHONPATH=/app \
     PYTHONUNBUFFERED=1 \
-    CUDA_VISIBLE_DEVICES=0
+    PYTHONDONTWRITEBYTECODE=1
 
 USER veriunlearn
 
