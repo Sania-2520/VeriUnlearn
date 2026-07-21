@@ -30,7 +30,7 @@ class TestUnlearningTasks:
         assert result["status"] == "not_found"
 
     def test_generate_deletion_proof_not_found(self):
-        result = generate_deletion_proof("nonexistent-job")
+        result = generate_deletion_proof({"job_id": "nonexistent-job", "request_id": ""})
         assert result["status"] == "not_found"
 
     def test_cleanup_deletion_queue(self):
@@ -111,7 +111,7 @@ class TestUnlearningTasks:
             patch("app.workers.unlearning_tasks.ml_engine_client", mock_client),
         ):
             mock_ws.return_value.__enter__.return_value = sync_session
-            result = generate_deletion_proof("test-job-1")
+            result = generate_deletion_proof({"job_id": "test-job-1", "request_id": "test-unlearn-req-2"})
             assert result["status"] == "completed"
             assert result["merkle_root"] == "abcdef1234567890"
 

@@ -1,4 +1,3 @@
-import asyncio
 from typing import Any
 
 import httpx
@@ -6,6 +5,7 @@ import httpx
 from app.core.logging import get_logger
 from app.workers.celery_app import celery_app
 from app.workers.session import worker_session
+from app.workers.utils import _run_async
 
 logger = get_logger(__name__)
 
@@ -16,7 +16,7 @@ def send_email(self, to: str, subject: str, body: str) -> dict:
     from app.infrastructure.external.email_service import email_service
 
     try:
-        asyncio.run(email_service.send_email(to, subject, body))
+        _run_async(email_service.send_email(to, subject, body))
         return {"to": to, "subject": subject, "status": "sent"}
     except Exception as e:
         logger.error("Failed to send email to %s: %s", to, str(e))

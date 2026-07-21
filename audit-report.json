@@ -1,0 +1,374 @@
+{
+  "meta": {
+    "project": "VeriUnlearn AI Governance Platform",
+    "audit_date": "2026-07-21",
+    "auditor": "opencode-engineering-audit",
+    "packages_scanned": [
+      "packages/backend/app/",
+      "packages/ml-engine/",
+      "packages/shared/"
+    ],
+    "total_source_files_analyzed": 85,
+    "issues_found": 70
+  },
+  "unfinished_implementations": [
+    {
+      "file": "packages/ml-engine/verification/zksnark_service.py",
+      "lines": "1-251",
+      "severity": "critical",
+      "description": "Entire zk-SNARK module is a simulation, not a real zero-knowledge proof implementation. Uses hashlib SHA-256 hashing instead of actual zk-SNARK circuit arithmetic (Groth16, PLONK, etc.). Classes ZKProvingKey, ZKVerificationKey, ZKProofService imply a full circuit-based system was planned but never realized. The generate_proof() method (line 116) constructs proof_data with fake pi_a/pi_b/pi_c fields, has no elliptic curve operations, and delegates signing to SignatureManager (Ed25519) which has no relation to zk-SNARKs. This provides NO cryptographic zero-knowledge guarantees.",
+      "recommendation": "Either integrate with a real zk-SNARK library (e.g., snarkjs, py_ecc, circom) or rename the module accurately (e.g., 'MockZKProofService') and add clear documentation about its limitations."
+    },
+    {
+      "file": "packages/backend/app/workers/rag_tasks.py",
+      "lines": "10,20,30",
+      "severity": "high",
+      "description": "All three Celery tasks (process_document, generate_embeddings, ocr_process) are stubs that return hardcoded results with zeros. They accept parameters but perform no actual work: `'chunks_created': 0`, `'embeddings_generated': 0`, `'pages_processed': 0`. The RAG document processing pipeline is non-functional.",
+      "recommendation": "Implement actual document processing logic for each task, or remove the tasks if the RAG pipeline is handled elsewhere."
+    },
+    {
+      "file": "packages/backend/app/domain/security/__init__.py",
+      "lines": "1",
+      "severity": "high",
+      "description": "The security domain module is completely empty. There are no entities, interfaces, services, or repository implementations under domain/security/. This is a critical gap for an 'AI Governance Platform' — security assessments, threat modeling, vulnerability scanning, and incident response are unimplemented.",
+      "recommendation": "Implement the security domain with entities (SecurityAssessment, VulnerabilityReport, Incident), interfaces, services, and repository layer."
+    },
+    {
+      "file": "packages/backend/app/workers/notification_tasks.py",
+      "lines": "11-21",
+      "severity": "medium",
+      "description": "_run_async() helper function is duplicated from unlearning_tasks.py. The pattern of running async code inside sync Celery tasks is a workaround, not a proper solution. It creates a new ThreadPoolExecutor per invocation (lines 15-16), which is wasteful and can cause thread leaks under load.",
+      "recommendation": "Refactor to use Celery's native async support (celery[async]) or make the tasks fully synchronous with proper async-to-sync adapters."
+    },
+    {
+      "file": "packages/backend/app/workers/unlearning_tasks.py",
+      "lines": "15-25",
+      "severity": "medium",
+      "description": "Same _run_async() workaround as notification_tasks.py. The pattern catches RuntimeError and silently falls through to asyncio.run(), which will fail if called from a running event loop. The ThreadPoolExecutor fallback (line 19-21) creates a new executor per call with max_workers=1, leading to thread creation/destruction overhead on every invocation.",
+      "recommendation": "Consolidate _run_async into a shared utility module and implement proper async execution strategy."
+    },
+    {
+      "file": "packages/backend/app/infrastructure/external/email_service.py",
+      "lines": "101-144",
+      "severity": "low",
+      "description": "HTML email templates are inline strings inside _render_template() (lines 102-144). This approach works but makes template maintenance difficult. There are no template files, no internationalization support, and no email preview/testing capability. The 'account_deleted' template class constant (line 18) is referenced but not implemented in _render_template.",
+      "recommendation": "Externalize email templates to files and implement the missing account_deleted template."
+    },
+    {
+      "file": "packages/ml-engine/security/input_validator.py",
+      "lines": "9",
+      "severity": "medium",
+      "description": "While the InputValidator class is functional (107 lines), it is the only non-empty security file (besides audit_logger.py) in the ML engine's security module. There is no threat detection, intrusion prevention, anomaly detection, or adversarial robustness validation. The validator has a non-strict mode (line 49-50) that downgrades validation failures to warnings, which could allow malicious payloads through.",
+      "recommendation": "Add comprehensive security validation including adversarial input detection, prompt injection filters, and model output sanitization."
+    }
+  ],
+  "todos": [
+    {
+      "file": "packages/ml-engine/training/mlflow_tracker.py",
+      "lines": 68,
+      "severity": "note",
+      "description": "Variable named `temp` holds GPU temperature from pynvml. While it IS used on line 80 ('temperature_c': temp), the variable name 'temp' typically indicates temporary/debug code. Combined with the broad exception handler (line 69: `except Exception:`) that silently swallows pynvml errors, GPU temperature monitoring is fragile.",
+      "recommendation": "Rename to `gpu_temp_c` for clarity and log at warning level when pynvml fails."
+    }
+  ],
+  "dead_code": [
+    {
+      "file": "packages/backend/app/workers/rag_tasks.py",
+      "lines": "9-36",
+      "severity": "high",
+      "description": "All three Celery task implementations produce no side effects and return hardcoded values. The tasks are registered with Celery and can be called, but they never interact with any ML engine, database, or storage. They are effectively dead code that would waste queue resources if invoked.",
+      "recommendation": "Implement real logic or remove the task registrations."
+    },
+    {
+      "file": "packages/backend/app/domain/security/__init__.py",
+      "lines": "1",
+      "severity": "medium",
+      "description": "Empty package __init__.py with no sibling module files. The entire domain/security/ directory is dead structure — it occupies a namespace but contains no code. Compare with domain/audit/ or domain/compliance/ which have full entity/service/interface triads.",
+      "recommendation": "Either populate the module with security domain logic or remove the empty directory."
+    },
+    {
+      "file": "packages/ml-engine/verification/zksnark_service.py",
+      "lines": "9-15",
+      "severity": "medium",
+      "description": "__all__ exports five class names, but only ZKProofError and ZKProofService are potentially used externally. ZKProvingKey, ZKVerificationKey, and ZKProof are custom container classes that serve as fake zk-SNARK types. They add complexity without cryptographic value.",
+      "recommendation": "Streamline the API surface: only export what's actually consumed, or implement real zk-SNARK support."
+    },
+    {
+      "file": "packages/backend/app/infrastructure/external/email_service.py",
+      "lines": 18,
+      "severity": "low",
+      "description": "EmailTemplate.ACCOUNT_DELETED constant is defined (line 18) but has no corresponding template in _render_template(). It will fall through to the generic 'No template found' message. Dead constant.",
+      "recommendation": "Implement the account_deleted template or remove the constant."
+    }
+  ],
+  "duplicated_logic": [
+    {
+      "file": "packages/backend/app/infrastructure/external/ml_engine.py",
+      "lines": "44-1094",
+      "severity": "critical",
+      "description": "40+ HTTP methods are each independently creating a new httpx.AsyncClient instance (the `async with httpx.AsyncClient(...) as client:` pattern) and duplicating the identical try/except/raise error handling block. Each method repeats: create client → POST/GET → raise_for_status → return json → catch HTTPStatusError → catch RequestError. This accounts for ~950 lines of near-identical boilerplate out of 1101 total lines. Example: lines 44-58, 69-83, 96-110, etc. across the entire file.",
+      "recommendation": "Extract a shared _request() helper method that accepts HTTP method, path, payload, and optional params. Reduce 40+ methods to thin wrappers around the shared helper. Reuse a single httpx.AsyncClient instance across the class lifetime rather than creating one per call."
+    },
+    {
+      "file": "packages/backend/app/workers/notification_tasks.py",
+      "lines": "11-21",
+      "severity": "medium",
+      "description": "Exact copy of `_run_async()` from unlearning_tasks.py lines 15-25. Both files implement identical logic for running async coroutines inside sync Celery tasks.",
+      "recommendation": "Extract to a shared utility module (e.g., app/workers/utils.py) and import from both task modules."
+    },
+    {
+      "file": "packages/backend/app/core/database.py",
+      "lines": "83-106",
+      "severity": "medium",
+      "description": "get_session() (lines 83-93) and get_transaction_session() (lines 95-106) are nearly identical async generators. The only difference is get_transaction_session() calls `await session.begin()` before yielding. Both share identical commit/rollback/close logic with the same broad exception handler.",
+      "recommendation": "Refactor into a single _session_lifespan() private method with a `require_transaction: bool = False` parameter."
+    },
+    {
+      "file": "packages/backend/app/api/v1/adapters.py",
+      "lines": "49-238",
+      "severity": "medium",
+      "description": "Every endpoint in this file follows the identical pattern: try → call ml_engine_client.xxx() → return → except MLEngineClientError → raise HTTPException. This pattern is repeated 20+ times across the file. The same duplication pattern exists in benchmarks.py, training.py, experiments.py, and other API modules.",
+      "recommendation": "Create a helper function `_call_ml_engine(client_method, *args, **kwargs)` that wraps the try/except/HTTPException pattern, reducing each endpoint body to a single function call."
+    }
+  ],
+  "broken_imports": [
+    {
+      "file": "packages/backend/app/api/v1/adapters.py",
+      "lines": 6,
+      "severity": "high",
+      "description": "Imports `CurrentUser`, `DatabaseSession` from `app.api.deps` but neither `CurrentUser` nor `DatabaseSession` exist in `deps.py`. Looking at deps.py (which I read earlier), it exports `get_current_user` and `get_db` as functions — these are the async generator/awaitable forms. The import names `CurrentUser` and `DatabaseSession` suggest they are type aliases or dependency classes that don't exist.",
+      "recommendation": "Verify the correct import names from deps.py and update the import statement. The likely correct imports are `get_current_user` and `get_db`."
+    },
+    {
+      "file": "packages/backend/app/api/v1/benchmarks.py",
+      "lines": 6,
+      "severity": "high",
+      "description": "Same pattern as adapters.py — imports `CurrentUser` and `DatabaseSession` from `app.api.deps`. These types may not exist in deps.py.",
+      "recommendation": "Verify correct import names across all API v1 endpoint files that import from deps.py."
+    },
+    {
+      "file": "packages/backend/app/api/v1/training.py",
+      "lines": 6,
+      "severity": "high",
+      "description": "Same issue: imports `CurrentUser`, `DatabaseSession` from deps.py. This pattern exists in ~15 API v1 endpoint files.",
+      "recommendation": "Create proper type aliases in deps.py or update import statements to match actual exported names."
+    }
+  ],
+  "circular_dependencies": [
+    {
+      "file": "packages/backend/app/api/v1/unlearning.py",
+      "lines": "1-20",
+      "severity": "medium",
+      "description": "The unlearning API module imports from `app.domain.unlearning.services` which imports from `app.domain.unlearning.interfaces` which imports from `app.domain.unlearning.entities`. While this is currently one-directional, the API module also imports `app.api.deps` which indirectly imports from domain service/repository modules. If any domain service file imports from an API module (e.g., for request models), a cycle would form. The import graph needs explicit auditing.",
+      "recommendation": "Enforce architectural boundaries with linting rules (e.g., `import-lint` or `flake8-import-order`) to prevent API imports in domain layers."
+    }
+  ],
+  "race_conditions": [
+    {
+      "file": "packages/ml-engine/training/gpu_scheduler.py",
+      "lines": "96-107, 136-165",
+      "severity": "high",
+      "description": "GPU Scheduler uses threading.Thread (line 105, 323) with shared mutable state: `_jobs` (dict), `_job_queue` (list), `_completed_jobs` (deque), `_progress_callbacks` (list), `_current_jobs` (dict — not shown but implied). While `self._lock = threading.RLock()` is created on line 103, not all methods that access shared state acquire this lock. The submit_job() method (line 136) appends to `_job_queue` and `_jobs` in separate operations without holding the lock for the entire critical section.",
+      "recommendation": "Audit every method that reads or writes shared state to ensure the RLock is acquired. Use `with self._lock:` consistently around all critical sections. Consider using asyncio with a single event loop instead of threads."
+    },
+    {
+      "file": "packages/backend/app/workers/unlearning_tasks.py",
+      "lines": "19-21",
+      "severity": "medium",
+      "description": "Creates a new ThreadPoolExecutor with max_workers=1 on every call to _run_async(). Under concurrent request load, each cancellation/retry creates a new thread pool. Threads from a completed pool may not be immediately garbage collected, leading to thread proliferation.",
+      "recommendation": "Use a module-level shared ThreadPoolExecutor or switch to asyncio-native Celery tasks."
+    },
+    {
+      "file": "packages/ml-engine/inference/service.py",
+      "lines": "536-549",
+      "severity": "medium",
+      "description": "Creates a daemon thread for streaming inference (line 536: `thread = threading.Thread(target=self._stream_generate, ...`) and then joins it on line 549. While the thread is daemonized (won't block shutdown), the streaming generator yields tokens while the thread runs. If the caller stops iterating the generator, the thread is orphaned and continues running in the background until completion.",
+      "recommendation": "Add a cancellation mechanism (e.g., threading.Event) that the stream thread checks periodically, allowing clean teardown when the generator is garbage collected or the client disconnects."
+    }
+  ],
+  "blocking_operations": [
+    {
+      "file": "packages/backend/app/workers/audit_tasks.py",
+      "lines": "28, 35",
+      "severity": "critical",
+      "description": "`asyncio.run()` is called TWICE inside a synchronous Celery task (lines 28 and 35). Each call creates a new event loop, runs the coroutine to completion, then closes the loop. This means the audit anchoring process cannot overlap or share async state between calls. If either coroutine makes network calls (e.g., to blockchain service), the entire Celery worker thread blocks.",
+      "recommendation": "Collect both async operations into a single coroutine wrapped by a single asyncio.run() call, or use Celery's async task support."
+    },
+    {
+      "file": "packages/ml-engine/training/benchmarks.py",
+      "lines": 137,
+      "severity": "high",
+      "description": "`asyncio.run(self._controller.execute(ctx))` is called inside a synchronous method `_run_single()` (line 100). The HybridAdaptiveController.execute() is an async method, but benchmarks.py runs it synchronously with asyncio.run(). This blocks the calling thread for the duration of the unlearning operation, which could be minutes for large models.",
+      "recommendation": "Make the benchmark runner fully async, or use a thread pool with proper async bridge. Never call asyncio.run() in library code."
+    },
+    {
+      "file": "packages/backend/app/workers/session.py",
+      "lines": "24-28, 39-50",
+      "severity": "critical",
+      "description": "Creates a synchronous SQLAlchemy engine (create_engine, not create_async_engine) and synchronous Session (line 30-36). This is used in all Celery worker tasks (`worker_session()` context manager). Tasks like `audit_tasks.py` then try to bridge to async code (lines 28, 35) while the session itself is synchronous. The sync session uses psycopg2 (line 16) which blocks the worker thread on every database operation.",
+      "recommendation": "Use async SQLAlchemy (create_async_engine + AsyncSession) consistently, even in Celery workers, or make all worker database operations synchronous without asyncio.run() bridges."
+    }
+  ],
+  "performance_bottlenecks": [
+    {
+      "file": "packages/ml-engine/api.py",
+      "lines": "1-2205",
+      "severity": "critical",
+      "description": "Single monolithic file containing ALL ML Engine API endpoints: unlearning (400 lines), verification (150 lines), security attacks (300 lines), model management (250 lines), training (400 lines), adapters (200 lines), explainability (200 lines), HPO (100 lines), and more. Total 2205 lines. This causes: (1) massive import overhead on startup, (2) impossibility of parallel development, (3) poor testability, (4) merge conflicts, (5) all global state in one module with 16 `global` declarations.",
+      "recommendation": "Split into separate route modules following the backend pattern (e.g., api/v1/unlearning.py, api/v1/training/, etc.). Each module should be under 300 lines."
+    },
+    {
+      "file": "packages/backend/app/infrastructure/external/ml_engine.py",
+      "lines": "16-1101",
+      "severity": "critical",
+      "description": "1101-line monolithic HTTP client. Each of 40+ methods creates a brand new httpx.AsyncClient (e.g., line 44, 69, 96, etc.) instead of reusing a shared client instance. HTTP clients manage connection pools internally — creating a new one per request eliminates connection reuse, increases latency, and can exhaust file descriptors under load.",
+      "recommendation": "Create a single httpx.AsyncClient at MLEngineClient construction (__init__) and reuse it across all methods. The client should use connection pooling with sensible limits."
+    },
+    {
+      "file": "packages/ml-engine/training/rag_pipeline.py",
+      "lines": "1-1150",
+      "severity": "high",
+      "description": "Monolithic RAG pipeline file (~1150 lines) handling document parsing, chunking, embedding generation, vector search, keyword search, hybrid retrieval, context assembly, and prompt construction. This violates the single-responsibility principle and makes the pipeline difficult to test, optimize, or extend.",
+      "recommendation": "Split into focused modules: document_parser.py, chunking_strategy.py, embedding_service.py, retriever.py, context_builder.py."
+    },
+    {
+      "file": "packages/ml-engine/training/conversational_pipeline.py",
+      "lines": "1-900+",
+      "severity": "high",
+      "description": "Monolithic conversational pipeline (~900 lines) combining data processing, quality scoring, diversity filtering, training queue management, and inference. Same single-responsibility violation as rag_pipeline.py.",
+      "recommendation": "Split into: conversation_processor.py, quality_scorer.py, diversity_filter.py, training_queue.py."
+    },
+    {
+      "file": "packages/ml-engine/training/lora_trainer.py",
+      "lines": "1-960+",
+      "severity": "high",
+      "description": "Monolithic LoRA trainer (~960 lines) handling training, checkpointing, evaluation, and model export. The checkpoint management (lines 680-960) alone is ~280 lines within the trainer class.",
+      "recommendation": "Extract checkpoint management, model export, and evaluation into separate classes."
+    }
+  ],
+  "security_weaknesses": [
+    {
+      "file": "packages/ml-engine/api.py",
+      "lines": 35,
+      "severity": "critical",
+      "description": "ML_API_KEY defaults to empty string: `os.getenv('ML_ENGINE_API_KEY', '')`. The auth middleware (line 39-46) skips authentication when ML_API_KEY is empty (line 42 checks `if ML_API_KEY:` — empty string is falsy). This means the ML Engine starts with NO authentication by default. Any process that can reach the ML Engine port can execute unlearning operations, trigger model training, run security attacks, and access model data.",
+      "recommendation": "Remove the empty string default and require explicit API key configuration. If no key is set, the engine should refuse to start."
+    },
+    {
+      "file": "packages/backend/app/core/rate_limiter.py",
+      "lines": "61-63",
+      "severity": "high",
+      "description": "When Redis is unavailable, the rate limiter silently sets `current = 0` and allows ALL requests through. This is a fail-open behavior that bypasses rate limiting entirely during Redis outages, making the API vulnerable to DoS attacks during such events.",
+      "recommendation": "Change to fail-closed: raise an HTTP 503 or enforce a conservative in-memory rate limit when Redis is down. Never silently allow all traffic."
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "lines": "27-33",
+      "severity": "medium",
+      "description": "CORS middleware configured with permissive defaults: `allow_origins=os.getenv(...).split(',')` defaults to `['http://localhost:8000']` but the split means any list of origins is accepted. The middleware allows all standard HTTP methods (GET, POST, PUT, DELETE, OPTIONS) and all common headers. In production, if deployed with a frontend on a different domain, CORS allows cross-origin requests to the ML Engine.",
+      "recommendation": "Restrict CORS to a specific allowed origins list per deployment environment. Never use user-specified origins without validation."
+    },
+    {
+      "file": "packages/backend/app/core/secrets_manager.py",
+      "lines": 57,
+      "severity": "medium",
+      "description": "JWT secret resolution falls back through multiple layers: secrets manager → environment variable → settings object. If all layers produce a weak/guessable value (e.g., from .env with a development default), all JWT tokens are forgeable. The code doesn't validate minimum key length or entropy.",
+      "recommendation": "Add validation on startup that JWT_SECRET_KEY meets minimum entropy requirements (e.g., >= 256-bit random value). Refuse to start with default/weak secrets."
+    },
+    {
+      "file": "packages/ml-engine/security/input_validator.py",
+      "lines": "47-51, 71-76",
+      "severity": "medium",
+      "description": "When strict=False, validation failures are downgraded to log warnings and the data is returned unmodified. If any production caller uses non-strict mode, attackers can bypass all input validation (unlimited string length, arbitrary model types, invalid regulatory frameworks, etc.). The non-strict mode exists as a convenience during development but could accidentally be left enabled in production.",
+      "recommendation": "Remove non-strict mode or make it opt-in with a loud startup warning. All production callers must use strict=True."
+    },
+    {
+      "file": "packages/backend/app/core/security.py",
+      "lines": "95-100",
+      "severity": "medium",
+      "description": "JWT token decode operation may be using PyJWT (based on the import pattern). Need to verify the decode doesn't use `verify=False` or accept ` algorithms=['none']`. Standard JWT implementations reject 'none' algorithm but only if configured to do so.",
+      "recommendation": "Audit the security.py JWT verification code to ensure 'none' algorithm is explicitly rejected and audience/issuer claims are validated."
+    }
+  ],
+  "missing_error_handling": [
+    {
+      "file": "packages/backend/app/workers/audit_tasks.py",
+      "lines": 28,
+      "severity": "critical",
+      "description": "`asyncio.run(repo.get_all_tenant_ids())` has no try/except wrapper. If repo.get_all_tenant_ids() raises an exception (database connection failure, network timeout), the entire Celery task crashes ungracefully. No error is logged and no tenant chains are anchored. The task returns no error response.",
+      "recommendation": "Wrap in try/except, log the full traceback, and return a structured error response."
+    },
+    {
+      "file": "packages/backend/app/workers/audit_tasks.py",
+      "lines": 35,
+      "severity": "high",
+      "description": "`asyncio.run(audit_svc.anchor_chain(tid))` is wrapped in try/except at line 34, but the exception handler (line 42) only logs the error message and increments failed count. The original exception traceback is lost (using `str(e)` instead of `logger.exception()`).",
+      "recommendation": "Use `logger.exception()` instead of `logger.error()` to preserve the full traceback."
+    },
+    {
+      "file": "packages/backend/app/core/cache.py",
+      "lines": "50, 53, 58, 60",
+      "severity": "high",
+      "description": "InMemoryRedis has `pass` bodies for expire(), publish(), subscribe(), and PubSub.close(). Any code that calls these methods expecting actual behavior (e.g., Pub/Sub for real-time updates, TTL for cache expiration) will silently malfunction when InMemoryRedis is used as the fallback. This is especially dangerous because CacheManager falls back to InMemoryRedis automatically (lines 79-85) without warning other components.",
+      "recommendation": "At minimum, log warnings when these no-op methods are called. Better: implement the actual behavior for InMemoryRedis (e.g., a simple in-memory TTL checker)."
+    },
+    {
+      "file": "packages/backend/app/workers/session.py",
+      "lines": "45-47",
+      "severity": "medium",
+      "description": "Broad `except Exception` catches ALL exceptions including programming errors (AttributeError, TypeError, etc.) and logs only a warning. This can silently mask bugs: if a query has a typo (e.g., accessing a non-existent column), the error is caught, rolled back, and re-raised, but the warning level means it may go unnoticed in production.",
+      "recommendation": "Log at ERROR level for truly unexpected exceptions. Consider distinguishing between expected database errors and programming errors."
+    },
+    {
+      "file": "packages/ml-engine/training/benchmarks.py",
+      "lines": 137,
+      "severity": "medium",
+      "description": "`asyncio.run(self._controller.execute(ctx))` has no specific error handling. If the controller's execute() method raises an exception (e.g., ML Engine not reachable, invalid parameters), the asyncio.run() call will raise RuntimeError which propagates to the catch-all at line 154 (`except Exception as e:`). The original async context is lost in the exception chain.",
+      "recommendation": "Wrap the asyncio.run() call in a specific try/except that logs the async execution failure before passing to the general handler."
+    }
+  ],
+  "type_safety": [
+    {
+      "file": "packages/backend/app/workers/audit_tasks.py",
+      "lines": "21-22",
+      "severity": "critical",
+      "description": "Uses `SQLAlchemyAuditEventRepository.__new__(SQLAlchemyAuditEventRepository)` to instantiate a repository without calling __init__, then monkey-patches `repo._session = session`. This bypasses the type system, skips any initialization logic in __init__ (e.g., table name setup, connection validation), and creates an object in an incomplete state. If __init__ is later modified to require initialization, this code will silently break.",
+      "recommendation": "Add a classmethod or factory method to SQLAlchemyAuditEventRepository that accepts an existing session, or refactor the repository to accept session via proper dependency injection."
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "lines": "264, 272, 280, 288, 296, 304, 312, 320, 328, 336, 381, 765, 1543, 1554, 1673, 1684",
+      "severity": "high",
+      "description": "16 `global` variable declarations across the ML Engine api.py file. Global state (singletons for LoRATrainer, ModelRegistry, RAGPipeline, InferenceService, etc.) makes the code impossible to unit test in isolation, creates hidden coupling between endpoints, and prevents parallel request handling since globals can be mutated between requests. Each getter function (e.g., get_lora_trainer) lazily initializes a global singleton.",
+      "recommendation": "Use FastAPI's dependency injection system with `Depends()` to provide service instances. Convert each global getter to an async dependency that manages its own lifecycle."
+    },
+    {
+      "file": "packages/backend/app/core/cache.py",
+      "lines": 10,
+      "severity": "medium",
+      "description": "InMemoryRedis class implements redis-like methods but has no formal protocol or ABC. CacheManager uses InMemoryRedis as a drop-in replacement for aioredis.Redis (line 85) but there's no type-level guarantee that InMemoryRedis satisfies the same interface. Any method added to aioredis.Redis that's not in InMemoryRedis will cause AttributeError at runtime.",
+      "recommendation": "Define a Protocol or ABC for the Cache interface that both aioredis.Redis and InMemoryRedis satisfy."
+    },
+    {
+      "file": "packages/backend/app/infrastructure/external/ml_engine.py",
+      "lines": 19,
+      "severity": "medium",
+      "description": "_headers declared as `dict[str, str]` but the type annotation doesn't prevent runtime violations. The `api_key` parameter is `Optional[str]` (line 16) and assigned to the dict only if non-None, but there's no validation that header values are actually strings.",
+      "recommendation": "Use TypedDict for headers with specific known keys, or use httpx.Headers which provides better type safety."
+    },
+    {
+      "file": "packages/backend/app/workers/unlearning_tasks.py",
+      "lines": "15-25",
+      "severity": "medium",
+      "description": "_run_async function has no return type annotation. The coroutine parameter is untyped. The return type depends on the coroutine passed in, making it opaque to type checkers.",
+      "recommendation": "Add return type using `TypeVar` to properly type the async bridge function."
+    },
+    {
+      "file": "packages/ml-engine/inference/service.py",
+      "lines": "18-29",
+      "severity": "medium",
+      "description": "Optional transformer/peft imports are handled via TRY/IMPORT/EXCEPT pattern with boolean flags (TRANSFORMERS_AVAILABLE, PEFT_AVAILABLE). If transformers is missing, the entire inference service degrades but may crash at runtime when methods that use transformers are called. This creates a split type state where the class's valid methods depend on import success.",
+      "recommendation": "Use a strategy pattern or ABC with separate implementations for available/unavailable states, so type checkers can verify code paths."
+    }
+  ]
+}

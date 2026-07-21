@@ -1,16 +1,24 @@
 from typing import Any, Optional
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from app.api.deps import CurrentUser, DatabaseSession, default_rate_limiter, require_permission
 from app.core.logging import get_logger
 from app.core.rbac import Permission
+from app.core.config import settings
 from app.infrastructure.external.ml_engine import ml_engine_client, MLEngineClientError
 
 logger = get_logger(__name__)
 
-router = APIRouter(dependencies=[Depends(default_rate_limiter)])
+router = APIRouter(dependencies=[Depends(default_rate_limiter), Depends(require_permission(Permission.BENCHMARKS_READ))])
+
+_http_client = httpx.AsyncClient(
+    timeout=30,
+    limits=httpx.Limits(max_keepalive_connections=5, max_connections=20),
+)
 
 
 class RunBenchmarkRequest(BaseModel):
@@ -63,14 +71,13 @@ async def list_benchmark_results(
             params["algorithm"] = algorithm
         if dataset:
             params["dataset"] = dataset
-        async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.get(
-                f"{ml_engine_client._base_url}/benchmarks/results",
-                params=params,
-                headers=ml_engine_client._headers,
-            )
-            resp.raise_for_status()
-            return resp.json()
+        resp = await _http_client.get(
+            f"{ml_engine_client._base_url}/benchmarks/results",
+            params=params,
+            headers=ml_engine_client._headers,
+        )
+        resp.raise_for_status()
+        return resp.json()
     except Exception as e:
         logger.error("List benchmark results failed: %s", str(e))
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
@@ -83,14 +90,13 @@ async def get_leaderboard(
     _: None = Depends(require_permission(Permission.BENCHMARKS_READ)),
 ):
     try:
-        async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.get(
-                f"{ml_engine_client._base_url}/benchmarks/leaderboard",
-                params={"metric": metric, "limit": limit},
-                headers=ml_engine_client._headers,
-            )
-            resp.raise_for_status()
-            return resp.json()
+        resp = await _http_client.get(
+            f"{ml_engine_client._base_url}/benchmarks/leaderboard",
+            params={"metric": metric, "limit": limit},
+            headers=ml_engine_client._headers,
+        )
+        resp.raise_for_status()
+        return resp.json()
     except Exception as e:
         logger.error("Get leaderboard failed: %s", str(e))
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
@@ -104,19 +110,17 @@ async def export_benchmarks(
     if format not in ("csv", "json"):
         raise HTTPException(status_code=400, detail="Format must be 'csv' or 'json'")
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
-            resp = await client.get(
-                f"{ml_engine_client._base_url}/benchmarks/export/{format}",
-                headers=ml_engine_client._headers,
-            )
-            resp.raise_for_status()
-            if format == "csv":
-                return Response(content=resp.text, media_type="text/csv")
-            return resp.json()
+        resp = await _http_client.get(
+            f"{ml_engine_client._base_url}/benchmarks/export/{format}",
+            headers=ml_engine_client._headers,
+        )
+        resp.raise_for_status()
+        if format == "csv":
+            return Response(content=resp.text, media_type="text/csv")
+        return resp.json()
     except Exception as e:
         logger.error("Export benchmarks failed: %s", str(e))
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
 
 
-import httpx  # noqa: E402
-from fastapi.responses import Response  # noqa: E402
+

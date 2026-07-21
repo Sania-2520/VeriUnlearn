@@ -1,3 +1,18 @@
+"""
+Simulated zk-SNARK proof service for development and testing.
+
+This module provides a hash-based simulation of zk-SNARK proof generation and
+verification. It uses SHA-256 hashing and Ed25519 signatures instead of actual
+zero-knowledge elliptic curve arithmetic (Groth16, PLONK, etc.). The classes
+ZKProvingKey, ZKVerificationKey, and ZKProofService are placeholder types that
+imply a full circuit-based system was planned but not yet realized.
+
+SECURITY NOTE: This implementation provides NO cryptographic zero-knowledge
+guarantees. It is suitable for integration testing and development workflows
+only. For production use, replace with a real zk-SNARK library (e.g., snarkjs,
+py_ecc, circom) or integrate with a cloud HSM/attestation service.
+"""
+
 import hashlib
 import json
 from typing import Any, Optional

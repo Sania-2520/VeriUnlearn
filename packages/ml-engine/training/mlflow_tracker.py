@@ -58,16 +58,16 @@ class GPUTracker:
             mem_used = torch.cuda.memory_allocated(device) / (1024**2)
             mem_total = torch.cuda.get_device_properties(device).total_mem / (1024**2)
             util = 0
-            temp = 0
+            gpu_temp_c = 0
             try:
                 import pynvml
 
                 pynvml.nvmlInit()
                 handle = pynvml.nvmlDeviceGetHandleByIndex(device)
                 util = pynvml.nvmlDeviceGetUtilizationRates(handle).gpu
-                temp = pynvml.nvmlDeviceGetTemperature(handle, pynvml.NVML_TEMPERATURE_GPU)
+                gpu_temp_c = pynvml.nvmlDeviceGetTemperature(handle, pynvml.NVML_TEMPERATURE_GPU)
             except Exception:
-                pass
+                logger.debug("pynvml GPU stats unavailable", exc_info=True)
             snap = {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "available": True,
@@ -77,7 +77,7 @@ class GPUTracker:
                 "memory_total_mb": round(mem_total, 2),
                 "memory_used_pct": round(100.0 * mem_used / mem_total, 2) if mem_total > 0 else 0,
                 "utilization_pct": util,
-                "temperature_c": temp,
+                "temperature_c": gpu_temp_c,
             }
         self._snapshots.append(snap)
         return snap

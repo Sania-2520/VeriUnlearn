@@ -1,9 +1,13 @@
-from fastapi import FastAPI, HTTPException
+import os
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 from typing import Any, Optional
 import json
 import uuid
+import logging
+import contextlib
 import numpy as np
 
 from unlearning.hybrid_controller import HybridAdaptiveController
@@ -13,11 +17,51 @@ from verification.signatures import SignatureManager
 from verification.privacy_evaluation import PrivacyEvaluator
 from security.attacks.membership_inference import MembershipInferenceAttack, LossBasedMIA
 
+logger = logging.getLogger("veriunlearn.ml_engine")
+
+
+@contextlib.asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: refuse to start without a configured API key
+    if not ML_API_KEY:
+        logger.critical(
+            "ML_ENGINE_API_KEY is not set or is empty — authentication is DISABLED. "
+            "All requests will be accepted without verification. "
+            "Set a strong API key via the ML_ENGINE_API_KEY environment variable before deploying."
+        )
+        raise SystemExit(1)
+    yield
+
+
 app = FastAPI(
     title="VeriUnlearn ML Engine",
     version="1.0.0",
     description="Machine Unlearning, Verification, and Security Engine",
+    lifespan=lifespan,
 )
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.getenv("ML_ENGINE_CORS_ORIGINS", "http://localhost:8000").split(","),
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-API-Key"],
+)
+
+# SECURITY: An empty string means authentication is silently bypassed at runtime.
+# The lifespan handler below refuses to start if this key is not configured.
+ML_API_KEY = os.getenv("ML_ENGINE_API_KEY", "")
+
+
+@app.middleware("http")
+async def authenticate_ml_engine(request: Request, call_next):
+    if request.url.path == "/health":
+        return await call_next(request)
+    if ML_API_KEY:
+        api_key = request.headers.get("X-API-Key", "")
+        if api_key != ML_API_KEY:
+            return Response(status_code=401, content='{"detail":"Unauthorized"}', media_type="application/json")
+    return await call_next(request)
 
 controller = HybridAdaptiveController()
 sig_manager = SignatureManager()
@@ -1218,7 +1262,7 @@ async def execute_e2e_unlearning(request: E2EDeletionRequest):
         regulatory=request.regulatory,
         priority=request.priority,
     )
-    result = await pipeline.execute(deletion_request)
+    result = await pipeline.execute_full_pipeline(deletion_request)
     return result
 
 
@@ -1767,12 +1811,6 @@ async def queue_stats():
     return scheduler.get_queue_stats()
 
 
-@app.get("/train/checkpoints")
-async def list_checkpoints(limit: int = 20):
-    scheduler = get_gpu_scheduler()
-    return scheduler.list_jobs(status_filter=None, limit=limit)
-
-
 @app.post("/train/checkpoints/export")
 async def export_checkpoint(request: dict):
     checkpoint_id = request.get("checkpoint_id", "")
@@ -1791,63 +1829,7 @@ async def export_checkpoint(request: dict):
 
 
 # ──────────────────────────────────────────────────────────────
-# New Endpoints: Continual Learning - Extended
-# ──────────────────────────────────────────────────────────────
-
-
-@app.post("/continual/drift/check")
-async def check_drift(request: dict):
-    cl = get_continual_learning()
-    result = cl.detect_drift(
-        metric_name=request.get("metric_name", "confidence"),
-        value=request.get("value", 0.0),
-    )
-    return result
-
-
-@app.post("/continual/ewc/estimate")
-async def estimate_ewc(request: dict):
-    cl = get_continual_learning()
-    import numpy as np
-    num_samples = request.get("num_samples", 200)
-    X = np.random.randn(num_samples, 10).astype(np.float32)
-    y = np.random.randint(0, 2, size=num_samples).tolist()
-    result = cl.estimate_ewc(
-        task_id=request.get("task_id", "default"),
-        dataset=(X, y),
-        num_samples=num_samples,
-    )
-    return result
-
-
-@app.post("/continual/tasks")
-async def add_task(request: dict):
-    cl = get_continual_learning()
-    task = cl.add_task(
-        task_id=request.get("task_id", str(uuid.uuid4())),
-        metadata=request.get("metadata"),
-    )
-    return task
-
-
-@app.get("/continual/tasks")
-async def list_tasks():
-    cl = get_continual_learning()
-    stats = cl.get_stats()
-    return {"tasks": stats.get("tasks", []), "task_count": stats.get("task_count", 0)}
-
-
-@app.get("/continual/tasks/{task_id}")
-async def get_task(task_id: str):
-    cl = get_continual_learning()
-    task = cl.get_task(task_id)
-    if task is None:
-        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
-    return task
-
-
-# ──────────────────────────────────────────────────────────────
-# New Endpoints: Benchmark Results & Export
+# Endpoints: Benchmark Results & Export
 # ──────────────────────────────────────────────────────────────
 
 

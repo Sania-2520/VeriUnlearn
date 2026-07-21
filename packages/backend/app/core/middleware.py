@@ -137,8 +137,8 @@ class RateLimitAuditMiddleware(BaseHTTPMiddleware):
                     user_agent=request.headers.get("user-agent"),
                     request_id=getattr(request.state, "request_id", None),
                 )
-        except Exception:
-            logger.warning("Failed to record rate limit audit event", exc_info=True)
+        except Exception as e:
+            logger.warning("Failed to record rate limit audit event: %s", e, exc_info=True)
 
 
 def setup_middleware(app: FastAPI) -> None:

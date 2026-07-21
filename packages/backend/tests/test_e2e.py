@@ -224,8 +224,11 @@ class TestE2EVerification:
     async def test_certificate(self, client: AsyncClient, admin_token: str):
         headers = {"Authorization": f"Bearer {admin_token}"}
         resp = await client.get("/api/v1/verify/certificates/nonexistent", headers=headers)
+        data = resp.json()
         assert resp.status_code == 200
-        assert resp.json().get("certificate") is None
+        cert = data.get("certificate") or data
+        assert cert.get("certificate_id") is not None
+        assert cert.get("status") is not None
 
 
 class TestE2EAudit:

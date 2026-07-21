@@ -1,4 +1,5 @@
 import json
+import time
 from typing import Any, Optional
 from datetime import timedelta
 
@@ -10,22 +11,30 @@ from app.core.config import settings
 class InMemoryRedis:
     def __init__(self):
         self._store = {}
+        self._expiry = {}
 
     async def ping(self):
         return True
 
     async def get(self, key):
+        if key in self._expiry and time.time() > self._expiry[key]:
+            self._store.pop(key, None)
+            self._expiry.pop(key, None)
+            return None
         return self._store.get(key)
 
     async def set(self, key, value):
         self._store[key] = value
+        self._expiry.pop(key, None)
 
     async def setex(self, key, ttl, value):
         self._store[key] = value
+        self._expiry[key] = time.time() + ttl
 
     async def delete(self, *keys):
         for key in keys:
             self._store.pop(key, None)
+            self._expiry.pop(key, None)
 
     async def scan(self, cursor=0, match=None, count=None):
         keys = list(self._store.keys())
@@ -39,7 +48,10 @@ class InMemoryRedis:
         return 1 if key in self._store else 0
 
     async def ttl(self, key):
-        return 3600
+        if key in self._expiry:
+            remaining = int(self._expiry[key] - time.time())
+            return max(remaining, 0)
+        return -1 if key not in self._store else 3600
 
     async def incr(self, key):
         val = int(self._store.get(key, 0)) + 1
@@ -47,21 +59,30 @@ class InMemoryRedis:
         return val
 
     async def expire(self, key, ttl):
-        pass
+        if key in self._store:
+            self._expiry[key] = time.time() + ttl
 
     async def publish(self, channel, message):
-        pass
+        from app.core.logging import get_logger
+        get_logger(__name__).warning(
+            f"InMemoryRedis.publish({channel}, ...) is a no-op — pub/sub requires a real Redis instance"
+        )
 
     def pubsub(self):
         class PubSub:
             async def subscribe(self, channel):
-                pass
+                from app.core.logging import get_logger
+                get_logger(__name__).warning(
+                    f"InMemoryRedis.subscribe({channel}) is a no-op — pub/sub requires a real Redis instance"
+                )
             async def close(self):
-                pass
+                from app.core.logging import get_logger
+                get_logger(__name__).warning("InMemoryRedis PubSub.close() is a no-op")
         return PubSub()
 
     async def close(self):
         self._store.clear()
+        self._expiry.clear()
 
 
 class CacheManager:

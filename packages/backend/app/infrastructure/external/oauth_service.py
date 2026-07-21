@@ -1,3 +1,4 @@
+import secrets
 from typing import Any, Optional
 
 import httpx
@@ -24,7 +25,7 @@ class OAuthService:
                 f"response_type=code&"
                 f"scope=openid%20email%20profile&"
                 f"access_type=offline&"
-                f"state={__import__('secrets').token_urlsafe(32)}"
+                f"state={secrets.token_urlsafe(32)}"
             )
         elif provider == OAuthProvider.GITHUB:
             return (
@@ -32,7 +33,7 @@ class OAuthService:
                 f"client_id={settings.github_client_id}&"
                 f"redirect_uri={settings.github_redirect_uri}&"
                 f"scope=read:user%20user:email&"
-                f"state={__import__('secrets').token_urlsafe(32)}"
+                f"state={secrets.token_urlsafe(32)}"
             )
         raise ValueError(f"Unsupported OAuth provider: {provider}")
 
@@ -58,7 +59,7 @@ class OAuthService:
 
     @staticmethod
     async def _exchange_google(code: str) -> dict[str, Any]:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.post(
                 "https://oauth2.googleapis.com/token",
                 data={
@@ -74,7 +75,7 @@ class OAuthService:
 
     @staticmethod
     async def _exchange_github(code: str) -> dict[str, Any]:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.post(
                 "https://github.com/login/oauth/access_token",
                 headers={"Accept": "application/json"},
@@ -90,7 +91,7 @@ class OAuthService:
 
     @staticmethod
     async def _get_google_user(access_token: str) -> dict[str, Any]:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.get(
                 "https://www.googleapis.com/oauth2/v2/userinfo",
                 headers={"Authorization": f"Bearer {access_token}"},
@@ -108,7 +109,7 @@ class OAuthService:
 
     @staticmethod
     async def _get_github_user(access_token: str) -> dict[str, Any]:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.get(
                 "https://api.github.com/user",
                 headers={

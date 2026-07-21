@@ -1,3 +1,4 @@
+import asyncio
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -83,12 +84,14 @@ class EmailService:
             msg["Subject"] = subject
             msg.attach(MIMEText(body, "html"))
 
-            with smtplib.SMTP(self._host, self._port) as server:
-                server.starttls()
-                if self._user and self._password:
-                    server.login(self._user, self._password)
-                server.send_message(msg)
+            def _sync_send() -> None:
+                with smtplib.SMTP(self._host, self._port, timeout=10) as server:
+                    server.starttls()
+                    if self._user and self._password:
+                        server.login(self._user, self._password)
+                    server.send_message(msg)
 
+            await asyncio.to_thread(_sync_send)
             logger.info("Email sent to %s: %s", to_email, subject)
             return True
         except Exception as e:

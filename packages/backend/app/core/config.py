@@ -69,7 +69,7 @@ class Settings(BaseSettings):
 
     # ─── JWT ──────────────────────────────────────────────
     jwt_secret_key: str = Field(default="change-me-jwt-secret", min_length=32)
-    jwt_algorithm: str = "RS256"
+    jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 15
     jwt_refresh_token_expire_days: int = 7
     jwt_issuer: str = "veriunlearn"
@@ -248,9 +248,9 @@ class Settings(BaseSettings):
     @field_validator("secret_key", "jwt_secret_key")
     @classmethod
     def validate_secret_keys(cls, v: str) -> str:
-        if len(v) < 32 and v in ("change-me", "change-me-to-a-random-256-bit-key", "change-me-jwt-secret"):
+        if len(v) < 32:
             raise ValueError(
-                "Secret keys must be at least 32 characters and not use placeholder values"
+                f"Secret keys must be at least 32 characters (got {len(v)})"
             )
         return v
 

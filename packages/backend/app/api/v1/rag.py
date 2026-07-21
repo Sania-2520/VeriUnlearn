@@ -24,6 +24,21 @@ class SearchRequest(BaseModel):
     hybrid: bool = True
 
 
+ALLOWED_MIME_TYPES = {
+    "application/pdf",
+    "text/plain",
+    "text/csv",
+    "application/json",
+    "text/html",
+    "text/markdown",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+}
+
+
 @router.post("/documents/upload", status_code=status.HTTP_202_ACCEPTED)
 async def upload_document(
     current_user: CurrentUser,
@@ -33,9 +48,25 @@ async def upload_document(
 ):
     import json as _json
     import os
+    from app.core.config import settings
+
+    if file.content_type and file.content_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported file type: {file.content_type}",
+        )
+
     doc_id = str(uuid4())
     now = datetime.now(timezone.utc)
     file_content = await file.read()
+
+    max_size = settings.max_upload_size_bytes
+    if len(file_content) > max_size:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File too large ({len(file_content)} bytes). Maximum allowed: {max_size} bytes",
+        )
+
     try:
         text = file_content.decode("utf-8")
     except UnicodeDecodeError:

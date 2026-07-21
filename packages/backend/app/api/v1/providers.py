@@ -1,14 +1,18 @@
+import os
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
 
+from cryptography.fernet import Fernet
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select, desc, update as sa_update
 
 from app.api.deps import CurrentUser, DatabaseSession, default_rate_limiter, require_permission
+from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.rbac import Permission
+from app.core.secrets_manager import secrets_manager
 from app.infrastructure.database.models import AIProviderModel
 from app.infrastructure.external.ml_engine import ml_engine_client, MLEngineClientError
 
@@ -62,7 +66,7 @@ async def create_provider(
         tenant_id=current_user["tenant_id"],
         name=request.name,
         provider_type=request.provider_type,
-        api_key_encrypted=request.api_key,
+        api_key_encrypted=secrets_manager.encrypt_api_key(request.api_key),
         models=request.models,
         config=request.config,
         created_by=current_user["user_id"],
@@ -103,7 +107,7 @@ async def test_provider(
         test_result = await ml_engine_client.test_provider(
             provider_type=provider.provider_type,
             config=provider.config or {},
-            api_key=provider.api_key_encrypted,
+            api_key=secrets_manager.decrypt_api_key(provider.api_key_encrypted),
         )
         provider.last_tested_at = datetime.now(timezone.utc)
         await session.commit()

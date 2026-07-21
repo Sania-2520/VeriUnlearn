@@ -7,6 +7,9 @@ from fastapi import HTTPException, Request, status
 
 from app.core.cache import cache
 from app.core.config import settings
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -55,15 +58,19 @@ class SlidingWindowRateLimiter:
             results = await pipe.execute()
 
             current = results[1]  # ZCARD result
-        except Exception:
-            current = 0
+        except Exception as e:
+            logger.error("Redis rate limiter pipeline failed: %s", e)
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Rate limiter temporarily unavailable",
+            )
 
         allowed = current < self.max_requests
         if not allowed:
             try:
                 await cache.redis.zrem(key, f"{uuid.uuid4()}")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error("Redis rate limiter cleanup failed: %s", e)
 
         return RateLimitResult(
             allowed=allowed,

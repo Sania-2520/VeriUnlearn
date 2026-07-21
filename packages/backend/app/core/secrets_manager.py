@@ -1,6 +1,9 @@
+import base64
 import os
+import hashlib
 from typing import Any, Optional
 
+from cryptography.fernet import Fernet
 from app.core.config import settings
 from app.core.logging import get_logger
 
@@ -40,8 +43,8 @@ class SecretsManager:
                 )
                 data = secret.get("data", {}).get("data", {})
                 return data.get(key, os.getenv(key, default))
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error("Failed to read secret '%s' from Vault: %s", key, e)
         return os.getenv(key, default)
 
     def get_database_url(self) -> str:
@@ -66,6 +69,28 @@ class SecretsManager:
         if env_key:
             return self.get_secret(env_key)
         return None
+
+
+    def encrypt_api_key(self, plaintext: Optional[str]) -> Optional[str]:
+        if not plaintext:
+            return None
+        try:
+            key = base64.urlsafe_b64encode(hashlib.sha256(settings.secret_key.encode()).digest())
+            f = Fernet(key)
+            return f.encrypt(plaintext.encode()).decode()
+        except Exception as e:
+            logger.error("Failed to encrypt API key: %s", str(e))
+            return plaintext
+
+    def decrypt_api_key(self, ciphertext: Optional[str]) -> Optional[str]:
+        if not ciphertext:
+            return None
+        try:
+            key = base64.urlsafe_b64encode(hashlib.sha256(settings.secret_key.encode()).digest())
+            f = Fernet(key)
+            return f.decrypt(ciphertext.encode()).decode()
+        except Exception:
+            return ciphertext
 
 
 secrets_manager = SecretsManager()

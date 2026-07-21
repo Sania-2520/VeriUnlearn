@@ -16,6 +16,7 @@ from app.core.rate_limiter import make_rate_limiter, parse_rate_limit
 from app.core.config import settings
 from app.domain.unlearning.entities import TargetType, UnlearningPriority, UnlearningAlgorithm
 from app.infrastructure.external.ml_engine import ml_engine_client, MLEngineClientError
+from app.workers.unlearning_tasks import dispatch_unlearning_workflow
 
 logger = get_logger(__name__)
 
@@ -64,28 +65,13 @@ async def create_unlearning_request(
         algorithm=algorithm_enum,
     )
 
-    regulatory = "gdpr"
-    if gdpr_article:
-        regulatory = gdpr_article.lower().replace(" ", "_")
-
-    try:
-        ml_result = await ml_engine_client.execute_e2e_unlearning(
-            tenant_id=tenant_id,
-            user_id=current_user["user_id"],
-            target_data_ids=[target_id],
-            model_name=settings.ml_default_llm,
-            reason=reason or "",
-            regulatory=regulatory,
-            priority=priority,
-        )
-        logger.info("ML engine E2E unlearning triggered for request %s: %s", result.id, ml_result)
-    except MLEngineClientError as e:
-        logger.warning("ML engine E2E unlearning call failed for request %s: %s", result.id, str(e))
+    workflow = dispatch_unlearning_workflow(request_id=str(result.id))
 
     return {
         "request_id": result.id,
         "status": result.status.value,
         "job_id": job.id if job else None,
+        "workflow": workflow.get("workflow"),
     }
 
 

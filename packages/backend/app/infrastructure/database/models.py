@@ -24,14 +24,14 @@ class TenantApiKeyModel(Base):
     __tablename__ = "tenant_api_keys"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(255), nullable=False)
     key_hash = Column(String(255), nullable=False)
-    key_prefix = Column(String(8), nullable=False)
+    key_prefix = Column(String(8), nullable=False, index=True)
     scopes = Column(JSON, nullable=False, default=list)
     expires_at = Column(DateTime(timezone=True))
     is_active = Column(Boolean, nullable=False, default=True)
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     last_used_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
@@ -93,6 +93,8 @@ class UserModel(Base):
     __table_args__ = (
         UniqueConstraint("tenant_id", "email", name="uq_tenant_email"),
         Index("idx_users_tenant", "tenant_id"),
+        Index("idx_users_role", "role"),
+        Index("idx_users_active", "is_active"),
     )
 
 
@@ -116,6 +118,7 @@ class SessionModel(Base):
     __table_args__ = (
         Index("idx_sessions_user", "user_id"),
         Index("idx_sessions_refresh", "refresh_token_hash"),
+        Index("idx_sessions_revoked", "is_revoked"),
     )
 
 
@@ -443,6 +446,7 @@ class ChatMessageModel(Base):
 
     __table_args__ = (
         Index("idx_chat_messages_session", "session_id", "created_at"),
+        Index("idx_chat_messages_parent", "parent_id"),
     )
 
 
@@ -452,7 +456,7 @@ class MemoryEntryModel(Base):
     id = Column(String(36), primary_key=True)
     tenant_id = Column(String(36), nullable=False, index=True)
     user_id = Column(String(36), nullable=True, index=True)
-    session_id = Column(String(36), nullable=True)
+    session_id = Column(String(36), nullable=True, index=True)
     memory_type = Column(String(20), nullable=False, default="persistent")
     category = Column(String(50), nullable=True)
     content = Column(JSON, nullable=False, default=dict)

@@ -18,28 +18,36 @@ def anchor_all_chains(self) -> dict:
         )
         from app.domain.audit.services import AuditService
 
-        repo = SQLAlchemyAuditEventRepository.__new__(SQLAlchemyAuditEventRepository)
-        repo._session = session
-
+        repo = SQLAlchemyAuditEventRepository(session=session)
         audit_svc = AuditService(repo=repo)
 
         import asyncio
 
-        tenant_ids = asyncio.run(repo.get_all_tenant_ids())
-        if not tenant_ids:
+        async def _run():
+            tenant_ids = await repo.get_all_tenant_ids()
+            if not tenant_ids:
+                return None
+            results = []
+            for tid in tenant_ids:
+                result = await audit_svc.anchor_chain(tid)
+                results.append((tid, result))
+            return results
+
+        try:
+            results = asyncio.run(_run())
+        except Exception:
+            logger.exception("Failed to run audit anchoring")
+            return {"status": "completed", "anchored": 0, "failed": 0}
+
+        if results is None:
             logger.info("No tenants found to anchor")
             return {"status": "completed", "anchored": 0, "failed": 0}
 
-        for tid in tenant_ids:
-            try:
-                result = asyncio.run(audit_svc.anchor_chain(tid))
-                if result.get("anchored"):
-                    anchored += 1
-                    logger.info("Anchored chain for tenant %s: tx=%s", tid[:16], result.get("tx_hash", "")[:16])
-                else:
-                    logger.info("Skipped anchor for tenant %s: %s", tid[:16], result.get("reason", "unknown"))
-            except Exception as e:
-                failed += 1
-                logger.error("Failed to anchor chain for tenant %s: %s", tid[:16], str(e))
+        for tid, result in results:
+            if result.get("anchored"):
+                anchored += 1
+                logger.info("Anchored chain for tenant %s: tx=%s", tid[:16], result.get("tx_hash", "")[:16])
+            else:
+                logger.info("Skipped anchor for tenant %s: %s", tid[:16], result.get("reason", "unknown"))
 
     return {"status": "completed", "anchored": anchored, "failed": failed}

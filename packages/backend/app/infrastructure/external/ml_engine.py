@@ -375,6 +375,87 @@ class MLEngineClient:
                 logger.error("ML Engine RAG search request failed: %s", str(e))
                 raise MLEngineClientError(f"ML Engine request failed: {e}")
 
+    async def process_document(
+        self,
+        document_id: str,
+        filename: str,
+        file_type: str,
+        storage_path: str = "",
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "document_id": document_id,
+            "filename": filename,
+            "file_type": file_type,
+            "storage_path": storage_path,
+        }
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            try:
+                resp = await client.post(
+                    f"{self._base_url}/rag/documents/process",
+                    json=payload,
+                    headers=self._headers,
+                )
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine document processing failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine document processing request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
+    async def generate_embeddings(
+        self,
+        document_id: str,
+        chunk_count: int = 0,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "document_id": document_id,
+            "chunk_count": chunk_count,
+        }
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            try:
+                resp = await client.post(
+                    f"{self._base_url}/rag/embeddings/generate",
+                    json=payload,
+                    headers=self._headers,
+                )
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine embedding generation failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine embedding generation request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
+    async def ocr_process(
+        self,
+        document_id: str,
+        storage_path: str,
+        file_type: str,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "document_id": document_id,
+            "storage_path": storage_path,
+            "file_type": file_type,
+        }
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            try:
+                resp = await client.post(
+                    f"{self._base_url}/rag/documents/ocr",
+                    json=payload,
+                    headers=self._headers,
+                )
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine OCR processing failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine OCR processing request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
     async def record_conversation(
         self,
         user_id: str,
