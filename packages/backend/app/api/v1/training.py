@@ -99,6 +99,27 @@ async def run_distillation(
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
 
 
+@router.post("/start", status_code=status.HTTP_201_CREATED)
+async def start_training(
+    request: TrainingJobRequest,
+    current_user: CurrentUser,
+    session: DatabaseSession,
+):
+    """Alias for generic training-job submission used by the dashboard."""
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                f"{ml_engine_client._base_url}/train/submit",
+                json=request.model_dump(),
+                headers=ml_engine_client._headers,
+            )
+            resp.raise_for_status()
+            return resp.json()
+    except Exception as e:
+        logger.error("Start training failed: %s", str(e))
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
+
+
 @router.post("/submit", status_code=status.HTTP_201_CREATED)
 async def submit_training_job(
     request: TrainingJobRequest,

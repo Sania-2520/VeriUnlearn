@@ -1,4 +1,4 @@
-.PHONY: help install dev lint test build run clean
+.PHONY: help install dev lint test build run clean setup teardown healthcheck backup restore demo deploy-prod env-prod
 
 help:
 	@echo "VeriUnlearn Development Commands"
@@ -22,8 +22,8 @@ help:
 	@echo "make clean         - Clean temporary files"
 
 install:
-	pip install -r backend/requirements.txt
-	cd frontend && npm install
+	pip install -r packages/backend/requirements.txt
+	cd packages/frontend && npm install
 
 dev:
 	docker compose up -d postgres redis qdrant minio
@@ -31,33 +31,33 @@ dev:
 	$(MAKE) dev-backend &
 
 dev-backend:
-	cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	cd packages/backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 dev-frontend:
-	cd frontend && npm run dev
+	cd packages/frontend && npm run dev
 
 worker:
-	cd backend && celery -A app.worker.celery_app worker --loglevel=info --concurrency=1
+	cd packages/backend && celery -A app.workers.celery_app worker --loglevel=info --concurrency=1
 
 lint:
-	cd backend && ruff check .
-	cd backend && mypy app
-	cd frontend && npm run lint
+	cd packages/backend && ruff check .
+	cd packages/backend && mypy app
+	cd packages/frontend && npm run lint
 
 test:
-	cd backend && KMP_DUPLICATE_LIB_OK=TRUE pytest -v --cov=app --cov-report=term-missing
+	cd packages/backend && KMP_DUPLICATE_LIB_OK=TRUE pytest -v --cov=app --cov-report=term-missing
 
 test-unit:
-	cd backend && KMP_DUPLICATE_LIB_OK=TRUE pytest -v -m unit
+	cd packages/backend && KMP_DUPLICATE_LIB_OK=TRUE pytest -v -m unit
 
 test-int:
-	cd backend && KMP_DUPLICATE_LIB_OK=TRUE pytest -v -m integration
+	cd packages/backend && KMP_DUPLICATE_LIB_OK=TRUE pytest -v -m integration
 
 db-migrate:
-	cd backend && alembic upgrade head
+	cd packages/backend && alembic upgrade head
 
 db-revision:
-	cd backend && alembic revision --autogenerate -m "$(message)"
+	cd packages/backend && alembic revision --autogenerate -m "$(message)"
 
 build:
 	docker compose build
@@ -80,3 +80,33 @@ clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	rm -rf .pytest_cache .coverage htmlcov coverage.xml
+
+# ─── One-command operations (release / production) ───────────────────────
+setup:
+	./scripts/setup.sh --seed
+
+setup-monitoring:
+	./scripts/setup.sh --seed --with-monitoring
+
+teardown:
+	./scripts/teardown.sh
+
+healthcheck:
+	./scripts/healthcheck.sh
+
+backup:
+	./scripts/backup.sh
+
+restore:
+	./scripts/restore.sh --out ./backups
+
+demo:
+	./scripts/demo.sh
+
+env-prod:
+	cp .env.production.example .env
+	@echo "Created .env from production template. Edit secrets before deploying."
+
+deploy-prod:
+	docker compose --profile monitoring up -d --build
+	./scripts/healthcheck.sh

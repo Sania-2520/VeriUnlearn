@@ -1,28 +1,27 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Badge, statusTone } from "@/components/ui/badge"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import { SkeletonRows } from "@/components/ui/skeleton"
+import { EmptyState, ErrorState } from "@/components/ui/empty-state"
+import { HelpTip } from "@/components/ui/tooltip"
+import { PageHeader } from "@/components/ui/page-header"
 import { clsx } from "clsx"
+import { Search, Trash2, Plus, AlertCircle, ShieldCheck } from "lucide-react"
 import * as unlearningApi from "@/lib/api/unlearning"
 import type { UnlearningRequest } from "@/lib/types/unlearning"
 import { formatDate } from "@/lib/utils"
 
-const statusColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-700",
-  in_progress: "bg-blue-100 text-blue-700",
-  completed: "bg-green-100 text-green-700",
-  failed: "bg-red-100 text-red-700",
-  retrying: "bg-orange-100 text-orange-700",
-}
-
-const priorityColors: Record<string, string> = {
-  low: "bg-gray-100 text-gray-600",
-  medium: "bg-blue-50 text-blue-600",
-  high: "bg-orange-50 text-orange-600",
-  critical: "bg-red-50 text-red-600",
+const PRIORITY_TONE: Record<string, "neutral" | "info" | "warning" | "danger"> = {
+  low: "neutral",
+  medium: "info",
+  high: "warning",
+  critical: "danger",
 }
 
 export default function UnlearningPage() {
@@ -31,7 +30,9 @@ export default function UnlearningPage() {
   const [error, setError] = useState("")
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
   const [statusFilter, setStatusFilter] = useState("")
+  const [query, setQuery] = useState("")
 
   const loadRequests = useCallback(async () => {
     setLoading(true)
@@ -41,6 +42,7 @@ export default function UnlearningPage() {
       if (statusFilter) params.status = statusFilter
       const res = await unlearningApi.listRequests(params as Parameters<typeof unlearningApi.listRequests>[0])
       setRequests(res.data)
+      setTotal(res.meta.total)
       setTotalPages(res.meta.total_pages)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to load requests")
@@ -51,80 +53,120 @@ export default function UnlearningPage() {
 
   useEffect(() => { loadRequests() }, [loadRequests])
 
+  const filtered = useMemo(() => {
+    if (!query.trim()) return requests
+    const q = query.toLowerCase()
+    return requests.filter(
+      (r) =>
+        r.id.toLowerCase().includes(q) ||
+        (r.algorithm ?? "").toLowerCase().includes(q) ||
+        r.status.toLowerCase().includes(q),
+    )
+  }, [requests, query])
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Unlearning Requests</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage data deletion and right-to-be-forgotten requests</p>
-        </div>
-        <Link href="/dashboard/unlearning/new">
-          <Button>New Request</Button>
-        </Link>
-      </div>
+    <div className="space-y-6 p-6">
+      <PageHeader
+        title="Unlearning Requests"
+        description="Manage data deletion and right-to-be-forgotten requests"
+        breadcrumb={[{ label: "Workspace" }, { label: "Unlearning" }]}
+        actions={
+          <Link href="/dashboard/unlearning/new">
+            <Button>
+              <Plus className="h-4 w-4" />
+              New Request
+            </Button>
+          </Link>
+        }
+      />
 
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-3 mb-4">
-            <select
-              value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white"
-            >
-              <option value="">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="in_progress">In Progress</option>
-              <option value="completed">Completed</option>
-              <option value="failed">Failed</option>
-              <option value="retrying">Retrying</option>
-            </select>
+        <CardContent className="pt-5">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by ID, algorithm, or status"
+                leftIcon={<Search className="h-4 w-4" />}
+                className="sm:max-w-xs"
+                aria-label="Search unlearning requests"
+              />
+              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1) }}>
+                <SelectTrigger className="sm:w-48" aria-label="Filter by status">
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All statuses</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                  <SelectItem value="retrying">Retrying</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <HelpTip text="Requests trigger an unlearning job, then cryptographic verification. Filter by lifecycle status to triage faster.">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-default)] text-[var(--text-tertiary)]">
+                <AlertCircle className="h-4 w-4" />
+              </span>
+            </HelpTip>
           </div>
 
-          {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+          {error && <ErrorState title="Couldn't load requests" description={error} onRetry={loadRequests} className="mb-4" />}
 
           {loading ? (
-            <p className="text-sm text-gray-500 py-8 text-center">Loading...</p>
+            <SkeletonRows rows={6} />
           ) : requests.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500 font-medium">No unlearning requests yet</p>
-              <p className="text-sm text-gray-400 mt-1">Create your first deletion request to get started</p>
-              <Link href="/dashboard/unlearning/new">
-                <Button className="mt-4">Create Request</Button>
-              </Link>
-            </div>
+            <EmptyState
+              icon={Trash2}
+              title="No unlearning requests yet"
+              description="Create your first deletion request to start proving verifiable forgetfulness."
+              action="Create Request"
+              actionHref="/dashboard/unlearning/new"
+            />
+          ) : filtered.length === 0 ? (
+            <EmptyState icon={Search} title="No matches" description="No requests match your search or filter." />
           ) : (
-            <div className="space-y-3">
-              {requests.map((req) => (
-                <Link key={req.id} href={`/dashboard/unlearning/${req.id}`}>
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium truncate">
+            <div className="divide-y divide-[var(--border-subtle)]">
+              {filtered.map((req) => (
+                <Link
+                  key={req.id}
+                  href={`/dashboard/unlearning/${req.id}`}
+                  className="group flex items-center justify-between gap-4 px-2 py-3.5 transition-colors hover:bg-[var(--bg-hover)] sm:px-3"
+                >
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">
+                      <Trash2 className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate text-sm font-medium">
                           {req.target_data_ids.length} record{req.target_data_ids.length !== 1 ? "s" : ""}
                         </p>
-                        <span className={clsx("text-xs px-2 py-0.5 rounded-full", statusColors[req.status])}>
-                          {req.status.replace("_", " ")}
-                        </span>
-                        <span className={clsx("text-xs px-2 py-0.5 rounded-full", priorityColors[req.priority])}>
+                        <Badge tone={statusTone(req.status)} dot>
+                          {req.status.replace(/_/g, " ")}
+                        </Badge>
+                        <Badge tone={PRIORITY_TONE[req.priority] ?? "neutral"}>
                           {req.priority}
-                        </span>
+                        </Badge>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="mt-1 truncate text-xs text-[var(--text-secondary)]">
                         {req.algorithm ? `Algorithm: ${req.algorithm}` : "Algorithm: pending"}
                         {" · "}
                         {formatDate(req.created_at)}
                         {req.completed_at && ` · Completed ${formatDate(req.completed_at)}`}
                       </p>
                     </div>
-                    <span className="text-gray-400 ml-4">→</span>
                   </div>
+                  <span className="text-[var(--text-tertiary)] transition-transform group-hover:translate-x-0.5">→</span>
                 </Link>
               ))}
             </div>
           )}
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-6">
+          {!loading && totalPages > 1 && (
+            <div className="mt-6 flex items-center justify-center gap-3">
               <Button
                 variant="outline" size="sm"
                 disabled={page <= 1}
@@ -132,7 +174,7 @@ export default function UnlearningPage() {
               >
                 Previous
               </Button>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-[var(--text-secondary)]">
                 Page {page} of {totalPages}
               </span>
               <Button

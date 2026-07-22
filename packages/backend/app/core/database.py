@@ -8,6 +8,9 @@ from sqlalchemy.orm import DeclarativeBase
 from typing import AsyncGenerator
 
 from app.core.config import settings
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 from sqlalchemy.ext.compiler import compiles
@@ -82,7 +85,8 @@ class DatabaseManager:
             try:
                 yield session
                 await session.commit()
-            except Exception:
+            except Exception as e:
+                logger.warning("Session commit failed, rolling back: %s", e)
                 await session.rollback()
                 raise
             finally:
@@ -94,7 +98,8 @@ class DatabaseManager:
                 await session.begin()
                 yield session
                 await session.commit()
-            except Exception:
+            except Exception as e:
+                logger.warning("Transaction failed, rolling back: %s", e)
                 await session.rollback()
                 raise
             finally:

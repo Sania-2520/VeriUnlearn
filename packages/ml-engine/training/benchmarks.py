@@ -225,6 +225,7 @@ class BenchmarkRunner:
                 return 0.5
             return min(1.0, ret_std / orig_std)
         except Exception:
+            logger.warning("_measure_utility failed: returning 0.5")
             return 0.5
 
     def _measure_membership_inference(self, original: Any, target_ids: set[str], seed: int) -> float:
@@ -242,6 +243,7 @@ class BenchmarkRunner:
             result = attack.attack(None, target_features, member_features, nonmember_features)
             return result.get("overall_accuracy", 0.5)
         except Exception:
+            logger.warning("_measure_membership_inference failed: returning 0.5")
             return 0.5
 
     def _measure_stability(self, original: Any, target_ids: set[str], seed: int) -> float:
@@ -252,6 +254,7 @@ class BenchmarkRunner:
             orig_norm = float(torch.norm(original.features[:n]).item()) if hasattr(original.features, 'norm') else 1.0
             return min(1.0, max(0.0, 1.0 - float(rng.rand() * 0.1)))
         except Exception:
+            logger.warning("_measure_stability failed: returning 0.8")
             return 0.8
 
     def _save_progress(self) -> None:

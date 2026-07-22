@@ -1,20 +1,286 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────────────────────────
+   VeriUnlearn Design Tokens
+   Semantic, theme-aware color system (light + dark).
+   All component classes consume these via the `color-mix`/
+   CSS-variable approach so light & dark stay in sync.
+   ───────────────────────────────────────────────────────────── */
+
 @theme {
-  --color-chatgpt-bg: #212121;
-  --color-chatgpt-sidebar: #171717;
-  --color-chatgpt-hover: #2f2f2f;
-  --color-chatgpt-border: rgba(255, 255, 255, 0.08);
-  --color-chatgpt-text: #ececec;
-  --color-chatgpt-light-bg: #f9f9f9;
-  --color-chatgpt-light-sidebar: #f9f9f9;
-  --color-chatgpt-light-hover: #e3e3e3;
-  --color-chatgpt-light-border: #e3e3e3;
+  /* Brand */
+  --color-brand-50: #ecfdf5;
+  --color-brand-100: #d1fae5;
+  --color-brand-200: #a7f3d0;
+  --color-brand-300: #6ee7b7;
+  --color-brand-400: #34d399;
+  --color-brand-500: #10b981;
+  --color-brand-600: #059669;
+  --color-brand-700: #047857;
+  --color-brand-800: #065f46;
+  --color-brand-900: #064e3b;
+
+  --color-accent-400: #818cf8;
+  --color-accent-500: #6366f1;
+  --color-accent-600: #4f46e5;
+
+  /* Radius scale */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+
+  /* Typography */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, monospace;
+}
+
+/* Light theme (default) */
+:root {
+  --bg-app: #f6f7f9;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #ffffff;
+  --bg-subtle: #f1f3f5;
+  --bg-hover: #f1f3f5;
+  --bg-active: #e9ebef;
+
+  --border-default: #e4e7ec;
+  --border-strong: #d0d5dd;
+  --border-subtle: #eef0f3;
+
+  --text-primary: #101828;
+  --text-secondary: #475467;
+  --text-tertiary: #98a2b3;
+  --text-on-brand: #ffffff;
+
+  --brand: #059669;
+  --brand-strong: #047857;
+  --brand-soft: #ecfdf5;
+  --brand-border: #a7f3d0;
+
+  --accent: #4f46e5;
+  --accent-soft: #eef2ff;
+
+  --success: #12b76a;
+  --success-soft: #ecfdf3;
+  --success-border: #abefc6;
+  --warning: #f79009;
+  --warning-soft: #fffaeb;
+  --warning-border: #fedf89;
+  --danger: #f04438;
+  --danger-soft: #fef3f2;
+  --danger-border: #fecdca;
+  --info: #1570ef;
+  --info-soft: #eff8ff;
+  --info-border: #b2ddff;
+  --purple: #7a5af8;
+  --purple-soft: #f4f3ff;
+  --purple-border: #d6cbf5;
+
+  --ring: #10b981;
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.04);
+  --shadow-md: 0 4px 8px -2px rgba(16, 24, 40, 0.08), 0 2px 4px -2px rgba(16, 24, 40, 0.04);
+  --shadow-lg: 0 12px 24px -6px rgba(16, 24, 40, 0.12), 0 4px 8px -4px rgba(16, 24, 40, 0.06);
+
+  --chart-1: #10b981;
+  --chart-2: #6366f1;
+  --chart-3: #f59e0b;
+  --chart-4: #ec4899;
+  --chart-5: #06b6d4;
+  --chart-6: #8b5cf6;
+}
+
+/* Dark theme */
+.dark {
+  --bg-app: #0c0e12;
+  --bg-surface: #15181e;
+  --bg-surface-elevated: #1b1f27;
+  --bg-subtle: #13161c;
+  --bg-hover: #20252f;
+  --bg-active: #272d39;
+
+  --border-default: #262b35;
+  --border-strong: #343b48;
+  --border-subtle: #1d212a;
+
+  --text-primary: #f3f5f8;
+  --text-secondary: #9aa4b2;
+  --text-tertiary: #6b7280;
+  --text-on-brand: #ffffff;
+
+  --brand: #34d399;
+  --brand-strong: #6ee7b7;
+  --brand-soft: rgba(16, 185, 129, 0.12);
+  --brand-border: rgba(16, 185, 129, 0.35);
+
+  --accent: #818cf8;
+  --accent-soft: rgba(99, 102, 241, 0.14);
+
+  --success: #32d583;
+  --success-soft: rgba(18, 183, 106, 0.14);
+  --success-border: rgba(18, 183, 106, 0.35);
+  --warning: #fdb022;
+  --warning-soft: rgba(247, 144, 9, 0.14);
+  --warning-border: rgba(247, 144, 9, 0.35);
+  --danger: #f97066;
+  --danger-soft: rgba(240, 68, 56, 0.14);
+  --danger-border: rgba(240, 68, 56, 0.35);
+  --info: #53b1fd;
+  --info-soft: rgba(21, 112, 239, 0.14);
+  --info-border: rgba(21, 112, 239, 0.35);
+  --purple: #9a7ef0;
+  --purple-soft: rgba(122, 90, 248, 0.14);
+  --purple-border: rgba(122, 90, 248, 0.35);
+
+  --ring: #34d399;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 16px 32px -8px rgba(0, 0, 0, 0.6);
+
+  --chart-1: #34d399;
+  --chart-2: #818cf8;
+  --chart-3: #fdb022;
+  --chart-4: #f472b6;
+  --chart-5: #22d3ee;
+  --chart-6: #a78bfa;
 }
 
 @layer base {
+  * {
+    border-color: var(--border-default);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    background-color: var(--color-chatgpt-bg);
-    color: var(--color-chatgpt-text);
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  /* Accessible focus ring everywhere */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background-color: var(--brand-soft);
+    color: var(--text-primary);
+  }
+
+  /* Themed scrollbars */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 9999px;
+    border: 2px solid var(--bg-app);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+  }
+
+  h1, h2, h3, h4 {
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Utility helpers consumed by components */
+@layer components {
+  .surface {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    color: var(--text-primary);
+  }
+  .surface-elevated {
+    background-color: var(--bg-surface-elevated);
+    border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-sm);
+    color: var(--text-primary);
+  }
+  .text-secondary {
+    color: var(--text-secondary);
+  }
+  .text-tertiary {
+    color: var(--text-tertiary);
+  }
+  .border-subtle {
+    border-color: var(--border-subtle);
+  }
+
+  /* Shimmer animation for skeletons */
+  @keyframes vu-shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .skeleton-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--text-tertiary) 12%, transparent),
+      transparent
+    );
+    animation: vu-shimmer 1.4s infinite;
+  }
+
+  @keyframes vu-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-fade-up {
+    animation: vu-fade-up 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes vu-scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  .animate-scale-in {
+    animation: vu-scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }

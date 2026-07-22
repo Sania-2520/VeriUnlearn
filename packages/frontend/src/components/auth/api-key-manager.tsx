@@ -64,12 +64,12 @@ export function ApiKeyManager() {
       <Card>
         <CardHeader>
           <h3 className="text-lg font-semibold">API Key Created</h3>
-          <p className="text-sm text-amber-600 font-medium">
+          <p className="text-sm text-[var(--warning)] font-medium">
             Copy this key now — you won&apos;t be able to see it again!
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-[var(--bg-subtle)] rounded-lg p-4">
             <code className="text-sm font-mono break-all select-all">{newKeyResult.raw_key}</code>
           </div>
           <Button onClick={() => setNewKeyResult(null)}>Done</Button>
@@ -84,7 +84,7 @@ export function ApiKeyManager() {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold">API Keys</h3>
-            <p className="text-sm text-gray-500">Manage API keys for programmatic access</p>
+            <p className="text-sm text-[var(--text-secondary)]">Manage API keys for programmatic access</p>
           </div>
           <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
             {showCreate ? "Cancel" : "Create Key"}
@@ -92,7 +92,7 @@ export function ApiKeyManager() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
 
         {showCreate && (
           <form onSubmit={handleCreate} className="flex gap-2 items-end">
@@ -111,22 +111,22 @@ export function ApiKeyManager() {
         )}
 
         {loading ? (
-          <p className="text-sm text-gray-500">Loading...</p>
+          <p className="text-sm text-[var(--text-secondary)]">Loading...</p>
         ) : keys.length === 0 ? (
-          <p className="text-sm text-gray-500">No API keys yet</p>
+          <p className="text-sm text-[var(--text-secondary)]">No API keys yet</p>
         ) : (
           <div className="space-y-2">
             {keys.map((key) => (
-              <div key={key.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div key={key.id} className="flex items-center justify-between p-3 bg-[var(--bg-subtle)] rounded-lg">
                 <div>
                   <p className="text-sm font-medium">{key.name}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-[var(--text-secondary)]">
                     {key.key_prefix}... | Created {formatDate(key.created_at)}
                     {key.last_used_at && ` | Last used ${formatDate(key.last_used_at)}`}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${key.is_active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${key.is_active ? "bg-[var(--success-soft)] text-[var(--success)]" : "bg-[var(--danger-soft)] text-[var(--danger)]"}`}>
                     {key.is_active ? "Active" : "Revoked"}
                   </span>
                   {key.is_active && (

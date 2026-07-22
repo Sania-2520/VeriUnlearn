@@ -537,7 +537,7 @@ class LoRATrainer:
                                         step=global_step,
                                     )
                                 except Exception:
-                                    pass
+                                    logger.warning("Failed to log training metrics to MLflow", exc_info=True)
 
                         if (
                             self.config.eval_steps > 0
@@ -556,7 +556,7 @@ class LoRATrainer:
                                         step=global_step,
                                     )
                                 except Exception:
-                                    pass
+                                    logger.warning("Failed to log eval metrics to MLflow", exc_info=True)
 
                             is_best = eval_result["eval_loss"] < self._best_eval_loss
                             if is_best:
@@ -612,7 +612,7 @@ class LoRATrainer:
                     )
                     mlflow.log_artifact(final_ckpt.adapter_path)
                 except Exception:
-                    pass
+                    logger.warning("Failed to log final metrics/artifact to MLflow", exc_info=True)
 
             logger.info(
                 "Training complete — %d steps, final eval_loss=%.4f, perplexity=%.4f",
@@ -626,7 +626,7 @@ class LoRATrainer:
                 try:
                     mlflow.end_run()
                 except Exception:
-                    pass
+                    logger.warning("Failed to end MLflow run", exc_info=True)
 
         return self.training_history
 
@@ -892,7 +892,7 @@ class LoRATrainer:
                         "bias": task_config.bias,
                     }
             except Exception:
-                pass
+                logger.debug("Failed to read peft_config from model", exc_info=True)
 
         return info
 

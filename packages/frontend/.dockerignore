@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.gitignore
+.env*
+*.md
+Makefile
+Dockerfile*
+docker-compose*
+.vscode/
+.idea/
+coverage
+dist/
+build/

@@ -1,6 +1,7 @@
 import json
 import os
 import tempfile
+from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -172,26 +173,30 @@ class TestEmbeddingService:
         assert service._model is None
 
     def test_load_model_fallback(self):
-        service = EmbeddingService()
-        service._load_model()
-        assert service._dimension > 0
+        with patch("training.rag_pipeline.ST_AVAILABLE", False):
+            service = EmbeddingService()
+            service._load_model()
+            assert service._dimension > 0
 
     def test_embed_texts(self):
-        service = EmbeddingService()
-        embeddings = service.embed_texts(["hello", "world"], batch_size=2)
-        assert len(embeddings) == 2
-        assert len(embeddings[0]) == service._dimension
+        with patch("training.rag_pipeline.ST_AVAILABLE", False):
+            service = EmbeddingService()
+            embeddings = service.embed_texts(["hello", "world"], batch_size=2)
+            assert len(embeddings) == 2
+            assert len(embeddings[0]) == service._dimension
 
     def test_embed_query(self):
-        service = EmbeddingService()
-        emb = service.embed_query("test query")
-        assert isinstance(emb, list)
-        assert len(emb) == service._dimension
+        with patch("training.rag_pipeline.ST_AVAILABLE", False):
+            service = EmbeddingService()
+            emb = service.embed_query("test query")
+            assert isinstance(emb, list)
+            assert len(emb) == service._dimension
 
     def test_get_dimension(self):
-        service = EmbeddingService()
-        dim = service.get_dimension()
-        assert dim > 0
+        with patch("training.rag_pipeline.ST_AVAILABLE", False):
+            service = EmbeddingService()
+            dim = service.get_dimension()
+            assert dim > 0
 
     def test_compute_similarity_identical(self):
         vec = [1.0, 0.0, 0.0]
@@ -304,7 +309,8 @@ class TestRAGPipeline:
             qdrant_url="http://nonexistent:6333",
             min_score=0.0,
         )
-        return RAGPipeline(config)
+        with patch("training.rag_pipeline.ST_AVAILABLE", False):
+            yield RAGPipeline(config)
 
     def test_ingest_text(self, pipeline):
         doc = pipeline.ingest_text("This is test content about machine learning", "test")

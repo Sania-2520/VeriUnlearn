@@ -1,0 +1,19 @@
+{
+  "certificate_id": "VUC-275A2BEE63D34C06",
+  "content": {
+    "algorithm_used": "multi_algorithm",
+    "certificate_id": "VUC-275A2BEE63D34C06",
+    "dataset_hash": null,
+    "merkle_root": null,
+    "model_after_hash": null,
+    "model_before_hash": null,
+    "overall_status": "failed",
+    "request_id": 1,
+    "timestamp": "2026-07-16T15:52:46.846148+00:00",
+    "trust_score": 63.2,
+    "verification_job_id": 1
+  },
+  "signature": "8huUl++XApwb+n1jDGlTybDjNPG0xX0VcEEgZ3Y4Sy5g00/MpoCNhFjHZ2lSIgKCdpKO0H1LiTD7SmEh1IErDg==",
+  "integrity_hash": "83ff963bc6f4f81ac708786ef6eee0e996bc15eace7c8691bd2f7e75bc7d6047",
+  "public_key": "364fb3eee84e8a3b772051a3b616e3aae468c57fb378a0553588ff588b263503"
+}

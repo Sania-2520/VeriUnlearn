@@ -10,9 +10,15 @@ from unlearning.e2e_pipeline import (
     PipelineStep,
 )
 
+pytestmark = pytest.mark.slow
+
 
 def _run_async(coro):
-    return asyncio.get_event_loop().run_until_complete(coro)
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
 
 
 class TestDeletionRequest:
@@ -118,7 +124,7 @@ class TestE2EUnlearningPipeline:
             model_name="test-model",
         )
         result = _run_async(pipeline.execute_full_pipeline(request))
-        assert result["status"] == "completed"
+        assert result["request"]["status"] == "completed"
         assert "certificate" in result
         assert "steps" in result
         assert len(result["steps"]) == 12

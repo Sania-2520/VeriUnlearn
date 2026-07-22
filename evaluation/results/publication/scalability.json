@@ -1,0 +1,142 @@
+[
+  {
+    "algorithm": "sisa",
+    "dataset_size": 500,
+    "latency_ms": 264.9
+  },
+  {
+    "algorithm": "sisa",
+    "dataset_size": 1000,
+    "latency_ms": 414.6
+  },
+  {
+    "algorithm": "sisa",
+    "dataset_size": 2000,
+    "latency_ms": 593.8
+  },
+  {
+    "algorithm": "sisa",
+    "dataset_size": 5000,
+    "latency_ms": 1247.8
+  },
+  {
+    "algorithm": "sisa",
+    "dataset_size": 10000,
+    "latency_ms": 2172.6
+  },
+  {
+    "algorithm": "sisa",
+    "dataset_size": 20000,
+    "latency_ms": 3649.5
+  },
+  {
+    "algorithm": "sisa",
+    "dataset_size": 50000,
+    "latency_ms": 6440.8
+  },
+  {
+    "algorithm": "influence",
+    "dataset_size": 500,
+    "latency_ms": 112.4
+  },
+  {
+    "algorithm": "influence",
+    "dataset_size": 1000,
+    "latency_ms": 146.8
+  },
+  {
+    "algorithm": "influence",
+    "dataset_size": 2000,
+    "latency_ms": 212.0
+  },
+  {
+    "algorithm": "influence",
+    "dataset_size": 5000,
+    "latency_ms": 350.8
+  },
+  {
+    "algorithm": "influence",
+    "dataset_size": 10000,
+    "latency_ms": 507.4
+  },
+  {
+    "algorithm": "influence",
+    "dataset_size": 20000,
+    "latency_ms": 720.3
+  },
+  {
+    "algorithm": "influence",
+    "dataset_size": 50000,
+    "latency_ms": 1080.3
+  },
+  {
+    "algorithm": "certified",
+    "dataset_size": 500,
+    "latency_ms": 85.0
+  },
+  {
+    "algorithm": "certified",
+    "dataset_size": 1000,
+    "latency_ms": 106.7
+  },
+  {
+    "algorithm": "certified",
+    "dataset_size": 2000,
+    "latency_ms": 128.8
+  },
+  {
+    "algorithm": "certified",
+    "dataset_size": 5000,
+    "latency_ms": 185.8
+  },
+  {
+    "algorithm": "certified",
+    "dataset_size": 10000,
+    "latency_ms": 196.0
+  },
+  {
+    "algorithm": "certified",
+    "dataset_size": 20000,
+    "latency_ms": 268.3
+  },
+  {
+    "algorithm": "certified",
+    "dataset_size": 50000,
+    "latency_ms": 367.2
+  },
+  {
+    "algorithm": "hybrid",
+    "dataset_size": 500,
+    "latency_ms": 113.5
+  },
+  {
+    "algorithm": "hybrid",
+    "dataset_size": 1000,
+    "latency_ms": 160.5
+  },
+  {
+    "algorithm": "hybrid",
+    "dataset_size": 2000,
+    "latency_ms": 254.5
+  },
+  {
+    "algorithm": "hybrid",
+    "dataset_size": 5000,
+    "latency_ms": 411.6
+  },
+  {
+    "algorithm": "hybrid",
+    "dataset_size": 10000,
+    "latency_ms": 612.9
+  },
+  {
+    "algorithm": "hybrid",
+    "dataset_size": 20000,
+    "latency_ms": 932.4
+  },
+  {
+    "algorithm": "hybrid",
+    "dataset_size": 50000,
+    "latency_ms": 1799.7
+  }
+]

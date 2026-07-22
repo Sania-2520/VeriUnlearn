@@ -1,9 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/lib/store/auth-store"
 import * as authApi from "@/lib/api/auth"
@@ -12,8 +10,6 @@ import {
   Send,
   Plus,
   Trash2,
-  FileText,
-  Key,
   ShieldCheck,
   Zap,
   Globe,
@@ -55,19 +51,19 @@ export default function DashboardPage() {
   useEffect(() => {
     authApi.getAuditEvents({ page_size: 1 }).then((res) => {
       setEventCount(res.meta.total)
-    }).catch(() => {})
+    }).catch((err) => console.error("Failed to fetch audit events:", err))
 
     unlearningApi.listRequests({ page_size: 1 }).then((res) => {
       setRequestCount(res.meta.total)
-    }).catch(() => {})
+    }).catch((err) => console.error("Failed to fetch request count:", err))
 
     unlearningApi.listRequests({ page_size: 1, status: "pending" }).then((res) => {
       setPendingCount(res.meta.total)
-    }).catch(() => {})
+    }).catch((err) => console.error("Failed to fetch pending count:", err))
 
     unlearningApi.listRequests({ page_size: 1, status: "completed" }).then((res) => {
       setCompletedCount(res.meta.total)
-    }).catch(() => {})
+    }).catch((err) => console.error("Failed to fetch completed count:", err))
   }, [])
 
   // Auto scroll to bottom of chat
@@ -77,7 +73,13 @@ export default function DashboardPage() {
     }
   }, [messages, isTyping])
 
-  if (!user) return null
+  if (!user) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-[var(--brand)] border-t-transparent rounded-full" />
+      </div>
+    )
+  }
 
   const handleSendMessage = async (textToSend: string) => {
     if (!textToSend.trim()) return
@@ -179,7 +181,7 @@ Please select one of the suggestions or type a query (e.g., *"How do I verify a 
   }
 
   return (
-    <div className="flex-1 flex flex-col relative h-full bg-[#212121] text-gray-200">
+    <div className="flex-1 flex flex-col relative h-full bg-[var(--bg-app)] text-[var(--text-primary)]">
       
       {/* Scrollable Chat / Workspace Area */}
       <div className="flex-1 overflow-y-auto px-4 py-8 md:px-0">
@@ -189,34 +191,34 @@ Please select one of the suggestions or type a query (e.g., *"How do I verify a 
             // Central Intro Workspace (ChatGPT Style)
             <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-8 animate-in fade-in duration-300">
               <div className="flex flex-col items-center space-y-3">
-                <div className="h-12 w-12 rounded-full bg-emerald-700/80 flex items-center justify-center text-white text-xl font-bold">
+                <div className="h-12 w-12 rounded-full bg-[var(--brand)] flex items-center justify-center text-[var(--text-on-brand)] text-xl font-bold">
                   ⊗
                 </div>
-                <h2 className="text-[26px] font-bold tracking-tight text-white">
+                <h2 className="text-[26px] font-bold tracking-tight text-[var(--text-primary)]">
                   How can I assist with compliance today?
                 </h2>
-                <p className="text-gray-400 text-sm max-w-md">
+                <p className="text-[var(--text-tertiary)] text-sm max-w-md">
                   VeriUnlearn guarantees verifiable machine unlearning and cryptographic compliance proof generation.
                 </p>
               </div>
 
               {/* Quick Status Metrics Strip */}
-              <div className="grid grid-cols-4 gap-2.5 w-full max-w-xl bg-[#171717]/60 border border-[#2f2f2f]/60 p-3.5 rounded-xl text-center text-xs">
+              <div className="grid grid-cols-4 gap-2.5 w-full max-w-xl bg-[var(--bg-surface)]/60 border border-[var(--bg-hover)]/60 p-3.5 rounded-xl text-center text-xs">
                 <div>
-                  <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">Audit Events</p>
-                  <p className="text-base font-bold text-gray-200 mt-0.5">{eventCount}</p>
+                  <p className="text-[10px] text-[var(--text-tertiary)] font-semibold uppercase tracking-wider">Audit Events</p>
+                  <p className="text-base font-bold text-[var(--text-primary)] mt-0.5">{eventCount}</p>
                 </div>
-                <div className="border-l border-[#2f2f2f]/60">
-                  <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">Requests</p>
-                  <p className="text-base font-bold text-gray-200 mt-0.5">{requestCount}</p>
+                <div className="border-l border-[var(--bg-hover)]/60">
+                  <p className="text-[10px] text-[var(--text-tertiary)] font-semibold uppercase tracking-wider">Requests</p>
+                  <p className="text-base font-bold text-[var(--text-primary)] mt-0.5">{requestCount}</p>
                 </div>
-                <div className="border-l border-[#2f2f2f]/60">
-                  <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">Pending</p>
-                  <p className="text-base font-bold text-yellow-500 mt-0.5">{pendingCount}</p>
+                <div className="border-l border-[var(--bg-hover)]/60">
+                  <p className="text-[10px] text-[var(--text-tertiary)] font-semibold uppercase tracking-wider">Pending</p>
+                  <p className="text-base font-bold text-[var(--warning)] mt-0.5">{pendingCount}</p>
                 </div>
-                <div className="border-l border-[#2f2f2f]/60">
-                  <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">Completed</p>
-                  <p className="text-base font-bold text-emerald-500 mt-0.5">{completedCount}</p>
+                <div className="border-l border-[var(--bg-hover)]/60">
+                  <p className="text-[10px] text-[var(--text-tertiary)] font-semibold uppercase tracking-wider">Completed</p>
+                  <p className="text-base font-bold text-[var(--brand)] mt-0.5">{completedCount}</p>
                 </div>
               </div>
 
@@ -226,12 +228,12 @@ Please select one of the suggestions or type a query (e.g., *"How do I verify a 
                   <button
                     key={prompt.title}
                     onClick={() => handleSendMessage(prompt.action)}
-                    className="p-4 bg-[#171717]/30 hover:bg-[#2f2f2f]/40 border border-[#2f2f2f]/60 hover:border-gray-500 rounded-xl text-left transition-all group cursor-pointer"
+                    className="p-4 bg-[var(--bg-surface)]/30 hover:bg-[var(--bg-hover)]/40 border border-[var(--bg-hover)]/60 hover:border-[var(--border-strong)] rounded-xl text-left transition-all group cursor-pointer"
                   >
-                    <p className="text-sm font-semibold text-gray-200 group-hover:text-white transition-colors">
+                    <p className="text-sm font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand)] transition-colors">
                       {prompt.title}
                     </p>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-[var(--text-tertiary)] mt-1">
                       {prompt.subtitle}
                     </p>
                   </button>
@@ -242,14 +244,14 @@ Please select one of the suggestions or type a query (e.g., *"How do I verify a 
             // Active Chat Conversation
             <div className="space-y-6 animate-in fade-in duration-300">
               {/* Header options inside chat */}
-              <div className="flex justify-between items-center border-b border-[#2f2f2f]/50 pb-4 shrink-0">
-                <div className="flex items-center gap-2 text-xs text-gray-400">
-                  <Activity className="h-4 w-4 text-emerald-500" />
+              <div className="flex justify-between items-center border-b border-[var(--bg-hover)]/50 pb-4 shrink-0">
+                <div className="flex items-center gap-2 text-xs text-[var(--text-tertiary)]">
+                  <Activity className="h-4 w-4 text-[var(--brand)]" />
                   <span>Compliance Audit Chat Session</span>
                 </div>
                 <button
                   onClick={handleResetChat}
-                  className="flex items-center gap-1 px-2.5 py-1 text-xs bg-[#2f2f2f] hover:bg-[#2f2f2f]/80 text-gray-200 rounded-lg border border-[#2f2f2f] hover:border-gray-500 transition-all cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1 text-xs bg-[var(--bg-hover)] hover:bg-[var(--bg-hover)]/80 text-[var(--text-primary)] rounded-lg border border-[var(--bg-hover)] hover:border-[var(--border-strong)] transition-all cursor-pointer"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   New Chat
@@ -266,7 +268,7 @@ Please select one of the suggestions or type a query (e.g., *"How do I verify a 
                     }`}
                   >
                     {msg.sender === "assistant" && (
-                      <div className="h-8 w-8 rounded-full bg-emerald-700/80 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                      <div className="h-8 w-8 rounded-full bg-[var(--brand)] flex items-center justify-center text-[var(--text-on-brand)] text-sm font-bold shrink-0">
                         ⊗
                       </div>
                     )}
@@ -274,39 +276,39 @@ Please select one of the suggestions or type a query (e.g., *"How do I verify a 
                     <div
                       className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                         msg.sender === "user"
-                          ? "bg-[#2f2f2f] text-gray-100"
-                          : "text-gray-300"
+                          ? "bg-[var(--bg-hover)] text-[var(--text-primary)]"
+                          : "text-[var(--text-secondary)]"
                       }`}
                     >
                       <div className="whitespace-pre-wrap">{msg.text}</div>
 
                       {/* Display Cryptographic Proof if attached */}
                       {msg.proof && (
-                        <div className="mt-4 p-4 bg-[#171717] border border-[#2f2f2f] rounded-xl font-mono text-[11px] text-gray-300 space-y-2 select-all relative overflow-x-auto">
-                          <div className="flex justify-between items-center text-[10px] text-emerald-400 uppercase tracking-wider font-semibold border-b border-[#2f2f2f] pb-1.5 mb-2.5">
+                        <div className="mt-4 p-4 bg-[var(--bg-surface)] border border-[var(--bg-hover)] rounded-xl font-mono text-[11px] text-[var(--text-secondary)] space-y-2 select-all relative overflow-x-auto">
+                          <div className="flex justify-between items-center text-[10px] text-[var(--brand)] uppercase tracking-wider font-semibold border-b border-[var(--bg-hover)] pb-1.5 mb-2.5">
                             <span className="flex items-center gap-1.5">
                               <ShieldCheck className="h-3.5 w-3.5" />
                               Cryptographic Deletion Proof
                             </span>
-                            <span className="bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-800">
+                            <span className="bg-[var(--brand-soft)] text-[var(--brand-strong)] px-2 py-0.5 rounded-full border border-[var(--brand-border)]">
                               {msg.proof.status}
                             </span>
                           </div>
                           <div>
-                            <span className="text-gray-500">Root Hash:</span> {msg.proof.root}
+                            <span className="text-[var(--text-tertiary)]">Root Hash:</span> {msg.proof.root}
                           </div>
                           <div>
-                            <span className="text-gray-500">Signature:</span> {msg.proof.signature}
+                            <span className="text-[var(--text-tertiary)]">Signature:</span> {msg.proof.signature}
                           </div>
                           <div>
-                            <span className="text-gray-500">Algorithm:</span> {msg.proof.algorithm}
+                            <span className="text-[var(--text-tertiary)]">Algorithm:</span> {msg.proof.algorithm}
                           </div>
                         </div>
                       )}
                     </div>
 
                     {msg.sender === "user" && (
-                      <div className="h-8 w-8 rounded-full bg-blue-700 flex items-center justify-center text-white text-[11px] font-semibold uppercase shrink-0">
+                      <div className="h-8 w-8 rounded-full bg-[var(--accent)] flex items-center justify-center text-[var(--text-on-brand)] text-[11px] font-semibold uppercase shrink-0">
                         {user.full_name.substring(0, 2)}
                       </div>
                     )}
@@ -315,13 +317,13 @@ Please select one of the suggestions or type a query (e.g., *"How do I verify a 
 
                 {isTyping && (
                   <div className="flex items-start gap-4">
-                    <div className="h-8 w-8 rounded-full bg-emerald-700/80 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                    <div className="h-8 w-8 rounded-full bg-[var(--brand)] flex items-center justify-center text-[var(--text-on-brand)] text-sm font-bold shrink-0">
                       ⊗
                     </div>
-                    <div className="bg-transparent text-gray-400 text-sm py-2 px-1 flex items-center gap-1.5">
-                      <div className="h-1.5 w-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                      <div className="h-1.5 w-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                      <div className="h-1.5 w-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                    <div className="bg-transparent text-[var(--text-tertiary)] text-sm py-2 px-1 flex items-center gap-1.5">
+                      <div className="h-1.5 w-1.5 bg-[var(--text-tertiary)] rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                      <div className="h-1.5 w-1.5 bg-[var(--text-tertiary)] rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                      <div className="h-1.5 w-1.5 bg-[var(--text-tertiary)] rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
                     </div>
                   </div>
                 )}
@@ -334,20 +336,20 @@ Please select one of the suggestions or type a query (e.g., *"How do I verify a 
       </div>
 
       {/* Persistent Bottom Chat Input Area */}
-      <div className="absolute bottom-0 left-0 right-0 bg-[#212121] px-4 py-4 md:px-0 shrink-0">
+      <div className="absolute bottom-0 left-0 right-0 bg-[var(--bg-app)] px-4 py-4 md:px-0 shrink-0">
         <div className="max-w-2xl mx-auto space-y-3">
           <form
             onSubmit={(e) => {
               e.preventDefault()
               handleSendMessage(inputMessage)
             }}
-            className="relative bg-[#171717] border border-[#2f2f2f] focus-within:border-gray-500 rounded-2xl p-1.5 pr-3 shadow-xl transition-all"
+            className="relative bg-[var(--bg-surface)] border border-[var(--bg-hover)] focus-within:border-[var(--border-strong)] rounded-2xl p-1.5 pr-3 shadow-xl transition-all"
           >
             <div className="flex items-center">
               {/* Paperclip attachment simulation */}
               <button
                 type="button"
-                className="p-2.5 text-gray-400 hover:text-white rounded-xl hover:bg-[#2f2f2f]/60 transition-colors"
+                className="p-2.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] rounded-xl hover:bg-[var(--bg-hover)]/60 transition-colors"
                 title="Attach logs or metadata"
               >
                 <Paperclip className="h-5 w-5" />
@@ -364,13 +366,13 @@ Please select one of the suggestions or type a query (e.g., *"How do I verify a 
                 }}
                 placeholder="Message VeriUnlearn Assistant (e.g. 'Initiate deletion request' or 'How do I verify proofs?')"
                 rows={1}
-                className="flex-1 bg-transparent text-sm text-white placeholder-gray-500 focus:outline-none resize-none py-2.5 px-3 min-h-[40px] max-h-[200px]"
+                className="flex-1 bg-transparent text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none resize-none py-2.5 px-3 min-h-[40px] max-h-[200px]"
               />
 
               {/* Web search toggle simulation */}
               <button
                 type="button"
-                className="p-2.5 text-gray-400 hover:text-white rounded-xl hover:bg-[#2f2f2f]/60 transition-colors"
+                className="p-2.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] rounded-xl hover:bg-[var(--bg-hover)]/60 transition-colors"
                 title="Search logs history"
               >
                 <Globe className="h-5 w-5" />
@@ -381,8 +383,8 @@ Please select one of the suggestions or type a query (e.g., *"How do I verify a 
                 disabled={!inputMessage.trim()}
                 className={`p-2.5 rounded-xl ml-1 transition-all ${
                   inputMessage.trim()
-                    ? "bg-white text-[#171717] hover:bg-gray-200 cursor-pointer"
-                    : "bg-[#2f2f2f]/50 text-gray-600 cursor-not-allowed"
+                  ? "bg-[var(--text-primary)] text-[var(--bg-surface)] hover:opacity-90 cursor-pointer"
+                  : "bg-[var(--bg-hover)] text-[var(--text-tertiary)] cursor-not-allowed"
                 }`}
               >
                 <Send className="h-4 w-4" />
@@ -392,21 +394,21 @@ Please select one of the suggestions or type a query (e.g., *"How do I verify a 
 
           {/* Security Recommendation Warning if MFA disabled */}
           {!user.mfa_enabled && !chatActive && (
-            <div className="flex items-center justify-between p-3 bg-yellow-950/20 border border-yellow-900/40 rounded-xl text-xs text-yellow-400/90 max-w-xl mx-auto shadow-sm">
+            <div className="flex items-center justify-between p-3 bg-[var(--warning-soft)] border border-[var(--warning-border)] rounded-xl text-xs text-[var(--warning)] max-w-xl mx-auto shadow-sm">
               <span className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0 text-yellow-500" />
+                <AlertCircle className="h-4 w-4 shrink-0 text-[var(--warning)]" />
                 MFA is currently disabled. Enable two-factor authentication to secure your audits.
               </span>
               <button
                 onClick={() => router.push("/auth/mfa/setup")}
-                className="px-2.5 py-1 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-600/40 text-yellow-300 font-medium rounded-lg transition-all shrink-0 cursor-pointer"
+                className="px-2.5 py-1 bg-[var(--warning-soft)] hover:opacity-90 border border-[var(--warning-border)] text-[var(--warning)] font-medium rounded-lg transition-all shrink-0 cursor-pointer"
               >
                 Enable
               </button>
             </div>
           )}
 
-          <p className="text-[11px] text-gray-500 text-center max-w-md mx-auto leading-relaxed">
+          <p className="text-[11px] text-[var(--text-tertiary)] text-center max-w-md mx-auto leading-relaxed">
             VeriUnlearn uses SISA retraining and cryptographic commitments to guarantee deletion. Verification keys are signed via Ed25519.
           </p>
         </div>

@@ -3,9 +3,11 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+# Install dependencies (full install; next is required to build)
 COPY package.json package-lock.json ./
-RUN npm ci --only=production
+RUN npm ci
 
+# Build the application
 COPY . .
 RUN npm run build
 
@@ -14,19 +16,22 @@ FROM node:22-alpine AS runtime
 
 WORKDIR /app
 
+ENV NODE_ENV=production
+
 RUN addgroup -S veriunlearn && adduser -S veriunlearn -G veriunlearn
 
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/next.config.js ./
+# Copy only what is needed to run the production server
+COPY --from=builder --chown=veriunlearn:veriunlearn /app/.next ./.next
+COPY --from=builder --chown=veriunlearn:veriunlearn /app/public ./public
+COPY --from=builder --chown=veriunlearn:veriunlearn /app/package.json ./package.json
+COPY --from=builder --chown=veriunlearn:veriunlearn /app/next.config.js ./
+COPY --from=builder --chown=veriunlearn:veriunlearn /app/node_modules ./node_modules
 
 USER veriunlearn
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3000/api/health', r => {process.exit(r.statusCode === 200 ? 0 : 1)}).on('error', () => process.exit(1))"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD wget -qO- http://localhost:3000 >/dev/null 2>&1 || exit 1
 
 CMD ["npm", "start"]

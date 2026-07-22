@@ -1,151 +1,154 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge, statusTone } from "@/components/ui/badge"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import { SkeletonRows } from "@/components/ui/skeleton"
+import { EmptyState, ErrorState } from "@/components/ui/empty-state"
+import { PageHeader } from "@/components/ui/page-header"
 import { clsx } from "clsx"
+import { ShieldCheck, Search } from "lucide-react"
 import * as authApi from "@/lib/api/auth"
 import type { AuditEvent } from "@/lib/types/auth"
 import { formatDate } from "@/lib/utils"
 
-const eventColors: Record<string, string> = {
-  user_login: "bg-blue-100 text-blue-700",
-  user_logout: "bg-gray-100 text-gray-700",
-  user_registered: "bg-green-100 text-green-700",
-  email_verified: "bg-teal-100 text-teal-700",
-  password_changed: "bg-orange-100 text-orange-700",
-  password_reset: "bg-orange-100 text-orange-700",
-  mfa_enabled: "bg-purple-100 text-purple-700",
-  mfa_disabled: "bg-purple-100 text-purple-700",
-  mfa_verify: "bg-indigo-100 text-indigo-700",
-  api_key_created: "bg-pink-100 text-pink-700",
-  api_key_revoked: "bg-pink-100 text-pink-700",
-  unlearning_created: "bg-cyan-100 text-cyan-700",
-  unlearning_retry: "bg-cyan-100 text-cyan-700",
-  settings_updated: "bg-amber-100 text-amber-700",
-  webhook_created: "bg-sky-100 text-sky-700",
-  webhook_deleted: "bg-sky-100 text-sky-700",
-  permission_denied: "bg-red-100 text-red-700",
+const EVENT_TONE: Record<string, ReturnType<typeof statusTone>> = {
+  user_login: "info",
+  user_logout: "neutral",
+  user_registered: "success",
+  email_verified: "success",
+  password_changed: "warning",
+  password_reset: "warning",
+  mfa_enabled: "purple",
+  mfa_disabled: "purple",
+  mfa_verify: "accent",
+  api_key_created: "purple",
+  api_key_revoked: "danger",
+  unlearning_created: "info",
+  unlearning_retry: "warning",
+  settings_updated: "warning",
+  webhook_created: "info",
+  webhook_deleted: "danger",
+  permission_denied: "danger",
 }
 
-function getEventColor(eventType: string): string {
-  return eventColors[eventType] || "bg-gray-100 text-gray-700"
-}
+const eventTypes = [
+  { value: "", label: "All Types" },
+  { value: "user_login", label: "Login" },
+  { value: "user_logout", label: "Logout" },
+  { value: "user_registered", label: "Registration" },
+  { value: "email_verified", label: "Email Verified" },
+  { value: "password_changed", label: "Password Changed" },
+  { value: "password_reset", label: "Password Reset" },
+  { value: "mfa_enabled", label: "MFA Enabled" },
+  { value: "mfa_disabled", label: "MFA Disabled" },
+  { value: "api_key_created", label: "API Key Created" },
+  { value: "api_key_revoked", label: "API Key Revoked" },
+  { value: "unlearning_created", label: "Unlearning Created" },
+  { value: "unlearning_retry", label: "Unlearning Retry" },
+  { value: "settings_updated", label: "Settings Updated" },
+  { value: "webhook_created", label: "Webhook Created" },
+  { value: "webhook_deleted", label: "Webhook Deleted" },
+  { value: "permission_denied", label: "Permission Denied" },
+]
 
 function EventRow({ event }: { event: AuditEvent }) {
   const [expanded, setExpanded] = useState(false)
-
   return (
-    <div className="border border-gray-200 rounded-lg">
+    <div className="overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] transition-colors hover:border-[var(--border-default)]">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
+        aria-expanded={expanded}
+        className="flex w-full items-center justify-between gap-3 p-4 text-left transition-colors hover:bg-[var(--bg-hover)]"
       >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className={clsx("text-xs px-2 py-0.5 rounded-full font-medium", getEventColor(event.event_type))}>
-              {event.event_type.replace(/_/g, " ")}
-            </span>
-            <span className={clsx(
-              "text-xs px-2 py-0.5 rounded-full",
-              event.status === "success" ? "bg-green-100 text-green-700" :
-              event.status === "denied" ? "bg-red-100 text-red-700" :
-              "bg-gray-100 text-gray-600"
-            )}>
-              {event.status}
-            </span>
-          </div>
-          <p className="text-sm text-gray-900 mt-1">
-            <span className="font-medium">{event.action}</span>
-            {event.resource.type && (
-              <span className="text-gray-500"> on {event.resource.type}{event.resource.id ? `:${event.resource.id.slice(0, 8)}` : ""}</span>
-            )}
-          </p>
-          <div className="flex items-center gap-3 mt-1">
-            <p className="text-xs text-gray-500">{formatDate(event.timestamp || event.event_hash)}</p>
-            {event.ip_address && <p className="text-xs text-gray-400">{event.ip_address}</p>}
-            {event.actor.id && <p className="text-xs text-gray-400">by {event.actor.id.slice(0, 12)}...</p>}
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">
+            <ShieldCheck className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone={EVENT_TONE[event.event_type] ?? "neutral"} dot>
+                {event.event_type.replace(/_/g, " ")}
+              </Badge>
+              <Badge tone={statusTone(event.status)}>{event.status}</Badge>
+            </div>
+            <p className="mt-1 truncate text-sm text-[var(--text-primary)]">
+              <span className="font-medium">{event.action}</span>
+              {event.resource.type && (
+                <span className="text-[var(--text-secondary)]">
+                  {" "}
+                  on {event.resource.type}
+                  {event.resource.id ? `:${event.resource.id.slice(0, 8)}` : ""}
+                </span>
+              )}
+            </p>
           </div>
         </div>
-        <span className={clsx(
-          "text-gray-400 transition-transform ml-4",
-          expanded && "rotate-180"
-        )}>▼</span>
+        <div className="hidden items-center gap-4 text-xs text-[var(--text-tertiary)] sm:flex">
+          <span>{formatDate(event.timestamp || event.event_hash)}</span>
+          {event.ip_address && <span>{event.ip_address}</span>}
+          {event.actor.id && <span>by {event.actor.id.slice(0, 12)}…</span>}
+        </div>
+        <span className={clsx("text-[var(--text-tertiary)] transition-transform", expanded && "rotate-180")}>▼</span>
       </button>
 
       {expanded && (
-        <div className="px-4 pb-4 border-t border-gray-100 pt-3">
+        <div className="border-t border-[var(--border-subtle)] px-4 pb-4 pt-3">
           <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Event ID</p>
-              <p className="font-mono text-xs break-all">{event.id}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Version</p>
-              <p className="text-xs">{event.event_version}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Actor</p>
-              <p className="text-xs">
-                {event.actor.id ? `${event.actor.id.slice(0, 16)}...` : "system"}
-                <span className="text-gray-400"> ({event.actor.type})</span>
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Resource</p>
-              <p className="text-xs">
-                {event.resource.type || "none"}
-                {event.resource.id && <span className="text-gray-400"> / {event.resource.id.slice(0, 12)}...</span>}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Session ID</p>
-              <p className="font-mono text-xs">{event.session_id ? `${event.session_id.slice(0, 16)}...` : "—"}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Request ID</p>
-              <p className="font-mono text-xs">{event.request_id ? `${event.request_id.slice(0, 16)}...` : "—"}</p>
-            </div>
+            <Detail label="Event ID" value={event.id} mono />
+            <Detail label="Version" value={event.event_version} />
+            <Detail label="Actor" value={event.actor.id ? `${event.actor.id.slice(0, 16)}… (${event.actor.type})` : "system"} mono />
+            <Detail label="Resource" value={event.resource.type || "none"} mono />
+            <Detail label="Session ID" value={event.session_id ? `${event.session_id.slice(0, 16)}…` : "—"} mono />
+            <Detail label="Request ID" value={event.request_id ? `${event.request_id.slice(0, 16)}…` : "—"} mono />
           </div>
 
-          {/* Chain Hashes */}
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-            <p className="text-xs font-medium text-gray-700 mb-2">Chain Hash Verification</p>
+          <div className="mt-4 rounded-lg bg-[var(--bg-subtle)] p-3">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)]">Chain Hash Verification</p>
             <div className="space-y-2">
               <div>
-                <p className="text-xs text-gray-500">Previous Hash</p>
-                <p className="font-mono text-xs break-all text-gray-700">
+                <p className="text-xs text-[var(--text-tertiary)]">Previous Hash</p>
+                <p className="break-all font-mono text-xs text-[var(--text-secondary)]">
                   {event.previous_event_hash || "— (genesis event)"}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Event Hash</p>
-                <p className="font-mono text-xs break-all text-blue-700 font-medium">{event.event_hash}</p>
+                <p className="text-xs text-[var(--text-tertiary)]">Event Hash</p>
+                <p className="break-all font-mono text-xs font-medium text-[var(--info)]">{event.event_hash}</p>
               </div>
             </div>
           </div>
 
-          {/* Metadata */}
           {event.metadata && Object.keys(event.metadata).length > 0 && (
-            <div className="mt-3">
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Metadata</p>
-              <pre className="text-xs bg-gray-50 p-3 rounded-lg overflow-x-auto max-h-40">
-                {JSON.stringify(event.metadata, null, 2)}
-              </pre>
-            </div>
+            <Pre title="Metadata" data={event.metadata} />
           )}
-
-          {/* Changes */}
           {event.changes && Object.keys(event.changes).length > 0 && (
-            <div className="mt-3">
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Changes</p>
-              <pre className="text-xs bg-gray-50 p-3 rounded-lg overflow-x-auto max-h-40">
-                {JSON.stringify(event.changes, null, 2)}
-              </pre>
-            </div>
+            <Pre title="Changes" data={event.changes} />
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+function Detail({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div>
+      <p className="mb-1 text-xs uppercase tracking-wider text-[var(--text-tertiary)]">{label}</p>
+      <p className={clsx("text-xs text-[var(--text-secondary)]", mono && "font-mono break-all")}>{value}</p>
+    </div>
+  )
+}
+
+function Pre({ title, data }: { title: string; data: Record<string, unknown> }) {
+  return (
+    <div className="mt-3">
+      <p className="mb-1 text-xs uppercase tracking-wider text-[var(--text-tertiary)]">{title}</p>
+      <pre className="max-h-40 overflow-x-auto rounded-lg bg-[var(--bg-subtle)] p-3 text-xs">
+        {JSON.stringify(data, null, 2)}
+      </pre>
     </div>
   )
 }
@@ -178,63 +181,46 @@ export default function AuditPage() {
 
   useEffect(() => { loadEvents() }, [loadEvents])
 
-  const eventTypes = [
-    { value: "", label: "All Types" },
-    { value: "user_login", label: "Login" },
-    { value: "user_logout", label: "Logout" },
-    { value: "user_registered", label: "Registration" },
-    { value: "email_verified", label: "Email Verified" },
-    { value: "password_changed", label: "Password Changed" },
-    { value: "password_reset", label: "Password Reset" },
-    { value: "mfa_enabled", label: "MFA Enabled" },
-    { value: "mfa_disabled", label: "MFA Disabled" },
-    { value: "api_key_created", label: "API Key Created" },
-    { value: "api_key_revoked", label: "API Key Revoked" },
-    { value: "unlearning_created", label: "Unlearning Created" },
-    { value: "unlearning_retry", label: "Unlearning Retry" },
-    { value: "settings_updated", label: "Settings Updated" },
-    { value: "webhook_created", label: "Webhook Created" },
-    { value: "webhook_deleted", label: "Webhook Deleted" },
-    { value: "permission_denied", label: "Permission Denied" },
-  ]
-
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Audit Log</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Tamper-evident event trail with cryptographic chain verification
-        </p>
-      </div>
+    <div className="space-y-6 p-6">
+      <PageHeader
+        title="Audit Log"
+        description="Tamper-evident event trail with cryptographic chain verification"
+        breadcrumb={[{ label: "Configuration" }, { label: "Audit Log" }]}
+        actions={
+          <Badge tone="success" dot>
+            {total} events
+          </Badge>
+        }
+      />
 
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <select
-                value={eventTypeFilter}
-                onChange={(e) => { setEventTypeFilter(e.target.value); setPage(1) }}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white"
-              >
+        <CardContent className="pt-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <Select value={eventTypeFilter} onValueChange={(v) => { setEventTypeFilter(v); setPage(1) }}>
+              <SelectTrigger className="sm:w-56" aria-label="Filter by event type">
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent>
                 {eventTypes.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
+                  <SelectItem key={t.value} value={t.value}>
+                    {t.label}
+                  </SelectItem>
                 ))}
-              </select>
-            </div>
-            <p className="text-sm text-gray-500">{total} total events</p>
+              </SelectContent>
+            </Select>
           </div>
 
-          {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+          {error && <ErrorState title="Couldn't load audit events" description={error} onRetry={loadEvents} className="mb-4" />}
 
           {loading ? (
-            <p className="text-sm text-gray-500 py-8 text-center">Loading...</p>
+            <SkeletonRows rows={8} />
           ) : events.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500 font-medium">No audit events found</p>
-              <p className="text-sm text-gray-400 mt-1">
-                {eventTypeFilter ? "No events match the selected filter" : "Events will appear here as actions are taken"}
-              </p>
-            </div>
+            <EmptyState
+              icon={ShieldCheck}
+              title="No audit events found"
+              description={eventTypeFilter ? "No events match the selected filter." : "Events will appear here as actions are taken across the platform."}
+            />
           ) : (
             <div className="space-y-2">
               {events.map((event) => (
@@ -243,23 +229,15 @@ export default function AuditPage() {
             </div>
           )}
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-6">
-              <Button
-                variant="outline" size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
+          {!loading && totalPages > 1 && (
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
                 Previous
               </Button>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-[var(--text-secondary)]">
                 Page {page} of {totalPages}
               </span>
-              <Button
-                variant="outline" size="sm"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => p + 1)}
-              >
+              <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
                 Next
               </Button>
             </div>

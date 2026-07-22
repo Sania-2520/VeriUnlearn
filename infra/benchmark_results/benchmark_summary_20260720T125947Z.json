@@ -1,0 +1,15 @@
+[
+  {
+    "dataset": "sst2",
+    "algorithm": "influence",
+    "mean": 0.6428571343421936,
+    "std": 0.0,
+    "ci_lower": 0.6428571343421936,
+    "ci_upper": 0.6428571343421936,
+    "latency_mean": 9877.0,
+    "f1_mean": 0.5906432748538012,
+    "mia_mean": 0.5,
+    "privacy_leakage_mean": 0.5,
+    "success_rate": 1.0
+  }
+]

@@ -1,5 +1,8 @@
+import logging
 import time
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 import torch
 
@@ -106,5 +109,6 @@ class SISAUnlearning(UnlearningAlgorithm):
                     if matching:
                         return False
             except Exception:
+                logger.warning("SISA verification failed")
                 return False
         return True

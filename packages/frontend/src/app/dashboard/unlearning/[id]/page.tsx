@@ -11,11 +11,11 @@ import type { UnlearningRequest, DeletionProof, Certificate } from "@/lib/types/
 import { formatDate } from "@/lib/utils"
 
 const statusColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-700",
-  in_progress: "bg-blue-100 text-blue-700",
-  completed: "bg-green-100 text-green-700",
-  failed: "bg-red-100 text-red-700",
-  retrying: "bg-orange-100 text-orange-700",
+  pending: "bg-[var(--warning-soft)] text-[var(--warning)]",
+  in_progress: "bg-[var(--accent-soft)] text-[var(--accent)]",
+  completed: "bg-[var(--success-soft)] text-[var(--success)]",
+  failed: "bg-[var(--danger-soft)] text-[var(--danger)]",
+  retrying: "bg-[var(--purple-soft)] text-[var(--purple)]",
 }
 
 const stepMap: Record<string, string> = {
@@ -30,13 +30,13 @@ const stepMap: Record<string, string> = {
 
 function StepIcon({ status }: { status: string }) {
   if (status === "completed" || status === "verified" || status === "generated") {
-    return <span className="text-green-600 font-bold">✓</span>
+    return <span className="text-[var(--success)] font-bold">✓</span>
   }
-  if (status === "failed") return <span className="text-red-600 font-bold">✗</span>
+  if (status === "failed") return <span className="text-[var(--danger)] font-bold">✗</span>
   if (status === "in_progress" || status === "processing") {
-    return <span className="text-blue-600 animate-pulse">◌</span>
+    return <span className="text-[var(--accent)] animate-pulse">◌</span>
   }
-  return <span className="text-gray-400">○</span>
+  return <span className="text-[var(--text-tertiary)]">○</span>
 }
 
 export default function UnlearningDetailPage() {
@@ -105,7 +105,7 @@ export default function UnlearningDetailPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <p className="text-sm text-gray-500">Loading...</p>
+        <p className="text-sm text-[var(--text-secondary)]">Loading...</p>
       </div>
     )
   }
@@ -113,7 +113,7 @@ export default function UnlearningDetailPage() {
   if (error && !request) {
     return (
       <div className="space-y-6">
-        <p className="text-sm text-red-600">{error}</p>
+        <p className="text-sm text-[var(--danger)]">{error}</p>
         <Button variant="outline" onClick={() => router.push("/dashboard/unlearning")}>Back</Button>
       </div>
     )
@@ -125,11 +125,11 @@ export default function UnlearningDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <button onClick={() => router.push("/dashboard/unlearning")} className="text-sm text-blue-600 hover:text-blue-800 mb-1 block">
+          <button onClick={() => router.push("/dashboard/unlearning")} className="text-sm text-[var(--accent)] hover:text-[var(--accent-strong)] mb-1 block">
             ← Back to requests
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Unlearning Request</h1>
-          <p className="text-sm text-gray-500 mt-1">ID: {request.id.slice(0, 12)}...</p>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Unlearning Request</h1>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">ID: {request.id.slice(0, 12)}...</p>
         </div>
         <div className="flex gap-2">
           {(request.status === "failed") && (
@@ -138,12 +138,12 @@ export default function UnlearningDetailPage() {
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
 
       {/* Status Timeline */}
       <Card>
         <CardContent className="pt-6">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Timeline</h3>
+          <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-4">Timeline</h3>
           <div className="space-y-3">
             {[
               { label: "Created", date: request.created_at, status: "completed" },
@@ -155,11 +155,11 @@ export default function UnlearningDetailPage() {
                 <div>
                   <p className={clsx(
                     "text-sm font-medium",
-                    step.status === "failed" ? "text-red-700" : "text-gray-900"
+                    step.status === "failed" ? "text-[var(--danger)]" : "text-[var(--text-primary)]"
                   )}>
                     {step.label}
                   </p>
-                  <p className="text-xs text-gray-500">{formatDate(step.date)}</p>
+                  <p className="text-xs text-[var(--text-secondary)]">{formatDate(step.date)}</p>
                 </div>
               </div>
             ))}
@@ -173,7 +173,7 @@ export default function UnlearningDetailPage() {
         <CardContent>
           <dl className="grid grid-cols-2 gap-4">
             <div>
-              <dt className="text-xs text-gray-500 uppercase tracking-wider">Status</dt>
+              <dt className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">Status</dt>
               <dd>
                 <span className={clsx("text-xs px-2 py-0.5 rounded-full inline-block mt-1", statusColors[request.status])}>
                   {request.status.replace("_", " ")}
@@ -181,37 +181,37 @@ export default function UnlearningDetailPage() {
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-gray-500 uppercase tracking-wider">Priority</dt>
+              <dt className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">Priority</dt>
               <dd className="text-sm font-medium mt-1 capitalize">{request.priority}</dd>
             </div>
             <div>
-              <dt className="text-xs text-gray-500 uppercase tracking-wider">Algorithm</dt>
+              <dt className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">Algorithm</dt>
               <dd className="text-sm font-medium mt-1">{request.algorithm || "Pending"}</dd>
             </div>
             <div>
-              <dt className="text-xs text-gray-500 uppercase tracking-wider">Regulatory</dt>
+              <dt className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">Regulatory</dt>
               <dd className="text-sm font-medium mt-1 uppercase">{request.regulatory}</dd>
             </div>
             <div>
-              <dt className="text-xs text-gray-500 uppercase tracking-wider">Target Records</dt>
+              <dt className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">Target Records</dt>
               <dd className="text-sm font-medium mt-1">{request.target_data_ids.length}</dd>
             </div>
             <div>
-              <dt className="text-xs text-gray-500 uppercase tracking-wider">Created</dt>
+              <dt className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">Created</dt>
               <dd className="text-sm font-medium mt-1">{formatDate(request.created_at)}</dd>
             </div>
             {request.completed_at && (
               <div>
-                <dt className="text-xs text-gray-500 uppercase tracking-wider">Completed</dt>
+                <dt className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">Completed</dt>
                 <dd className="text-sm font-medium mt-1">{formatDate(request.completed_at)}</dd>
               </div>
             )}
           </dl>
 
           {request.error_message && (
-            <div className="mt-4 p-3 bg-red-50 rounded-lg">
-              <p className="text-xs text-red-600 font-medium">Error</p>
-              <p className="text-sm text-red-700 mt-1">{request.error_message}</p>
+            <div className="mt-4 p-3 bg-[var(--danger-soft)] rounded-lg">
+              <p className="text-xs text-[var(--danger)] font-medium">Error</p>
+              <p className="text-sm text-[var(--danger)] mt-1">{request.error_message}</p>
             </div>
           )}
         </CardContent>
@@ -223,10 +223,10 @@ export default function UnlearningDetailPage() {
         <CardContent>
           <div className="flex flex-wrap gap-2">
             {request.target_data_ids.slice(0, 50).map((id) => (
-              <span key={id} className="text-xs px-2 py-1 bg-gray-100 rounded text-gray-700 font-mono">{id}</span>
+              <span key={id} className="text-xs px-2 py-1 bg-[var(--bg-subtle)] rounded text-[var(--text-secondary)] font-mono">{id}</span>
             ))}
             {request.target_data_ids.length > 50 && (
-              <span className="text-xs px-2 py-1 bg-gray-100 rounded text-gray-500">
+              <span className="text-xs px-2 py-1 bg-[var(--bg-subtle)] rounded text-[var(--text-secondary)]">
                 +{request.target_data_ids.length - 50} more
               </span>
             )}
@@ -255,23 +255,23 @@ export default function UnlearningDetailPage() {
           <CardContent>
             <dl className="grid grid-cols-2 gap-4">
               <div>
-                <dt className="text-xs text-gray-500 uppercase tracking-wider">Status</dt>
+                <dt className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">Status</dt>
                 <dd>
-                  <span className={clsx("text-xs px-2 py-0.5 rounded-full inline-block mt-1", statusColors[proof.status] || "bg-gray-100 text-gray-600")}>
+                  <span className={clsx("text-xs px-2 py-0.5 rounded-full inline-block mt-1", statusColors[proof.status] || "bg-[var(--bg-subtle)] text-[var(--text-tertiary)]")}>
                     {proof.status}
                   </span>
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-gray-500 uppercase tracking-wider">Algorithm</dt>
+                <dt className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">Algorithm</dt>
                 <dd className="text-sm font-medium mt-1">{proof.algorithm}</dd>
               </div>
               <div className="col-span-2">
-                <dt className="text-xs text-gray-500 uppercase tracking-wider">Merkle Root</dt>
+                <dt className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">Merkle Root</dt>
                 <dd className="text-sm font-mono mt-1 break-all">{proof.merkle_root}</dd>
               </div>
               <div className="col-span-2">
-                <dt className="text-xs text-gray-500 uppercase tracking-wider">Signature</dt>
+                <dt className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">Signature</dt>
                 <dd className="text-sm font-mono mt-1 break-all text-xs">{proof.signature_hex}</dd>
               </div>
             </dl>
@@ -279,11 +279,11 @@ export default function UnlearningDetailPage() {
             {verifyResult !== null && (
               <div className={clsx(
                 "mt-4 p-3 rounded-lg",
-                verifyResult ? "bg-green-50" : "bg-red-50"
+                verifyResult ? "bg-[var(--success-soft)]" : "bg-[var(--danger-soft)]"
               )}>
                 <p className={clsx(
                   "text-sm font-medium",
-                  verifyResult ? "text-green-700" : "text-red-700"
+                  verifyResult ? "text-[var(--success)]" : "text-[var(--danger)]"
                 )}>
                   {verifyResult ? "✓ Proof verified successfully" : "✗ Proof verification failed"}
                 </p>
@@ -300,45 +300,45 @@ export default function UnlearningDetailPage() {
           <CardContent>
             <dl className="grid grid-cols-2 gap-4">
               <div>
-                <dt className="text-xs text-gray-500 uppercase tracking-wider">Certificate ID</dt>
+                <dt className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">Certificate ID</dt>
                 <dd className="text-sm font-mono mt-1">{certificate.certificate_id}</dd>
               </div>
               <div>
-                <dt className="text-xs text-gray-500 uppercase tracking-wider">Status</dt>
+                <dt className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">Status</dt>
                 <dd>
                   <span className={clsx(
                     "text-xs px-2 py-0.5 rounded-full inline-block mt-1",
-                    certificate.status === "verified" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
+                    certificate.status === "verified" ? "bg-[var(--success-soft)] text-[var(--success)]" : "bg-[var(--bg-subtle)] text-[var(--text-tertiary)]"
                   )}>
                     {certificate.status}
                   </span>
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-gray-500 uppercase tracking-wider">Utility Retained</dt>
+                <dt className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">Utility Retained</dt>
                 <dd className="text-sm font-medium mt-1">{(certificate.utility_retained * 100).toFixed(1)}%</dd>
               </div>
               <div>
-                <dt className="text-xs text-gray-500 uppercase tracking-wider">Processing Time</dt>
+                <dt className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">Processing Time</dt>
                 <dd className="text-sm font-medium mt-1">{certificate.processing_time_ms}ms</dd>
               </div>
             </dl>
 
             {certificate.privacy_assessment && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs font-medium text-gray-700 mb-2">Privacy Assessment</p>
+              <div className="mt-4 p-3 bg-[var(--bg-subtle)] rounded-lg">
+                <p className="text-xs font-medium text-[var(--text-secondary)] mb-2">Privacy Assessment</p>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <span className="text-gray-500">MIA Confidence:</span>{" "}
+                    <span className="text-[var(--text-secondary)]">MIA Confidence:</span>{" "}
                     {(certificate.privacy_assessment.membership_inference.confidence_based.overall_accuracy * 100).toFixed(0)}%
                   </div>
                   <div>
-                    <span className="text-gray-500">MIA Loss-based:</span>{" "}
+                    <span className="text-[var(--text-secondary)]">MIA Loss-based:</span>{" "}
                     {(certificate.privacy_assessment.membership_inference.loss_based.overall_accuracy * 100).toFixed(0)}%
                   </div>
                   {certificate.privacy_assessment.dp_estimate.epsilon !== null && (
                     <div>
-                      <span className="text-gray-500">DP ε:</span>{" "}
+                      <span className="text-[var(--text-secondary)]">DP ε:</span>{" "}
                       {certificate.privacy_assessment.dp_estimate.epsilon}
                     </div>
                   )}
@@ -352,7 +352,7 @@ export default function UnlearningDetailPage() {
       {!proof && request.status === "completed" && (
         <Card>
           <CardContent className="py-6 text-center">
-            <p className="text-sm text-gray-500">No proof generated for this request yet.</p>
+            <p className="text-sm text-[var(--text-secondary)]">No proof generated for this request yet.</p>
           </CardContent>
         </Card>
       )}

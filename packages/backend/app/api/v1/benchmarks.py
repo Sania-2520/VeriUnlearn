@@ -15,10 +15,17 @@ logger = get_logger(__name__)
 
 router = APIRouter(dependencies=[Depends(default_rate_limiter), Depends(require_permission(Permission.BENCHMARKS_READ))])
 
-_http_client = httpx.AsyncClient(
-    timeout=30,
-    limits=httpx.Limits(max_keepalive_connections=5, max_connections=20),
-)
+_client: httpx.AsyncClient | None = None
+
+
+def _get_client() -> httpx.AsyncClient:
+    global _client
+    if _client is None:
+        _client = httpx.AsyncClient(
+            timeout=30,
+            limits=httpx.Limits(max_keepalive_connections=5, max_connections=20),
+        )
+    return _client
 
 
 class RunBenchmarkRequest(BaseModel):
@@ -71,7 +78,7 @@ async def list_benchmark_results(
             params["algorithm"] = algorithm
         if dataset:
             params["dataset"] = dataset
-        resp = await _http_client.get(
+        resp = await _get_client().get(
             f"{ml_engine_client._base_url}/benchmarks/results",
             params=params,
             headers=ml_engine_client._headers,
@@ -90,7 +97,7 @@ async def get_leaderboard(
     _: None = Depends(require_permission(Permission.BENCHMARKS_READ)),
 ):
     try:
-        resp = await _http_client.get(
+        resp = await _get_client().get(
             f"{ml_engine_client._base_url}/benchmarks/leaderboard",
             params={"metric": metric, "limit": limit},
             headers=ml_engine_client._headers,
@@ -110,7 +117,7 @@ async def export_benchmarks(
     if format not in ("csv", "json"):
         raise HTTPException(status_code=400, detail="Format must be 'csv' or 'json'")
     try:
-        resp = await _http_client.get(
+        resp = await _get_client().get(
             f"{ml_engine_client._base_url}/benchmarks/export/{format}",
             headers=ml_engine_client._headers,
         )

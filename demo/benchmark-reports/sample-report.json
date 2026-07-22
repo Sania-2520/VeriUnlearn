@@ -1,0 +1,178 @@
+{
+  "report_id": "bench-report-f4ecf44c9b99",
+  "generated_at": "2026-05-27T12:00:00+00:00",
+  "datasets": [
+    "cifar10",
+    "cifar100",
+    "tiny_imagenet"
+  ],
+  "algorithms": [
+    "sisa",
+    "influence",
+    "certified",
+    "hybrid"
+  ],
+  "results": [
+    {
+      "dataset": "cifar10",
+      "algorithm": "sisa",
+      "accuracy": 0.8303,
+      "f1_macro": 0.7459,
+      "mia_success_rate": 0.3372,
+      "privacy_leakage": 0.1632,
+      "latency_ms": 4258.1,
+      "deletion_fraction": 0.066,
+      "forget_rate": 0.8819,
+      "model_inversion_resistance": 0.877,
+      "success": true
+    },
+    {
+      "dataset": "cifar10",
+      "algorithm": "influence",
+      "accuracy": 0.8182,
+      "f1_macro": 0.7287,
+      "mia_success_rate": 0.0923,
+      "privacy_leakage": 0.1881,
+      "latency_ms": 3999.2,
+      "deletion_fraction": 0.099,
+      "forget_rate": 0.8912,
+      "model_inversion_resistance": 0.8403,
+      "success": true
+    },
+    {
+      "dataset": "cifar10",
+      "algorithm": "certified",
+      "accuracy": 0.8651,
+      "f1_macro": 0.9493,
+      "mia_success_rate": 0.1219,
+      "privacy_leakage": 0.1758,
+      "latency_ms": 2595.3,
+      "deletion_fraction": 0.014,
+      "forget_rate": 0.8569,
+      "model_inversion_resistance": 0.8848,
+      "success": true
+    },
+    {
+      "dataset": "cifar10",
+      "algorithm": "hybrid",
+      "accuracy": 0.818,
+      "f1_macro": 0.7775,
+      "mia_success_rate": 0.1631,
+      "privacy_leakage": 0.2101,
+      "latency_ms": 3317.4,
+      "deletion_fraction": 0.02,
+      "forget_rate": 0.8727,
+      "model_inversion_resistance": 0.8524,
+      "success": true
+    },
+    {
+      "dataset": "cifar100",
+      "algorithm": "sisa",
+      "accuracy": 0.8303,
+      "f1_macro": 0.7459,
+      "mia_success_rate": 0.3372,
+      "privacy_leakage": 0.1632,
+      "latency_ms": 4258.1,
+      "deletion_fraction": 0.066,
+      "forget_rate": 0.8819,
+      "model_inversion_resistance": 0.877,
+      "success": true
+    },
+    {
+      "dataset": "cifar100",
+      "algorithm": "influence",
+      "accuracy": 0.8182,
+      "f1_macro": 0.7287,
+      "mia_success_rate": 0.0923,
+      "privacy_leakage": 0.1881,
+      "latency_ms": 3999.2,
+      "deletion_fraction": 0.099,
+      "forget_rate": 0.8912,
+      "model_inversion_resistance": 0.8403,
+      "success": true
+    },
+    {
+      "dataset": "cifar100",
+      "algorithm": "certified",
+      "accuracy": 0.8651,
+      "f1_macro": 0.9493,
+      "mia_success_rate": 0.1219,
+      "privacy_leakage": 0.1758,
+      "latency_ms": 2595.3,
+      "deletion_fraction": 0.014,
+      "forget_rate": 0.8569,
+      "model_inversion_resistance": 0.8848,
+      "success": true
+    },
+    {
+      "dataset": "cifar100",
+      "algorithm": "hybrid",
+      "accuracy": 0.818,
+      "f1_macro": 0.7775,
+      "mia_success_rate": 0.1631,
+      "privacy_leakage": 0.2101,
+      "latency_ms": 3317.4,
+      "deletion_fraction": 0.02,
+      "forget_rate": 0.8727,
+      "model_inversion_resistance": 0.8524,
+      "success": true
+    },
+    {
+      "dataset": "tiny_imagenet",
+      "algorithm": "sisa",
+      "accuracy": 0.7424,
+      "f1_macro": 0.8969,
+      "mia_success_rate": 0.2666,
+      "privacy_leakage": 0.2335,
+      "latency_ms": 3302.3,
+      "deletion_fraction": 0.042,
+      "forget_rate": 0.9854,
+      "model_inversion_resistance": 0.9187,
+      "success": true
+    },
+    {
+      "dataset": "tiny_imagenet",
+      "algorithm": "influence",
+      "accuracy": 0.7439,
+      "f1_macro": 0.8821,
+      "mia_success_rate": 0.2844,
+      "privacy_leakage": 0.0632,
+      "latency_ms": 1503.0,
+      "deletion_fraction": 0.02,
+      "forget_rate": 0.855,
+      "model_inversion_resistance": 0.951,
+      "success": true
+    },
+    {
+      "dataset": "tiny_imagenet",
+      "algorithm": "certified",
+      "accuracy": 0.754,
+      "f1_macro": 0.7936,
+      "mia_success_rate": 0.1914,
+      "privacy_leakage": 0.24,
+      "latency_ms": 2412.9,
+      "deletion_fraction": 0.014,
+      "forget_rate": 0.9558,
+      "model_inversion_resistance": 0.841,
+      "success": true
+    },
+    {
+      "dataset": "tiny_imagenet",
+      "algorithm": "hybrid",
+      "accuracy": 0.7357,
+      "f1_macro": 0.7954,
+      "mia_success_rate": 0.105,
+      "privacy_leakage": 0.2288,
+      "latency_ms": 3630.0,
+      "deletion_fraction": 0.014,
+      "forget_rate": 0.8638,
+      "model_inversion_resistance": 0.8287,
+      "success": true
+    }
+  ],
+  "summary": {
+    "best_algorithm_by_privacy": "certified",
+    "avg_forget_rate": 0.93,
+    "avg_mia_success_rate": 0.18
+  }
+}

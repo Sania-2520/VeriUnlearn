@@ -1,0 +1,2 @@
+dataset,algorithm,mean,std,ci_lower,ci_upper,latency_mean,f1_mean,mia_mean,privacy_leakage_mean,success_rate
+sst2,influence,0.6428571343421936,0.0,0.6428571343421936,0.6428571343421936,9877.0,0.5906432748538012,0.5,0.5,1.0

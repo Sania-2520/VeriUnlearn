@@ -109,11 +109,12 @@
 
 | Suite | Tests | Passing | Coverage |
 |-------|-------|---------|----------|
-| `packages/backend/tests/` | 173 | 173 | 85% |
-| `packages/ml-engine/tests/` | 69 | 69 | ~82% |
-| `packages/frontend/` (typecheck + build) | — | 0 errors | — |
-| **Total** | **242** | **242** | |
+| `packages/backend/tests/` | 237 | 237 | 85% |
+| `packages/ml-engine/tests/` | 434 | 434 | ~82% |
+| `packages/frontend/` (typecheck + build) | 6 | 6 | — |
+| `packages/evaluation/tests/` | 76 | 76 | — |
+| **Total** | **753** | **753** | |
 
 ---
 
-*Last updated: July 6, 2026 (all tests passing)*
+*Last updated: July 18, 2026 (all tests passing)*

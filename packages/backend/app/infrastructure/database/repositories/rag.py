@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 from sqlalchemy import func
@@ -175,7 +176,7 @@ class MLEngineVectorSearchService(VectorSearchService):
                 for item in items
             ]
         except MLEngineClientError:
-            logger = __import__("logging").getLogger(__name__)
+            logger = logging.getLogger(__name__)
             logger.warning("ML Engine search unavailable, returning empty results")
             return []
 
@@ -183,12 +184,12 @@ class MLEngineVectorSearchService(VectorSearchService):
         try:
             await ml_engine_client.upsert_embedding(collection, point_id, vector, payload)
         except MLEngineClientError:
-            logger = __import__("logging").getLogger(__name__)
+            logger = logging.getLogger(__name__)
             logger.warning("Failed to upsert embedding to ML Engine")
 
     async def delete_by_filter(self, collection: str, filter_: dict) -> None:
         try:
             await ml_engine_client.delete_vectors(collection, filter_)
         except MLEngineClientError:
-            logger = __import__("logging").getLogger(__name__)
+            logger = logging.getLogger(__name__)
             logger.warning("Failed to delete vectors from ML Engine")

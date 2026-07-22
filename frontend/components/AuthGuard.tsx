@@ -17,7 +17,9 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         return;
       }
       try {
-        const res = await fetch("/api/auth/me");
+        const res = await fetch("/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (res.ok) {
           const user = await res.json();
           setUser(user);
@@ -25,24 +27,31 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
           localStorage.removeItem("access_token");
           localStorage.removeItem("refresh_token");
           router.push("/login");
+          return;
         }
-      } catch {
+      } catch (e) {
+        console.error("Auth check failed:", e);
         router.push("/login");
+        return;
       }
       setChecking(false);
     };
     check();
   }, [router, setUser]);
 
-  if (checking) {
+  useEffect(() => {
+    if (!checking && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [checking, isAuthenticated, router]);
+
+  if (checking || !isAuthenticated) {
     return (
       <div className="flex h-screen items-center justify-center">
         <p className="text-gray-400">Verifying session...</p>
       </div>
     );
   }
-
-  if (!isAuthenticated) return null;
 
   return <>{children}</>;
 }

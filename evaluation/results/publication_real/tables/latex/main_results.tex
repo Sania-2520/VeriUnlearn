@@ -1,0 +1,18 @@
+\begin{table*}[t]
+\centering
+\caption{Benchmark results across datasets and unlearning algorithms. Metrics are mean values over multiple runs. Best values per dataset are \textbf{bolded}.}
+\label{tab:main_results}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llrrrrr}
+\toprule
+Dataset & Metric & \multicolumn{1}{c}{Retrain} & \multicolumn{1}{c}{Sisa} & \multicolumn{1}{c}{Scrub} & \multicolumn{1}{c}{Influence\_Functions} & \multicolumn{1}{c}{Fine\_Tune\_Forgetting} \\
+\midrule
+MNIST & Accuracy & \textbf{0.813} & 0.601 & \textbf{0.813} & \textbf{0.813} & \textbf{0.813} \\
+ & F1 Score & \textbf{0.809} & 0.568 & \textbf{0.809} & \textbf{0.809} & \textbf{0.809} \\
+ & Latency (ms) & \textbf{277} & 440 & 13703 & 613 & 857 \\
+ & MIA Success & 0.211 & 0.449 & 0.208 & \textbf{0.207} & 0.264 \\
+\midrule
+\bottomrule
+\end{tabular}
+\end{table*}

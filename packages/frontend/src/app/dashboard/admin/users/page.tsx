@@ -9,11 +9,11 @@ import type { User } from "@/lib/types/auth"
 import { formatDate } from "@/lib/utils"
 
 const roleColors: Record<string, string> = {
-  admin: "bg-purple-100 text-purple-700",
-  compliance_officer: "bg-blue-100 text-blue-700",
-  unlearning_auditor: "bg-cyan-100 text-cyan-700",
-  member: "bg-green-100 text-green-700",
-  viewer: "bg-gray-100 text-gray-600",
+  admin: "bg-[var(--purple-soft)] text-[var(--purple)]",
+  compliance_officer: "bg-[var(--accent-soft)] text-[var(--accent)]",
+  unlearning_auditor: "bg-[var(--info-soft)] text-[var(--info)]",
+  member: "bg-[var(--success-soft)] text-[var(--success)]",
+  viewer: "bg-[var(--bg-subtle)] text-[var(--text-secondary)]",
 }
 
 const roles = ["admin", "compliance_officer", "unlearning_auditor", "member", "viewer"]
@@ -74,10 +74,10 @@ export default function AdminUsersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Users</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage user accounts and roles</p>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Users</h1>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">Manage user accounts and roles</p>
         </div>
-        <p className="text-sm text-gray-500">{total} total users</p>
+        <p className="text-sm text-[var(--text-secondary)]">{total} total users</p>
       </div>
 
       <Card>
@@ -86,7 +86,7 @@ export default function AdminUsersPage() {
             <select
               value={roleFilter}
               onChange={(e) => { setRoleFilter(e.target.value); setPage(1) }}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white"
+              className="rounded-lg border border-[var(--border-default)] px-3 py-2 text-sm bg-[var(--bg-surface)] text-[var(--text-primary)]"
             >
               <option value="">All Roles</option>
               {roles.map((r) => (
@@ -95,30 +95,30 @@ export default function AdminUsersPage() {
             </select>
           </div>
 
-          {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+          {error && <p className="text-sm text-[var(--danger)] mb-4">{error}</p>}
 
           {loading ? (
-            <p className="text-sm text-gray-500 py-8 text-center">Loading...</p>
+            <p className="text-sm text-[var(--text-secondary)] py-8 text-center">Loading...</p>
           ) : users.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500 font-medium">No users found</p>
+              <p className="text-[var(--text-secondary)] font-medium">No users found</p>
             </div>
           ) : (
             <div className="space-y-2">
               {users.map((user) => (
-                <div key={user.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div key={user.id} className="flex items-center justify-between p-4 bg-[var(--bg-subtle)] rounded-lg">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium">{user.full_name || "—"}</p>
-                      <span className={clsx("text-xs px-2 py-0.5 rounded-full", roleColors[user.role] || "bg-gray-100")}>
+                      <span className={clsx("text-xs px-2 py-0.5 rounded-full", roleColors[user.role] || "bg-[var(--bg-subtle)]")}>
                         {user.role.replace("_", " ")}
                       </span>
                       {!user.is_active && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600">inactive</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--danger-soft)] text-[var(--danger)]">inactive</span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">{user.email}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">{user.email}</p>
+                    <p className="text-xs text-[var(--text-tertiary)] mt-0.5">
                       {user.mfa_enabled && "MFA · "}
                       {user.is_email_verified ? "Verified" : "Unverified"}
                       {" · Joined "}{formatDate(user.created_at)}
@@ -130,7 +130,7 @@ export default function AdminUsersPage() {
                       <select
                         value={editRole}
                         onChange={(e) => setEditRole(e.target.value)}
-                        className="rounded-lg border border-gray-300 px-2 py-1 text-sm bg-white"
+                        className="rounded-lg border border-[var(--border-default)] px-2 py-1 text-sm bg-[var(--bg-surface)] text-[var(--text-primary)]"
                       >
                         {roles.map((r) => (
                           <option key={r} value={r}>{r.replace("_", " ")}</option>
@@ -138,7 +138,7 @@ export default function AdminUsersPage() {
                       </select>
                       <label className="flex items-center gap-1 text-xs">
                         <input type="checkbox" checked={editActive} onChange={(e) => setEditActive(e.target.checked)}
-                          className="rounded border-gray-300 text-blue-600" />
+                          className="rounded border-[var(--border-default)] text-[var(--accent)]" />
                         Active
                       </label>
                       <Button size="sm" onClick={handleSave} loading={saving}>Save</Button>
@@ -159,7 +159,7 @@ export default function AdminUsersPage() {
               <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
                 Previous
               </Button>
-              <span className="text-sm text-gray-500">Page {page} of {totalPages}</span>
+              <span className="text-sm text-[var(--text-secondary)]">Page {page} of {totalPages}</span>
               <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
                 Next
               </Button>

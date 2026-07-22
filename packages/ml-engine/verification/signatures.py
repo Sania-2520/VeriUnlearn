@@ -1,7 +1,9 @@
-import secrets
+import logging
 from typing import Any, Optional, Tuple
 
 from cryptography.exceptions import InvalidSignature
+
+logger = logging.getLogger(__name__)
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519, rsa, padding
 from cryptography.hazmat.primitives.asymmetric.types import (
@@ -74,8 +76,10 @@ class SignatureManager:
                 raise ValueError(f"Unsupported key type: {type(public_key)}")
             return True
         except InvalidSignature:
+            logger.warning("Signature verification failed: invalid signature")
             return False
         except Exception:
+            logger.exception("Signature verification raised unexpected exception")
             return False
 
     @staticmethod

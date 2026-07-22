@@ -45,11 +45,11 @@ export default function MFAVerifyPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-app)] px-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <h2 className="text-2xl font-bold text-center">Two-Factor Authentication</h2>
-          <p className="text-sm text-gray-500 text-center mt-1">
+          <p className="text-sm text-[var(--text-secondary)] text-center mt-1">
             Enter the code from your authenticator app
           </p>
         </CardHeader>
@@ -64,7 +64,7 @@ export default function MFAVerifyPage() {
               required
               autoFocus
             />
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
             <Button type="submit" loading={loading} className="w-full">
               Verify
             </Button>

@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -5,6 +6,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError as PydanticValidationError
 
+from app.core.config import settings
 from app.core.exceptions import VeriUnlearnError
 from app.core.logging import get_logger
 
@@ -25,10 +27,8 @@ def create_error_response(
             "message": message,
         },
         "meta": {
-            "timestamp": __import__("datetime").datetime.now(
-                __import__("datetime").timezone.utc
-            ).isoformat(),
-            "version": __import__("app.core.config", fromlist=["settings"]).settings.version,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "version": settings.version,
         },
     }
     if details:

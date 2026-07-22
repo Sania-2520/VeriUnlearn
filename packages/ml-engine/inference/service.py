@@ -27,6 +27,8 @@ try:
 except ImportError:
     PEFT_AVAILABLE = False
 
+CUDA_AVAILABLE = torch.cuda.is_available()
+
 
 # ---------------------------------------------------------------------------
 # Dataclasses
@@ -110,7 +112,7 @@ class AdapterManager:
         self._lock = threading.RLock()
 
         if device == "auto":
-            if torch.cuda.is_available():
+            if CUDA_AVAILABLE:
                 self._device = torch.device("cuda")
             else:
                 self._device = torch.device("cpu")
@@ -154,7 +156,7 @@ class AdapterManager:
             if self._device.type == "cuda":
                 model.eval()
                 if hasattr(model, "half") and dtype == torch.float16:
-                    pass
+                    model = model.half()
 
             self._tokenizer = tokenizer
             self._base_model = model
@@ -173,6 +175,10 @@ class AdapterManager:
 
             if not PEFT_AVAILABLE:
                 raise ImportError("peft is required to load LoRA adapters")
+
+            import os
+            if not os.path.isdir(adapter_path):
+                raise FileNotFoundError(f"Adapter path does not exist: {adapter_path}")
 
             self.load_base_model()
 
@@ -203,7 +209,7 @@ class AdapterManager:
 
             del adapter_model
             gc.collect()
-            if torch.cuda.is_available():
+            if CUDA_AVAILABLE:
                 torch.cuda.empty_cache()
 
             logger.info("Adapter '%s' unloaded", adapter_name)
@@ -246,20 +252,20 @@ class AdapterManager:
                 del self._base_model
                 self._base_model = None
             gc.collect()
-            if torch.cuda.is_available():
+            if CUDA_AVAILABLE:
                 torch.cuda.empty_cache()
             logger.info("All adapters unloaded, base model freed")
 
     def get_memory_usage(self) -> dict:
         mem_info: dict[str, Any] = {
             "device": str(self._device),
-            "cuda_available": torch.cuda.is_available(),
+            "cuda_available": CUDA_AVAILABLE,
             "base_model_loaded": self._base_model is not None,
             "loaded_adapters": list(self._loaded_adapters.keys()),
             "adapter_count": len(self._loaded_adapters),
         }
 
-        if self._device.type == "cuda" and torch.cuda.is_available():
+        if self._device.type == "cuda" and CUDA_AVAILABLE:
             mem_info["gpu_memory_allocated_mb"] = round(
                 torch.cuda.memory_allocated(self._device) / (1024 ** 2), 2
             )
@@ -288,7 +294,7 @@ class AdapterManager:
                 try:
                     adapter_model.unload()
                 except Exception:
-                    pass
+                    logger.debug("Error unloading adapter '%s' (internal)", adapter_name, exc_info=True)
             del adapter_model
 
     def _resolve_dtype(self) -> torch.dtype:
@@ -646,7 +652,7 @@ class InferenceService:
         if mem.get("cuda_available") and mem.get("gpu_memory_allocated_mb"):
             metrics.gpu_memory_used_mb = mem["gpu_memory_allocated_mb"]
 
-        if torch.cuda.is_available() and torch.cuda.is_available():
+        if CUDA_AVAILABLE:
             metrics.gpu_memory_used_mb = round(
                 torch.cuda.memory_allocated() / (1024 ** 2), 2
             )
@@ -672,7 +678,7 @@ class InferenceService:
             "uptime_seconds": round(time.monotonic() - self._start_time, 2),
             "transformers_available": TRANSFORMERS_AVAILABLE,
             "peft_available": PEFT_AVAILABLE,
-            "cuda_available": torch.cuda.is_available(),
+            "cuda_available": CUDA_AVAILABLE,
         }
 
     def _update_metrics(
@@ -710,7 +716,7 @@ class InferenceService:
         logger.info("Shutting down inference service")
         self.adapter_manager.clear_cache()
         gc.collect()
-        if torch.cuda.is_available():
+        if CUDA_AVAILABLE:
             torch.cuda.empty_cache()
         self._initialized = False
         logger.info("Inference service shut down")

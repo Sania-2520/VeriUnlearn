@@ -110,14 +110,14 @@ export default function ModelsPage() {
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Model Registry</h1>
-          <p className="text-sm text-gray-400 mt-1">Manage model versions, verify integrity, and rollback</p>
+          <h1 className="text-2xl font-bold text-[var(--text-on-brand)]">Model Registry</h1>
+          <p className="text-sm text-[var(--text-tertiary)] mt-1">Manage model versions, verify integrity, and rollback</p>
         </div>
         <div className="flex items-center gap-2">
           <select
             value={filterModel}
             onChange={(e) => setFilterModel(e.target.value)}
-            className="px-3 py-2 text-sm bg-[#212121] border border-[#2f2f2f] focus:border-gray-500 rounded-lg text-gray-300 focus:outline-none appearance-none cursor-pointer"
+            className="px-3 py-2 text-sm bg-[var(--bg-app)] border border-[var(--border-default)] focus:border-[var(--border-strong)] rounded-lg text-[var(--text-secondary)] focus:outline-none appearance-none cursor-pointer"
           >
             <option value="">All Models</option>
             {modelNames.map((name) => (
@@ -126,7 +126,7 @@ export default function ModelsPage() {
           </select>
           <button
             onClick={fetchVersions}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white bg-[#2f2f2f] hover:bg-[#3a3a3a] border border-[#2f2f2f] hover:border-gray-500 rounded-lg transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-hover)] hover:bg-[var(--bg-active)] border border-[var(--bg-hover)] hover:border-[var(--border-strong)] rounded-lg transition-colors cursor-pointer"
           >
             <RefreshCw className="h-4 w-4" />
           </button>
@@ -134,45 +134,45 @@ export default function ModelsPage() {
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 p-3 bg-red-950/30 border border-red-900/40 rounded-lg text-sm text-red-400">
+        <div className="flex items-center gap-2 p-3 bg-[var(--danger-soft)] border border-[var(--danger-border)] rounded-lg text-sm text-[var(--danger)]">
           <AlertCircle className="h-4 w-4 shrink-0" />
           {error}
-          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-300 cursor-pointer">
+          <button onClick={() => setError(null)} className="ml-auto text-[var(--danger)] hover:text-[var(--danger-border)] cursor-pointer">
             ×
           </button>
         </div>
       )}
 
       {compareIds.length === 2 && comparedVersions.length === 2 && (
-        <div className="bg-[#171717] border border-[#2f2f2f]/60 rounded-xl p-5">
+        <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-200">Version Comparison</h2>
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Version Comparison</h2>
             <button
               onClick={() => setCompareIds([])}
-              className="text-xs text-gray-400 hover:text-white cursor-pointer"
+              className="text-xs text-[var(--text-tertiary)] hover:text-[var(--text-primary)] cursor-pointer"
             >
               Clear
             </button>
           </div>
           <div className="grid grid-cols-2 gap-4">
             {comparedVersions.map((v) => (
-              <div key={v.id} className="p-4 bg-[#212121] border border-[#2f2f2f] rounded-lg space-y-3">
-                <div className="font-medium text-gray-200">{v.model_name} v{v.version}</div>
+              <div key={v.id} className="p-4 bg-[var(--bg-app)] border border-[var(--border-default)] rounded-lg space-y-3">
+                <div className="font-medium text-[var(--text-primary)]">{v.model_name} v{v.version}</div>
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Algorithm</span>
-                    <span className="text-gray-300">{v.algorithm}</span>
+                    <span className="text-[var(--text-tertiary)]">Algorithm</span>
+                    <span className="text-[var(--text-secondary)]">{v.algorithm}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Status</span>
+                    <span className="text-[var(--text-tertiary)]">Status</span>
                     <span className={`${
-                      v.status === "active" ? "text-emerald-400" : v.status === "training" ? "text-yellow-400" : "text-gray-400"
+                      v.status === "active" ? "text-[var(--brand)]" : v.status === "training" ? "text-[var(--warning)]" : "text-[var(--text-tertiary)]"
                     }`}>{v.status}</span>
                   </div>
                   {v.metrics && Object.entries(v.metrics).map(([key, val]) => (
                     <div key={key} className="flex justify-between">
-                      <span className="text-gray-500">{key}</span>
-                      <span className="text-gray-300">{typeof val === "number" ? val.toFixed(4) : String(val)}</span>
+                      <span className="text-[var(--text-tertiary)]">{key}</span>
+                      <span className="text-[var(--text-secondary)]">{typeof val === "number" ? val.toFixed(4) : String(val)}</span>
                     </div>
                   ))}
                 </div>
@@ -182,36 +182,36 @@ export default function ModelsPage() {
         </div>
       )}
 
-      <div className="bg-[#171717] border border-[#2f2f2f]/60 rounded-xl">
-        <div className="px-5 py-4 border-b border-[#2f2f2f]/40 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-200">Model Versions</h2>
-          <span className="text-xs text-gray-500">{versions.length} versions</span>
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl">
+        <div className="px-5 py-4 border-b border-[var(--border-default)] flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">Model Versions</h2>
+          <span className="text-xs text-[var(--text-tertiary)]">{versions.length} versions</span>
         </div>
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin h-6 w-6 border-2 border-emerald-500 border-t-transparent rounded-full" />
+            <div className="animate-spin h-6 w-6 border-2 border-[var(--brand)] border-t-transparent rounded-full" />
           </div>
         ) : versions.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-[var(--text-tertiary)]">
             <GitBranch className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p className="text-sm">No model versions found</p>
           </div>
         ) : (
-          <div className="divide-y divide-[#2f2f2f]/40">
+          <div className="divide-y divide-[var(--border-default)]">
             {versions.map((version) => {
               const isExpanded = expandedId === version.id
               const isCompared = compareIds.includes(version.id)
               return (
                 <div key={version.id}>
                   <div
-                    className={`flex items-center gap-4 px-5 py-3.5 hover:bg-[#212121]/50 transition-colors ${
-                      isCompared ? "bg-emerald-950/10 border-l-2 border-l-emerald-500" : ""
+                    className={`flex items-center gap-4 px-5 py-3.5 hover:bg-[var(--bg-subtle)] transition-colors ${
+                      isCompared ? "bg-[var(--brand-soft)] border-l-2 border-l-[var(--brand)]" : ""
                     }`}
                   >
                     <button
                       onClick={() => toggleExpand(version.id)}
-                      className="text-gray-500 hover:text-gray-300 cursor-pointer"
+                      className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] cursor-pointer"
                     >
                       {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                     </button>
@@ -220,53 +220,53 @@ export default function ModelsPage() {
                       onClick={() => toggleCompare(version.id)}
                       className={`w-4 h-4 rounded border transition-colors cursor-pointer ${
                         isCompared
-                          ? "bg-emerald-500 border-emerald-500"
-                          : "border-gray-600 hover:border-gray-400"
+                          ? "bg-[var(--brand)] border-[var(--brand)]"
+                          : "border-[var(--border-strong)] hover:border-[var(--border-default)]"
                       }`}
                     />
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-200">{version.model_name}</span>
-                        <span className="text-xs text-gray-500">v{version.version}</span>
+                        <span className="text-sm font-medium text-[var(--text-primary)]">{version.model_name}</span>
+                        <span className="text-xs text-[var(--text-tertiary)]">v{version.version}</span>
                       </div>
-                      <p className="text-xs text-gray-500 mt-0.5">{version.algorithm}</p>
+                      <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{version.algorithm}</p>
                     </div>
 
                     <span className={`text-xs px-2 py-0.5 rounded-full border ${
                       version.status === "active"
-                        ? "bg-emerald-950/30 text-emerald-400 border-emerald-900/40"
+                        ? "bg-[var(--brand-soft)] text-[var(--brand)] border-[var(--brand-border)]"
                         : version.status === "training"
-                          ? "bg-yellow-950/30 text-yellow-400 border-yellow-900/40"
-                          : "bg-gray-900/30 text-gray-400 border-gray-700/40"
+                          ? "bg-[var(--warning-soft)] text-[var(--warning)] border-[var(--warning-border)]"
+                          : "bg-[var(--bg-subtle)] text-[var(--text-tertiary)] border-[var(--border-default)]"
                     }`}>
                       {version.status}
                     </span>
 
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-[var(--text-tertiary)]">
                       <Clock className="h-3.5 w-3.5 inline mr-1" />
                       {new Date(version.created_at).toLocaleDateString()}
                     </span>
                   </div>
 
                   {isExpanded && (
-                    <div className="px-5 pb-4 pt-1 bg-[#212121]/30">
+                    <div className="px-5 pb-4 pt-1 bg-[var(--bg-subtle)]">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-3">
-                          <div className="p-3 bg-[#212121] border border-[#2f2f2f] rounded-lg">
-                            <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2">Details</div>
+                          <div className="p-3 bg-[var(--bg-app)] border border-[var(--border-default)] rounded-lg">
+                            <div className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider font-semibold mb-2">Details</div>
                             <div className="space-y-2 text-xs">
                               <div className="flex items-center gap-2">
-                                <Hash className="h-3.5 w-3.5 text-gray-400" />
-                                <span className="text-gray-500">ID:</span>
-                                <span className="text-gray-300 font-mono">{version.id}</span>
+                                <Hash className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+                                <span className="text-[var(--text-tertiary)]">ID:</span>
+                                <span className="text-[var(--text-secondary)] font-mono">{version.id}</span>
                               </div>
                               {version.sha256 && (
                                 <div className="flex items-start gap-2">
-                                  <Lock className="h-3.5 w-3.5 text-gray-400 mt-0.5" />
+                                  <Lock className="h-3.5 w-3.5 text-[var(--text-tertiary)] mt-0.5" />
                                   <div>
-                                    <span className="text-gray-500">SHA256:</span>
-                                    <p className="text-gray-300 font-mono text-[11px] break-all mt-0.5">{version.sha256}</p>
+                                    <span className="text-[var(--text-tertiary)]">SHA256:</span>
+                                    <p className="text-[var(--text-secondary)] font-mono text-[11px] break-all mt-0.5">{version.sha256}</p>
                                   </div>
                                 </div>
                               )}
@@ -274,15 +274,15 @@ export default function ModelsPage() {
                           </div>
 
                           {version.metrics && Object.keys(version.metrics).length > 0 && (
-                            <div className="p-3 bg-[#212121] border border-[#2f2f2f] rounded-lg">
-                              <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2">Metrics</div>
-                              <div className="space-y-1.5">
-                                {Object.entries(version.metrics).map(([key, val]) => (
-                                  <div key={key} className="flex justify-between text-xs">
-                                    <span className="text-gray-500">{key}</span>
-                                    <span className="text-gray-300 font-mono">{typeof val === "number" ? val.toFixed(4) : String(val)}</span>
-                                  </div>
-                                ))}
+                              <div className="p-3 bg-[var(--bg-app)] border border-[var(--border-default)] rounded-lg">
+                                <div className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider font-semibold mb-2">Metrics</div>
+                                <div className="space-y-1.5">
+                                  {Object.entries(version.metrics).map(([key, val]) => (
+                                    <div key={key} className="flex justify-between text-xs">
+                                      <span className="text-[var(--text-tertiary)]">{key}</span>
+                                      <span className="text-[var(--text-secondary)] font-mono">{typeof val === "number" ? val.toFixed(4) : String(val)}</span>
+                                    </div>
+                                  ))}
                               </div>
                             </div>
                           )}
@@ -290,16 +290,16 @@ export default function ModelsPage() {
 
                         <div className="space-y-3">
                           {version.config && Object.keys(version.config).length > 0 && (
-                            <div className="p-3 bg-[#212121] border border-[#2f2f2f] rounded-lg">
-                              <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2">Config</div>
-                              <pre className="text-[11px] text-gray-300 font-mono whitespace-pre-wrap overflow-auto max-h-40">
+                              <div className="p-3 bg-[var(--bg-app)] border border-[var(--border-default)] rounded-lg">
+                                <div className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider font-semibold mb-2">Config</div>
+                                <pre className="text-[11px] text-[var(--text-secondary)] font-mono whitespace-pre-wrap overflow-auto max-h-40">
                                 {JSON.stringify(version.config, null, 2)}
                               </pre>
                             </div>
                           )}
 
-                          <div className="p-3 bg-[#212121] border border-[#2f2f2f] rounded-lg">
-                            <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3">Actions</div>
+                          <div className="p-3 bg-[var(--bg-app)] border border-[var(--border-default)] rounded-lg">
+                            <div className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider font-semibold mb-3">Actions</div>
                             <div className="flex flex-wrap gap-2">
                               <Button
                                 variant="outline"

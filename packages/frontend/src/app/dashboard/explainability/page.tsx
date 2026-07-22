@@ -43,14 +43,14 @@ const METHODS: { id: ExplainMethod; label: string; description: string }[] = [
 
 function ImportanceBar({ label, value, direction, maxVal }: { label: string; value: number; direction: string; maxVal: number }) {
   const pct = maxVal > 0 ? (value / maxVal) * 100 : 0
-  const color = direction === "positive" ? "bg-emerald-500" : "bg-red-500"
+  const color = direction === "positive" ? "bg-[var(--brand)]" : "bg-[var(--danger)]"
   return (
     <div className="flex items-center gap-3 text-sm">
-      <span className="w-24 text-right text-gray-400 truncate text-xs">{label}</span>
-      <div className="flex-1 h-3 bg-[#171717] rounded-full overflow-hidden">
+      <span className="w-24 text-right text-[var(--text-tertiary)] truncate text-xs">{label}</span>
+      <div className="flex-1 h-3 bg-[var(--bg-surface)] rounded-full overflow-hidden">
         <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
       </div>
-      <span className="w-16 text-right text-gray-300 text-xs font-mono">{value.toFixed(4)}</span>
+          <span className="w-16 text-right text-[var(--text-secondary)] text-xs font-mono">{value.toFixed(4)}</span>
     </div>
   )
 }
@@ -190,8 +190,8 @@ export default function ExplainabilityPage() {
     <div className="p-6 space-y-6 max-w-5xl mx-auto w-full">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-100">Explainability</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-xl font-semibold text-[var(--text-primary)]">Explainability</h1>
+          <p className="text-sm text-[var(--text-tertiary)] mt-1">
             Model interpretability with SHAP, LIME, Integrated Gradients, and feature attribution
           </p>
         </div>
@@ -208,8 +208,8 @@ export default function ExplainabilityPage() {
                 className={clsx(
                   "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer",
                   activeTab === tab.id
-                    ? "bg-emerald-600/20 text-emerald-400 border border-emerald-600/30"
-                    : "text-gray-400 hover:bg-[#2f2f2f] border border-transparent"
+                    ? "bg-[var(--brand-soft)] text-[var(--brand)] border border-[var(--brand-border)]"
+                    : "text-[var(--text-tertiary)] hover:bg-[var(--bg-hover)] border border-transparent"
                 )}
               >
                 <TabIcon className="h-3.5 w-3.5" />
@@ -223,13 +223,13 @@ export default function ExplainabilityPage() {
           <div className="relative">
             <button
               onClick={() => setMethodDropdown(!methodDropdown)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#171717] border border-[#2f2f2f] text-xs text-gray-300 hover:text-white transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
             >
               {METHODS.find((m) => m.id === selectedMethod)?.label}
               <ChevronDown className="h-3 w-3" />
             </button>
             {methodDropdown && (
-              <div className="absolute top-10 right-0 w-52 bg-[#171717] border border-[#2f2f2f] rounded-xl shadow-2xl py-1.5 z-40 text-xs">
+                <div className="absolute top-10 right-0 w-52 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl shadow-2xl py-1.5 z-40 text-xs">
                 {METHODS.map((m) => (
                   <button
                     key={m.id}
@@ -238,12 +238,12 @@ export default function ExplainabilityPage() {
                       setMethodDropdown(false)
                     }}
                     className={clsx(
-                      "w-full text-left px-4 py-2 hover:bg-[#2f2f2f] transition-colors cursor-pointer",
-                      selectedMethod === m.id ? "text-emerald-400 font-medium" : "text-gray-300"
+                      "w-full text-left px-4 py-2 hover:bg-[var(--bg-hover)] transition-colors cursor-pointer",
+                      selectedMethod === m.id ? "text-[var(--brand)] font-medium" : "text-[var(--text-secondary)]"
                     )}
                   >
                     <span className="font-medium">{m.label}</span>
-                    <p className="text-gray-500 text-[10px] mt-0.5">{m.description}</p>
+                    <p className="text-[var(--text-tertiary)] text-[10px] mt-0.5">{m.description}</p>
                   </button>
                 ))}
               </div>
@@ -253,7 +253,7 @@ export default function ExplainabilityPage() {
           <button
             onClick={runAction}
             disabled={loading}
-            className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-600/50 rounded-lg text-xs font-medium text-white transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-1.5 bg-[var(--brand)] hover:bg-[var(--brand-strong)] disabled:bg-[var(--brand)]/50 rounded-lg text-xs font-medium text-[var(--text-on-brand)] transition-colors cursor-pointer"
           >
             {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Brain className="h-3.5 w-3.5" />}
             {loading ? "Computing..." : "Run"}
@@ -262,16 +262,16 @@ export default function ExplainabilityPage() {
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 px-4 py-3 bg-red-900/20 border border-red-800/30 rounded-xl text-sm text-red-400">
+        <div className="flex items-center gap-2 px-4 py-3 bg-[var(--danger-soft)] border border-[var(--danger-border)] rounded-xl text-sm text-[var(--danger)]">
           <AlertCircle className="h-4 w-4 shrink-0" />
           {error}
         </div>
       )}
 
-      <Card className="bg-[#171717] border-[#2f2f2f]/50">
-        <CardHeader className="border-b border-[#2f2f2f]/30 pb-3">
+      <Card className="bg-[var(--bg-surface)] border-[var(--border-default)]">
+        <CardHeader className="border-b border-[var(--border-default)] pb-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-200">
+            <h2 className="text-sm font-semibold text-[var(--text-secondary)]">
               {activeTab === "samples" && "Sample Explanations"}
               {activeTab === "features" && "Global Feature Importance"}
               {activeTab === "compare" && "Before / After Unlearning Comparison"}
@@ -279,7 +279,7 @@ export default function ExplainabilityPage() {
               {activeTab === "drift" && "Model Drift Analysis"}
             </h2>
             {sampleResults.length > 0 && (
-              <div className="flex items-center gap-1 text-xs text-emerald-400">
+              <div className="flex items-center gap-1 text-xs text-[var(--brand)]">
                 <CheckCircle2 className="h-3 w-3" />
                 {sampleResults.length} features
               </div>
@@ -290,7 +290,7 @@ export default function ExplainabilityPage() {
           {activeTab === "samples" && (
             <div className="space-y-2">
               {sampleResults.length === 0 && !loading && (
-                <p className="text-sm text-gray-500 text-center py-8">Click &quot;Run&quot; to explain a sample input with {METHODS.find((m) => m.id === selectedMethod)?.label}.</p>
+                 <p className="text-sm text-[var(--text-tertiary)] text-center py-8">Click &quot;Run&quot; to explain a sample input with {METHODS.find((m) => m.id === selectedMethod)?.label}.</p>
               )}
               {sampleResults.map((r, i) => (
                 <ImportanceBar key={i} label={r.feature} value={r.importance} direction={r.direction} maxVal={maxImportance} />
@@ -301,7 +301,7 @@ export default function ExplainabilityPage() {
           {activeTab === "features" && (
             <div className="space-y-2">
               {sampleResults.length === 0 && !loading && (
-                <p className="text-sm text-gray-500 text-center py-8">Run feature analysis to see global importance scores.</p>
+                 <p className="text-sm text-[var(--text-tertiary)] text-center py-8">Run feature analysis to see global importance scores.</p>
               )}
               {sampleResults.map((r, i) => (
                 <ImportanceBar key={i} label={r.feature} value={r.importance} direction={r.direction} maxVal={maxImportance} />
@@ -312,21 +312,21 @@ export default function ExplainabilityPage() {
           {activeTab === "compare" && (
             <div className="space-y-3">
               {comparisonResults.length === 0 && !loading && (
-                <p className="text-sm text-gray-500 text-center py-8">Run a comparison to see how feature importance shifts after unlearning.</p>
+                 <p className="text-sm text-[var(--text-tertiary)] text-center py-8">Run a comparison to see how feature importance shifts after unlearning.</p>
               )}
               {comparisonResults.map((r, i) => (
                 <div key={i} className="flex items-center gap-3 text-sm">
-                  <span className="w-24 text-right text-gray-400 truncate text-xs">{r.feature}</span>
-                  <div className="flex-1 flex items-center gap-1">
-                    <div className="flex-1 h-2 bg-[#212121] rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.abs(r.pre) * 100}%` }} />
-                    </div>
-                    <span className="text-xs text-gray-500 w-8 text-center">vs</span>
-                    <div className="flex-1 h-2 bg-[#212121] rounded-full overflow-hidden">
-                      <div className={clsx("h-full rounded-full", r.shift >= 0 ? "bg-emerald-500" : "bg-red-500")} style={{ width: `${Math.abs(r.post) * 100}%` }} />
-                    </div>
-                  </div>
-                  <span className={clsx("w-12 text-right text-xs font-mono", r.shift >= 0 ? "text-emerald-400" : "text-red-400")}>
+                   <span className="w-24 text-right text-[var(--text-tertiary)] truncate text-xs">{r.feature}</span>
+                   <div className="flex-1 flex items-center gap-1">
+                     <div className="flex-1 h-2 bg-[var(--bg-app)] rounded-full overflow-hidden">
+                       <div className="h-full bg-[var(--brand)] rounded-full" style={{ width: `${Math.abs(r.pre) * 100}%` }} />
+                     </div>
+                     <span className="text-xs text-[var(--text-tertiary)] w-8 text-center">vs</span>
+                     <div className="flex-1 h-2 bg-[var(--bg-app)] rounded-full overflow-hidden">
+                       <div className={clsx("h-full rounded-full", r.shift >= 0 ? "bg-[var(--brand)]" : "bg-[var(--danger)]")} style={{ width: `${Math.abs(r.post) * 100}%` }} />
+                     </div>
+                   </div>
+                   <span className={clsx("w-12 text-right text-xs font-mono", r.shift >= 0 ? "text-[var(--brand)]" : "text-[var(--danger)]")}>
                     {r.shift >= 0 ? "+" : ""}{r.shift.toFixed(3)}
                   </span>
                 </div>
@@ -336,44 +336,44 @@ export default function ExplainabilityPage() {
 
           {activeTab === "heatmap" && (
             <div className="text-center py-8">
-              <Shield className="h-8 w-8 text-gray-600 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">Privacy risk heatmap visualization integrates with security assessments.</p>
-              <p className="text-xs text-gray-600 mt-1">Use the Security module to generate privacy scores, then visualize them here.</p>
+              <Shield className="h-8 w-8 text-[var(--text-tertiary)] mx-auto mb-3" />
+              <p className="text-sm text-[var(--text-tertiary)]">Privacy risk heatmap visualization integrates with security assessments.</p>
+              <p className="text-xs text-[var(--text-tertiary)] mt-1">Use the Security module to generate privacy scores, then visualize them here.</p>
             </div>
           )}
 
           {activeTab === "drift" && (
             <div className="space-y-4">
               {!driftSummary && !loading && (
-                <p className="text-sm text-gray-500 text-center py-8">Run drift analysis to detect model behavior changes after unlearning.</p>
+                 <p className="text-sm text-[var(--text-tertiary)] text-center py-8">Run drift analysis to detect model behavior changes after unlearning.</p>
               )}
               {driftSummary && (
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-[#212121] rounded-xl p-4 border border-[#2f2f2f]/30">
-                    <p className="text-xs text-gray-500 mb-1">Confidence Drift</p>
-                    <p className={clsx("text-lg font-semibold", (driftSummary.confidence_drift as number) < -0.01 ? "text-red-400" : "text-emerald-400")}>
+                  <div className="bg-[var(--bg-app)] rounded-xl p-4 border border-[var(--border-default)]">
+                    <p className="text-xs text-[var(--text-tertiary)] mb-1">Confidence Drift</p>
+                    <p className={clsx("text-lg font-semibold", (driftSummary.confidence_drift as number) < -0.01 ? "text-[var(--danger)]" : "text-[var(--brand)]")}>
                       {(driftSummary.confidence_drift as number).toFixed(4)}
                     </p>
                   </div>
-                  <div className="bg-[#212121] rounded-xl p-4 border border-[#2f2f2f]/30">
-                    <p className="text-xs text-gray-500 mb-1">Importance Drift</p>
-                    <p className={clsx("text-lg font-semibold", (driftSummary.importance_drift as number) > 0.1 ? "text-red-400" : "text-emerald-400")}>
+                  <div className="bg-[var(--bg-app)] rounded-xl p-4 border border-[var(--border-default)]">
+                    <p className="text-xs text-[var(--text-tertiary)] mb-1">Importance Drift</p>
+                    <p className={clsx("text-lg font-semibold", (driftSummary.importance_drift as number) > 0.1 ? "text-[var(--danger)]" : "text-[var(--brand)]")}>
                       {(driftSummary.importance_drift as number).toFixed(4)}
                     </p>
                   </div>
-                  <div className="bg-[#212121] rounded-xl p-4 border border-[#2f2f2f]/30">
-                    <p className="text-xs text-gray-500 mb-1">Pre-Volatility</p>
-                    <p className="text-lg font-semibold text-gray-200">{(driftSummary.volatility_pre as number).toFixed(4)}</p>
+                  <div className="bg-[var(--bg-app)] rounded-xl p-4 border border-[var(--border-default)]">
+                    <p className="text-xs text-[var(--text-tertiary)] mb-1">Pre-Volatility</p>
+                    <p className="text-lg font-semibold text-[var(--text-secondary)]">{(driftSummary.volatility_pre as number).toFixed(4)}</p>
                   </div>
-                  <div className="bg-[#212121] rounded-xl p-4 border border-[#2f2f2f]/30">
-                    <p className="text-xs text-gray-500 mb-1">Post-Volatility</p>
-                    <p className="text-lg font-semibold text-gray-200">{(driftSummary.volatility_post as number).toFixed(4)}</p>
+                  <div className="bg-[var(--bg-app)] rounded-xl p-4 border border-[var(--border-default)]">
+                    <p className="text-xs text-[var(--text-tertiary)] mb-1">Post-Volatility</p>
+                    <p className="text-lg font-semibold text-[var(--text-secondary)]">{(driftSummary.volatility_post as number).toFixed(4)}</p>
                   </div>
-                  <div className="col-span-2 bg-[#212121] rounded-xl p-4 border border-[#2f2f2f]/30">
-                    <p className="text-xs text-gray-500 mb-1">Status</p>
+                  <div className="col-span-2 bg-[var(--bg-app)] rounded-xl p-4 border border-[var(--border-default)]">
+                    <p className="text-xs text-[var(--text-tertiary)] mb-1">Status</p>
                     <div className="flex items-center gap-2">
-                      <div className={clsx("h-2 w-2 rounded-full", driftSummary.drift_detected ? "bg-red-500" : "bg-emerald-500")} />
-                      <p className="text-sm font-medium text-gray-200">
+                      <div className={clsx("h-2 w-2 rounded-full", driftSummary.drift_detected ? "bg-[var(--danger)]" : "bg-[var(--brand)]")} />
+                      <p className="text-sm font-medium text-[var(--text-secondary)]">
                         {driftSummary.drift_detected ? "Drift Detected" : "No Significant Drift"}
                       </p>
                     </div>
@@ -385,16 +385,16 @@ export default function ExplainabilityPage() {
         </CardContent>
       </Card>
 
-      <Card className="bg-[#171717] border-[#2f2f2f]/50">
-        <CardHeader className="border-b border-[#2f2f2f]/30 pb-3">
-          <h2 className="text-sm font-semibold text-gray-200">Available Methods</h2>
+      <Card className="bg-[var(--bg-surface)] border-[var(--border-default)]">
+        <CardHeader className="border-b border-[var(--border-default)] pb-3">
+          <h2 className="text-sm font-semibold text-[var(--text-secondary)]">Available Methods</h2>
         </CardHeader>
         <CardContent className="pt-4">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {METHODS.map((m) => (
-              <div key={m.id} className="bg-[#212121] rounded-xl p-3 border border-[#2f2f2f]/30">
-                <p className="text-sm font-medium text-gray-200">{m.label}</p>
-                <p className="text-xs text-gray-500 mt-1">{m.description}</p>
+              <div key={m.id} className="bg-[var(--bg-app)] rounded-xl p-3 border border-[var(--border-default)]">
+                <p className="text-sm font-medium text-[var(--text-secondary)]">{m.label}</p>
+                <p className="text-xs text-[var(--text-tertiary)] mt-1">{m.description}</p>
               </div>
             ))}
           </div>

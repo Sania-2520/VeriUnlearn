@@ -251,6 +251,7 @@ async def logout(
 
 
 @router.get("/oauth/{provider}")
+@router.get("/oauth/{provider}/authorize")
 async def oauth_login(provider: str):
     if provider not in ("google", "github"):
         raise HTTPException(status_code=400, detail="Unsupported OAuth provider")

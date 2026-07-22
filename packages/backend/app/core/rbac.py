@@ -34,6 +34,7 @@ class Permission(str, Enum):
     BENCHMARKS_READ = "benchmarks:read"
     BENCHMARKS_WRITE = "benchmarks:write"
     CONTINUAL_LEARNING_WRITE = "continual_learning:write"
+    MONITORING_READ = "monitoring:read"
 
 
 ROLE_PERMISSIONS: dict[str, set[Permission]] = {
@@ -69,6 +70,7 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
         Permission.BENCHMARKS_READ,
         Permission.BENCHMARKS_WRITE,
         Permission.CONTINUAL_LEARNING_WRITE,
+        Permission.MONITORING_READ,
     },
     "compliance_officer": {
         Permission.UNLEARNING_READ,
@@ -84,6 +86,7 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
         Permission.WEBHOOKS_READ,
         Permission.WEBHOOKS_WRITE,
         Permission.EXPLAIN_READ,
+        Permission.MONITORING_READ,
     },
     "unlearning_auditor": {
         Permission.UNLEARNING_CREATE,
@@ -94,6 +97,7 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
         Permission.AUDIT_READ,
         Permission.USERS_READ,
         Permission.BENCHMARKS_READ,
+        Permission.MONITORING_READ,
     },
     "member": {
         Permission.UNLEARNING_CREATE,
@@ -112,6 +116,7 @@ ROLE_PERMISSIONS: dict[str, set[Permission]] = {
         Permission.SETTINGS_READ,
         Permission.EXPLAIN_READ,
         Permission.BENCHMARKS_READ,
+        Permission.MONITORING_READ,
     },
     "viewer": {
         Permission.UNLEARNING_READ,

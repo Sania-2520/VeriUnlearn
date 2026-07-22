@@ -1,5 +1,8 @@
+import logging
 import math
 from typing import Any, Optional
+
+logger = logging.getLogger(__name__)
 
 import torch
 
@@ -157,6 +160,7 @@ class PrivacyEvaluator:
                 )
                 inversion_risk = inv_result
             except Exception:
+                logger.warning("Model inversion attack failed")
                 inversion_risk = {"error": "model inversion attack failed"}
 
         if run_extraction:
@@ -177,6 +181,7 @@ class PrivacyEvaluator:
                 )
                 extraction_risk = ext_result
             except Exception:
+                logger.warning("Model extraction attack failed")
                 extraction_risk = {"error": "model extraction attack failed"}
 
         return PrivacyEvaluationReport(

@@ -7,7 +7,7 @@ export default function MFASetupPage() {
   const router = useRouter()
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-app)] px-4">
       <div className="w-full max-w-lg">
         <MFASetupForm
           onComplete={() => router.push("/dashboard")}

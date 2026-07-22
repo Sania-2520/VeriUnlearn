@@ -5,6 +5,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import settings
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def _sync_database_url() -> str:
@@ -39,7 +42,8 @@ def worker_session() -> Generator[Session, None, None]:
     try:
         yield session
         session.commit()
-    except Exception:
+    except Exception as e:
+        logger.warning("Worker session failed, rolling back: %s", e)
         session.rollback()
         raise
     finally:

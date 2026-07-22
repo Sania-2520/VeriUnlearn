@@ -1,0 +1,287 @@
+[
+  {
+    "dataset": "mnist",
+    "algorithm": "retrain",
+    "forget_ratio": 0.1,
+    "run": 0,
+    "seed": 42,
+    "accuracy_before": 0.8233,
+    "f1_before": 0.8187,
+    "accuracy_after": 0.8267,
+    "f1_after": 0.8188,
+    "accuracy_drop": -0.0033,
+    "train_time_s": 0.36,
+    "unlearn_time_s": 0.3,
+    "params": {
+      "max_iter": 300
+    }
+  },
+  {
+    "dataset": "mnist",
+    "algorithm": "retrain",
+    "forget_ratio": 0.1,
+    "run": 1,
+    "seed": 43,
+    "accuracy_before": 0.7867,
+    "f1_before": 0.7804,
+    "accuracy_after": 0.74,
+    "f1_after": 0.7324,
+    "accuracy_drop": 0.0467,
+    "train_time_s": 0.34,
+    "unlearn_time_s": 0.27,
+    "params": {
+      "max_iter": 300
+    }
+  },
+  {
+    "dataset": "mnist",
+    "algorithm": "retrain",
+    "forget_ratio": 0.1,
+    "run": 2,
+    "seed": 44,
+    "accuracy_before": 0.83,
+    "f1_before": 0.8275,
+    "accuracy_after": 0.8,
+    "f1_after": 0.7957,
+    "accuracy_drop": 0.03,
+    "train_time_s": 0.28,
+    "unlearn_time_s": 0.26,
+    "params": {
+      "max_iter": 300
+    }
+  },
+  {
+    "dataset": "mnist",
+    "algorithm": "sisa",
+    "forget_ratio": 0.1,
+    "run": 0,
+    "seed": 42,
+    "accuracy_before": 0.6333,
+    "f1_before": 0.6025,
+    "accuracy_after": 0.5867,
+    "f1_after": 0.5451,
+    "accuracy_drop": 0.0467,
+    "train_time_s": 0.75,
+    "unlearn_time_s": 0.11,
+    "params": {
+      "num_shards": 5,
+      "max_iter": 300
+    }
+  },
+  {
+    "dataset": "mnist",
+    "algorithm": "sisa",
+    "forget_ratio": 0.1,
+    "run": 1,
+    "seed": 43,
+    "accuracy_before": 0.6033,
+    "f1_before": 0.5822,
+    "accuracy_after": 0.5033,
+    "f1_after": 0.4648,
+    "accuracy_drop": 0.1,
+    "train_time_s": 0.67,
+    "unlearn_time_s": 0.56,
+    "params": {
+      "num_shards": 5,
+      "max_iter": 300
+    }
+  },
+  {
+    "dataset": "mnist",
+    "algorithm": "sisa",
+    "forget_ratio": 0.1,
+    "run": 2,
+    "seed": 44,
+    "accuracy_before": 0.5667,
+    "f1_before": 0.5191,
+    "accuracy_after": 0.5633,
+    "f1_after": 0.5342,
+    "accuracy_drop": 0.0033,
+    "train_time_s": 0.62,
+    "unlearn_time_s": 0.65,
+    "params": {
+      "num_shards": 5,
+      "max_iter": 300
+    }
+  },
+  {
+    "dataset": "mnist",
+    "algorithm": "scrub",
+    "forget_ratio": 0.1,
+    "run": 0,
+    "seed": 42,
+    "accuracy_before": 0.8233,
+    "f1_before": 0.8187,
+    "accuracy_after": 0.78,
+    "f1_after": 0.7787,
+    "accuracy_drop": 0.0433,
+    "train_time_s": 0.54,
+    "unlearn_time_s": 13.86,
+    "params": {
+      "max_iter": 200,
+      "forget_weight": 1.0,
+      "retain_weight": 1.0,
+      "temperature": 2.0
+    }
+  },
+  {
+    "dataset": "mnist",
+    "algorithm": "scrub",
+    "forget_ratio": 0.1,
+    "run": 1,
+    "seed": 43,
+    "accuracy_before": 0.7867,
+    "f1_before": 0.7804,
+    "accuracy_after": 0.7933,
+    "f1_after": 0.7869,
+    "accuracy_drop": -0.0067,
+    "train_time_s": 0.55,
+    "unlearn_time_s": 13.6,
+    "params": {
+      "max_iter": 200,
+      "forget_weight": 1.0,
+      "retain_weight": 1.0,
+      "temperature": 2.0
+    }
+  },
+  {
+    "dataset": "mnist",
+    "algorithm": "scrub",
+    "forget_ratio": 0.1,
+    "run": 2,
+    "seed": 44,
+    "accuracy_before": 0.83,
+    "f1_before": 0.8275,
+    "accuracy_after": 0.8033,
+    "f1_after": 0.8015,
+    "accuracy_drop": 0.0267,
+    "train_time_s": 0.43,
+    "unlearn_time_s": 13.65,
+    "params": {
+      "max_iter": 200,
+      "forget_weight": 1.0,
+      "retain_weight": 1.0,
+      "temperature": 2.0
+    }
+  },
+  {
+    "dataset": "mnist",
+    "algorithm": "influence_functions",
+    "forget_ratio": 0.1,
+    "run": 0,
+    "seed": 42,
+    "accuracy_before": 0.8233,
+    "f1_before": 0.8187,
+    "accuracy_after": 0.8367,
+    "f1_after": 0.8295,
+    "accuracy_drop": -0.0133,
+    "train_time_s": 0.34,
+    "unlearn_time_s": 0.73,
+    "params": {
+      "max_iter": 300,
+      "damping": 0.01,
+      "top_k_influences": null
+    }
+  },
+  {
+    "dataset": "mnist",
+    "algorithm": "influence_functions",
+    "forget_ratio": 0.1,
+    "run": 1,
+    "seed": 43,
+    "accuracy_before": 0.7867,
+    "f1_before": 0.7804,
+    "accuracy_after": 0.7467,
+    "f1_after": 0.7366,
+    "accuracy_drop": 0.04,
+    "train_time_s": 0.35,
+    "unlearn_time_s": 0.55,
+    "params": {
+      "max_iter": 300,
+      "damping": 0.01,
+      "top_k_influences": null
+    }
+  },
+  {
+    "dataset": "mnist",
+    "algorithm": "influence_functions",
+    "forget_ratio": 0.1,
+    "run": 2,
+    "seed": 44,
+    "accuracy_before": 0.83,
+    "f1_before": 0.8275,
+    "accuracy_after": 0.7967,
+    "f1_after": 0.7932,
+    "accuracy_drop": 0.0333,
+    "train_time_s": 0.27,
+    "unlearn_time_s": 0.56,
+    "params": {
+      "max_iter": 300,
+      "damping": 0.01,
+      "top_k_influences": null
+    }
+  },
+  {
+    "dataset": "mnist",
+    "algorithm": "fine_tune_forgetting",
+    "forget_ratio": 0.1,
+    "run": 0,
+    "seed": 42,
+    "accuracy_before": 0.8233,
+    "f1_before": 0.8187,
+    "accuracy_after": 0.7367,
+    "f1_after": 0.7285,
+    "accuracy_drop": 0.0867,
+    "train_time_s": 0.34,
+    "unlearn_time_s": 0.86,
+    "params": {
+      "ascent_epochs": 3,
+      "retain_epochs": 5,
+      "ascent_lr": 0.01,
+      "retain_lr": 0.005,
+      "batch_size": 256
+    }
+  },
+  {
+    "dataset": "mnist",
+    "algorithm": "fine_tune_forgetting",
+    "forget_ratio": 0.1,
+    "run": 1,
+    "seed": 43,
+    "accuracy_before": 0.7867,
+    "f1_before": 0.7804,
+    "accuracy_after": 0.72,
+    "f1_after": 0.7148,
+    "accuracy_drop": 0.0667,
+    "train_time_s": 0.34,
+    "unlearn_time_s": 0.86,
+    "params": {
+      "ascent_epochs": 3,
+      "retain_epochs": 5,
+      "ascent_lr": 0.01,
+      "retain_lr": 0.005,
+      "batch_size": 256
+    }
+  },
+  {
+    "dataset": "mnist",
+    "algorithm": "fine_tune_forgetting",
+    "forget_ratio": 0.1,
+    "run": 2,
+    "seed": 44,
+    "accuracy_before": 0.83,
+    "f1_before": 0.8275,
+    "accuracy_after": 0.75,
+    "f1_after": 0.7423,
+    "accuracy_drop": 0.08,
+    "train_time_s": 0.27,
+    "unlearn_time_s": 0.85,
+    "params": {
+      "ascent_epochs": 3,
+      "retain_epochs": 5,
+      "ascent_lr": 0.01,
+      "retain_lr": 0.005,
+      "batch_size": 256
+    }
+  }
+]

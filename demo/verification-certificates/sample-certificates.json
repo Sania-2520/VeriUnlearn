@@ -1,0 +1,206 @@
+[
+  {
+    "certificate_id": "cert-sisa-cifar10",
+    "dataset": "cifar10",
+    "algorithm": "sisa",
+    "model_id": "resnet18",
+    "status": "valid",
+    "root_hash": "2aff72baedd999204b202df25b68b47fabe8d74f959318f64931a3d592d28f6a",
+    "merkle_root": "1a7146f0fbafd1239149b52fb74a43e290c3d1c458757c4c5cbabaebba8e91be",
+    "proof_steps": [
+      {
+        "step": 0,
+        "description": "Initialize unlearning request",
+        "hash": "fac295b33e80eee79652461740455c91"
+      },
+      {
+        "step": 1,
+        "description": "Load model checkpoint",
+        "hash": "f7cabbc9c231c73d7421e183c8969c95"
+      },
+      {
+        "step": 2,
+        "description": "Apply unlearning algorithm",
+        "hash": "9b9bf82c48d475ad2ee87fa4c7bc2854"
+      },
+      {
+        "step": 3,
+        "description": "Verify parameter delta",
+        "hash": "245b0d7a5097534eedcea650548ddc73"
+      },
+      {
+        "step": 4,
+        "description": "Compute inclusion test",
+        "hash": "c5c1d2c4a8c1922bf0467eb4b5f848e7"
+      },
+      {
+        "step": 5,
+        "description": "Generate zero-knowledge proof",
+        "hash": "6e2882db69558b60613ce5dff9a6b73d"
+      },
+      {
+        "step": 6,
+        "description": "Submit to certificate chain",
+        "hash": "bd51da3adf8809ffd62865a7d45a4b93"
+      }
+    ],
+    "inclusion_test_passed": true,
+    "exclusion_verified": true,
+    "issued_at": "2026-05-02T12:00:00+00:00",
+    "expires_at": "2027-05-02T12:00:00+00:00",
+    "signer": "veriunlearn-verifier"
+  },
+  {
+    "certificate_id": "cert-influence-cifar10",
+    "dataset": "cifar10",
+    "algorithm": "influence",
+    "model_id": "resnet18",
+    "status": "valid",
+    "root_hash": "5546af84786a184340605707f31fc1554a58b06c77b454f3781aa94d203f7281",
+    "merkle_root": "34bef0e6fb5370232e05e07361d7ebd676384063f0137b1908bcd36a52aa9ca6",
+    "proof_steps": [
+      {
+        "step": 0,
+        "description": "Initialize unlearning request",
+        "hash": "fdf9e54fdc58d8fa84f94c787d7fba8f"
+      },
+      {
+        "step": 1,
+        "description": "Load model checkpoint",
+        "hash": "043db704913090cbfaba5154abfc1ad6"
+      },
+      {
+        "step": 2,
+        "description": "Apply unlearning algorithm",
+        "hash": "e97f7f502eddacec797efad4dfb376f0"
+      },
+      {
+        "step": 3,
+        "description": "Verify parameter delta",
+        "hash": "4e968fb65fb3f3ce47a9f4e789670396"
+      },
+      {
+        "step": 4,
+        "description": "Compute inclusion test",
+        "hash": "552d20908a2c417d0f816a830d1ef692"
+      },
+      {
+        "step": 5,
+        "description": "Generate zero-knowledge proof",
+        "hash": "d6f66e51b86f5d5848da9abc4b5e41a3"
+      },
+      {
+        "step": 6,
+        "description": "Submit to certificate chain",
+        "hash": "02de518eafaf772439c1c31af185df7d"
+      }
+    ],
+    "inclusion_test_passed": true,
+    "exclusion_verified": true,
+    "issued_at": "2026-05-04T10:53:00+00:00",
+    "expires_at": "2027-05-04T10:53:00+00:00",
+    "signer": "veriunlearn-verifier"
+  },
+  {
+    "certificate_id": "cert-certified-cifar10",
+    "dataset": "cifar10",
+    "algorithm": "certified",
+    "model_id": "resnet18",
+    "status": "valid",
+    "root_hash": "3d426cb7f356f4230ae6ebf0f7e580308a388241e5c08583d791412df9ee9f1f",
+    "merkle_root": "726fbc49265676b1782a94d883ddcac92059699e9044a0a10d5b4d4cd0c90337",
+    "proof_steps": [
+      {
+        "step": 0,
+        "description": "Initialize unlearning request",
+        "hash": "e1328d372c1fd6dd7f44dfcb53d50fc9"
+      },
+      {
+        "step": 1,
+        "description": "Load model checkpoint",
+        "hash": "d0d2c989913bb49a829aaa8b8e29ac2c"
+      },
+      {
+        "step": 2,
+        "description": "Apply unlearning algorithm",
+        "hash": "efcb33906c7b5bcf479fac9cd6356c5f"
+      },
+      {
+        "step": 3,
+        "description": "Verify parameter delta",
+        "hash": "8520eb9fdb1a1bf1a183fd43a4fed4c1"
+      },
+      {
+        "step": 4,
+        "description": "Compute inclusion test",
+        "hash": "333973a0d5d6039ebcc3f37b86001d9d"
+      },
+      {
+        "step": 5,
+        "description": "Generate zero-knowledge proof",
+        "hash": "1bf01b3bb994a255bb9d8e7cf18e4cf5"
+      },
+      {
+        "step": 6,
+        "description": "Submit to certificate chain",
+        "hash": "4dac607da4d4fff2c07aeeea1aad5e8f"
+      }
+    ],
+    "inclusion_test_passed": true,
+    "exclusion_verified": true,
+    "issued_at": "2026-05-06T09:46:00+00:00",
+    "expires_at": "2027-05-06T09:46:00+00:00",
+    "signer": "veriunlearn-verifier"
+  },
+  {
+    "certificate_id": "cert-hybrid-cifar10",
+    "dataset": "cifar10",
+    "algorithm": "hybrid",
+    "model_id": "resnet18",
+    "status": "valid",
+    "root_hash": "a92eeb2bdad1a9cd825193c9ae4dd83d4dd2be3fb7a7f7bee09ecd74dc41b50a",
+    "merkle_root": "f18d026ed0ec17d2dad1658ada973447028d899c8a41cbe3ea501997fa215e14",
+    "proof_steps": [
+      {
+        "step": 0,
+        "description": "Initialize unlearning request",
+        "hash": "707a9497e63cb698c7068dbf4a4673d8"
+      },
+      {
+        "step": 1,
+        "description": "Load model checkpoint",
+        "hash": "30d1f962f6ca1b8b5f4543a1b20680cb"
+      },
+      {
+        "step": 2,
+        "description": "Apply unlearning algorithm",
+        "hash": "44820a0337204355162aa4d3333d8481"
+      },
+      {
+        "step": 3,
+        "description": "Verify parameter delta",
+        "hash": "4af1229be1b9995e13178232c6228b35"
+      },
+      {
+        "step": 4,
+        "description": "Compute inclusion test",
+        "hash": "2b941fdba3ad136b8ebaef058999bc35"
+      },
+      {
+        "step": 5,
+        "description": "Generate zero-knowledge proof",
+        "hash": "c0a290c1f2c13a71e964664cd839cfdf"
+      },
+      {
+        "step": 6,
+        "description": "Submit to certificate chain",
+        "hash": "fcf78de0cf70e256d1ff704565897c75"
+      }
+    ],
+    "inclusion_test_passed": true,
+    "exclusion_verified": true,
+    "issued_at": "2026-05-08T08:39:00+00:00",
+    "expires_at": "2027-05-08T08:39:00+00:00",
+    "signer": "veriunlearn-verifier"
+  }
+]

@@ -1,0 +1,58 @@
+VeriUnlearn
+Copyright 2024 VeriUnlearn Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+This product includes software developed by the VeriUnlearn project.
+
+---
+
+Third-Party Dependencies
+
+This product uses the following open-source libraries. Their respective
+licenses are included where noted.
+
+Backend (Python):
+- FastAPI - MIT License
+- SQLAlchemy - MIT License
+- Alembic - MIT License
+- Pydantic - MIT License
+- Celery - BSD License
+- Redis (via redis-py) - MIT License
+- PostgreSQL (via asyncpg) - Apache License 2.0
+- MinIO (minio-py) - Apache License 2.0
+- Qdrant Client - Apache License 2.0
+- OpenTelemetry - Apache License 2.0
+- Gunicorn - MIT License
+
+ML Engine (Python):
+- PyTorch - BSD License
+- PEFT (LoRA) - Apache License 2.0
+- SHAP - MIT License
+- LIME - BSD License
+
+Frontend (TypeScript/JavaScript):
+- Next.js - MIT License
+- React - MIT License
+- Tailwind CSS - MIT License
+- shadcn/ui - MIT License
+
+Infrastructure:
+- Docker - Apache License 2.0
+- Nginx - BSD License
+- Prometheus - Apache License 2.0
+- Grafana - AGPL License
+- RabbitMQ - MPL 2.0
+
+For a complete list of dependencies and their licenses, see the respective
+requirements.txt and package.json files in each package directory.

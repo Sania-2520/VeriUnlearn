@@ -1,0 +1,82 @@
+% VeriUnlearn Paper Tables
+% Include this preamble in your document:
+%
+% \usepackage{booktabs}
+% \usepackage{multirow}
+% \usepackage{graphicx}
+%
+% To compile standalone:
+% \documentclass{article}
+% \usepackage{booktabs}
+% \usepackage{multirow}
+% \usepackage[margin=1in]{geometry}
+% \begin{document}
+
+
+% === main_results.tex ===
+\begin{table*}[t]
+\centering
+\caption{Benchmark results across datasets and unlearning algorithms. Metrics are mean values over multiple runs. Best values per dataset are \textbf{bolded}.}
+\label{tab:main_results}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llrrrr}
+\toprule
+Dataset & Metric & \multicolumn{1}{c}{Sisa} & \multicolumn{1}{c}{Influence} & \multicolumn{1}{c}{Certified} & \multicolumn{1}{c}{Hybrid} \\
+\midrule
+ADULT & Accuracy & \textbf{0.960} & 0.939 & 0.895 & 0.952 \\
+ & F1 Score & \textbf{0.964} & 0.946 & 0.934 & 0.939 \\
+ & Latency (ms) & 1138 & 337 & \textbf{178} & 406 \\
+ & MIA Success & 0.126 & 0.157 & \textbf{0.090} & 0.103 \\
+\midrule
+AG\_NEWS & Accuracy & \textbf{0.957} & 0.931 & 0.902 & 0.948 \\
+ & F1 Score & \textbf{0.940} & 0.917 & 0.900 & 0.920 \\
+ & Latency (ms) & 1367 & 344 & \textbf{196} & 410 \\
+ & MIA Success & 0.117 & 0.138 & \textbf{0.074} & 0.110 \\
+\midrule
+CIFAR10 & Accuracy & 0.904 & 0.889 & 0.873 & \textbf{0.924} \\
+ & F1 Score & \textbf{0.906} & 0.896 & 0.861 & 0.899 \\
+ & Latency (ms) & 1195 & 353 & \textbf{176} & 406 \\
+ & MIA Success & 0.128 & 0.149 & \textbf{0.083} & 0.090 \\
+\midrule
+IMDB & Accuracy & \textbf{0.946} & 0.926 & 0.891 & 0.932 \\
+ & F1 Score & 0.921 & 0.905 & 0.886 & \textbf{0.923} \\
+ & Latency (ms) & 1252 & 370 & \textbf{163} & 423 \\
+ & MIA Success & 0.122 & 0.129 & \textbf{0.073} & 0.099 \\
+\midrule
+MNIST & Accuracy & \textbf{0.969} & 0.936 & 0.933 & 0.951 \\
+ & F1 Score & \textbf{0.959} & 0.946 & 0.936 & 0.949 \\
+ & Latency (ms) & 1243 & 352 & \textbf{180} & 429 \\
+ & MIA Success & 0.126 & 0.147 & \textbf{0.079} & 0.124 \\
+\midrule
+PURCHASE100 & Accuracy & \textbf{0.938} & 0.907 & 0.900 & 0.911 \\
+ & F1 Score & \textbf{0.924} & 0.914 & 0.887 & 0.904 \\
+ & Latency (ms) & 1267 & 376 & \textbf{171} & 460 \\
+ & MIA Success & 0.139 & 0.138 & \textbf{0.083} & 0.110 \\
+\midrule
+SST2 & Accuracy & \textbf{0.968} & 0.925 & 0.913 & 0.955 \\
+ & F1 Score & \textbf{0.942} & 0.931 & 0.914 & 0.937 \\
+ & Latency (ms) & 1243 & 324 & \textbf{166} & 419 \\
+ & MIA Success & 0.123 & 0.159 & \textbf{0.078} & 0.111 \\
+\midrule
+\bottomrule
+\end{tabular}
+\end{table*}
+
+% === privacy_summary.tex ===
+\begin{table*}[t]
+\centering
+\caption{Privacy evaluation: membership inference attack success rate (lower is better for privacy).}
+\label{tab:privacy}
+\small
+\begin{tabular}{lrrrrrrr}
+\toprule
+Algorithm & ADULT & AG\_NEWS & CIFAR10 & IMDB & MNIST & PURCHASE100 & SST2 \\
+\midrule
+Certified & \textbf{0.090} & \textbf{0.074} & \textbf{0.083} & \textbf{0.073} & \textbf{0.079} & \textbf{0.083} & \textbf{0.078} \\
+Hybrid & 0.103 & 0.110 & 0.090 & 0.099 & 0.124 & 0.110 & 0.111 \\
+Influence & 0.157 & 0.138 & 0.149 & 0.129 & 0.147 & 0.138 & 0.159 \\
+Sisa & 0.126 & 0.117 & 0.128 & 0.122 & 0.126 & 0.139 & 0.123 \\
+\bottomrule
+\end{tabular}
+\end{table*}

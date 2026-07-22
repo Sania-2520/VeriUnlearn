@@ -6,6 +6,8 @@ from app.api.v1.users import router as users_router
 from app.api.v1.providers import router as providers_router
 from app.api.v1.rag import router as rag_router
 from app.api.v1.memory import router as memory_router
+from app.api.v1.models import router as models_router
+from app.api.v1.monitoring import router as monitoring_router
 from app.api.v1.unlearning import router as unlearning_router
 from app.api.v1.verification import router as verification_router
 from app.api.v1.security import router as security_router
@@ -30,6 +32,8 @@ router.include_router(chat_router, prefix="/chat", tags=["Chat"])
 router.include_router(providers_router, prefix="/providers", tags=["AI Providers"])
 router.include_router(rag_router, prefix="/rag", tags=["RAG Engine"])
 router.include_router(memory_router, prefix="/memory", tags=["Memory"])
+router.include_router(models_router, prefix="/models", tags=["Model Registry"])
+router.include_router(monitoring_router, prefix="/monitoring", tags=["Monitoring"])
 router.include_router(unlearning_router, prefix="/unlearning", tags=["Unlearning"])
 router.include_router(verification_router, prefix="/verify", tags=["Verification"])
 router.include_router(security_router, prefix="/security", tags=["Security"])

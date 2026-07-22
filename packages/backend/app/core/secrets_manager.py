@@ -90,6 +90,7 @@ class SecretsManager:
             f = Fernet(key)
             return f.decrypt(ciphertext.encode()).decode()
         except Exception:
+            logger.exception("Failed to decrypt API key, returning ciphertext")
             return ciphertext
 
 

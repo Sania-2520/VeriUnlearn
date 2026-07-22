@@ -34,7 +34,7 @@ class FeatureAttribution(BaseExplainer):
                     out.backward()
                     return x.grad.detach().numpy().flatten()
             except Exception:
-                pass
+                logger.debug("Gradient attribution failed, falling back to random", exc_info=True)
         return np.random.randn(input_data.shape[-1]) * 0.01
 
     def _occlusion_attribution(self, input_data: np.ndarray) -> np.ndarray:

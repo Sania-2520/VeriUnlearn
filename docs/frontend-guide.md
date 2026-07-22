@@ -2,7 +2,7 @@
 
 ## Architecture
 
-The frontend is a Next.js 14 application with App Router, React 18, and Tailwind CSS.
+The frontend is a Next.js 15 application with App Router, React 19, and Tailwind CSS.
 
 ## Key Packages
 

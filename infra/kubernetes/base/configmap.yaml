@@ -6,25 +6,67 @@ metadata:
   labels:
     app.kubernetes.io/name: veriunlearn
     app.kubernetes.io/part-of: veriunlearn
+    app.kubernetes.io/version: "5.0.0"
 data:
+  # ── Application Settings ──────────────────────────────────────────────────
   ENVIRONMENT: "production"
+  DEBUG: "false"
   LOG_LEVEL: "info"
   LOG_FORMAT: "json"
-  BACKEND_HOST: "0.0.0.0"
-  BACKEND_PORT: "8000"
-  ML_ENGINE_HOST: "0.0.0.0"
-  ML_ENGINE_PORT: "8001"
-  CELERY_BROKER_URL: "redis://redis-master:6379/0"
-  CELERY_RESULT_BACKEND: "redis://redis-master:6379/1"
+
+  # ── Service URLs ──────────────────────────────────────────────────────────
   DATABASE_HOST: "postgresql-primary"
   DATABASE_PORT: "5432"
   DATABASE_NAME: "veriunlearn"
   REDIS_HOST: "redis-master"
   REDIS_PORT: "6379"
+  QDRANT_HOST: "qdrant"
+  QDRANT_PORT: "6333"
+  QDRANT_GRPC_PORT: "6334"
+  MINIO_ENDPOINT: "minio"
+  MINIO_PORT: "9000"
+  MINIO_BUCKET: "veriunlearn"
+
+  # ── Backend Configuration ─────────────────────────────────────────────────
+  BACKEND_HOST: "0.0.0.0"
+  BACKEND_PORT: "8000"
+  ML_ENGINE_HOST: "ml-engine"
+  ML_ENGINE_PORT: "8001"
+  FRONTEND_URL: "https://veriunlearn.example.com"
+
+  # ── Celery / Task Queue ──────────────────────────────────────────────────
+  CELERY_BROKER_URL: "redis://redis-master:6379/0"
+  CELERY_RESULT_BACKEND: "redis://redis-master:6379/1"
+
+  # ── CORS ──────────────────────────────────────────────────────────────────
   CORS_ORIGINS: "https://veriunlearn.example.com"
+  CORS_ALLOW_CREDENTIALS: "true"
+
+  # ── Uploads / Storage ────────────────────────────────────────────────────
   MAX_UPLOAD_SIZE_MB: "100"
   MODEL_CHECKPOINT_DIR: "/app/checkpoints"
+
+  # ── ML / Experiment Tracking ──────────────────────────────────────────────
   MLFLOW_TRACKING_URI: "http://mlflow:5000"
+
+  # ── Observability ─────────────────────────────────────────────────────────
   PROMETHEUS_ENABLED: "true"
+  OTEL_SERVICE_NAME: "veriunlearn-backend"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability:4317"
+  JAEGER_ENDPOINT: "http://jaeger.observability:14268/api/traces"
   SENTRY_DSN: ""
-  FRONTEND_URL: "https://veriunlearn.example.com"
+
+  # ── Feature Flags ────────────────────────────────────────────────────────
+  FEATURE_UNCERTAINTY_QUANTIFICATION: "true"
+  FEATURE_ADVERSARIAL_ROBUSTNESS: "true"
+  FEATURE_DRIFT_DETECTION: "true"
+  FEATURE_EXPLAINABILITY: "true"
+  FEATURE_FEDERATED_LEARNING: "false"
+  FEATURE_BETA_MODELS: "false"
+  FEATURE_RATE_LIMITING: "true"
+  FEATURE_MAINTENANCE_MODE: "false"
+
+  # ── Security ──────────────────────────────────────────────────────────────
+  JWT_ALGORITHM: "HS256"
+  JWT_EXPIRATION_MINUTES: "30"
+  RATE_LIMIT_PER_MINUTE: "60"

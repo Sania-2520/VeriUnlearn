@@ -85,7 +85,7 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Profile Settings</h1>
+      <h1 className="text-2xl font-bold text-[var(--text-primary)]">Profile Settings</h1>
 
       <Card>
         <CardHeader>
@@ -106,8 +106,8 @@ export default function ProfilePage() {
               onChange={(e) => setFullName(e.target.value)}
               required
             />
-            {updateError && <p className="text-sm text-red-600">{updateError}</p>}
-            {updateSuccess && <p className="text-sm text-green-600">Profile updated successfully</p>}
+            {updateError && <p className="text-sm text-[var(--danger)]">{updateError}</p>}
+            {updateSuccess && <p className="text-sm text-[var(--success)]">Profile updated successfully</p>}
             <Button type="submit" loading={updating}>Save Changes</Button>
           </form>
         </CardContent>
@@ -120,7 +120,7 @@ export default function ProfilePage() {
         <CardContent>
           {user.mfa_enabled ? (
             <div className="space-y-4 max-w-md">
-              <p className="text-sm text-green-700 font-medium">MFA is enabled</p>
+              <p className="text-sm text-[var(--success)] font-medium">MFA is enabled</p>
               <form onSubmit={handleDisableMFA} className="space-y-3">
                 <Input
                   id="disable-mfa-code"
@@ -130,7 +130,7 @@ export default function ProfilePage() {
                   placeholder="000000"
                   required
                 />
-                {mfaDisableError && <p className="text-sm text-red-600">{mfaDisableError}</p>}
+                {mfaDisableError && <p className="text-sm text-[var(--danger)]">{mfaDisableError}</p>}
                 <Button type="submit" variant="danger" loading={disablingMFA}>
                   Disable MFA
                 </Button>
@@ -146,7 +146,7 @@ export default function ProfilePage() {
             />
           ) : (
             <div className="space-y-3">
-              <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
+              <p className="text-sm text-[var(--text-secondary)]">Add an extra layer of security to your account</p>
               <Button onClick={() => setShowMFA(true)}>Set Up MFA</Button>
             </div>
           )}
@@ -186,8 +186,8 @@ export default function ProfilePage() {
               required
               autoComplete="new-password"
             />
-            {pwError && <p className="text-sm text-red-600">{pwError}</p>}
-            {pwSuccess && <p className="text-sm text-green-600">Password changed successfully</p>}
+            {pwError && <p className="text-sm text-[var(--danger)]">{pwError}</p>}
+            {pwSuccess && <p className="text-sm text-[var(--success)]">Password changed successfully</p>}
             <Button type="submit" loading={changingPw}>Change Password</Button>
           </form>
         </CardContent>

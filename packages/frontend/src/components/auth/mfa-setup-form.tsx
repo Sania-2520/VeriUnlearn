@@ -58,7 +58,7 @@ export function MFASetupForm({ onComplete, onCancel }: MFASetupFormProps) {
       <Card>
         <CardHeader>
           <h3 className="text-lg font-semibold">Set Up Authenticator</h3>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[var(--text-secondary)]">
             Scan the QR code or enter the secret key in your authenticator app
           </p>
         </CardHeader>
@@ -72,8 +72,8 @@ export function MFASetupForm({ onComplete, onCancel }: MFASetupFormProps) {
               />
             </div>
           )}
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-xs text-gray-500 mb-1">Secret Key</p>
+          <div className="bg-[var(--bg-subtle)] rounded-lg p-3">
+            <p className="text-xs text-[var(--text-secondary)] mb-1">Secret Key</p>
             <code className="text-sm font-mono break-all">{secret}</code>
           </div>
 
@@ -87,7 +87,7 @@ export function MFASetupForm({ onComplete, onCancel }: MFASetupFormProps) {
               required
               autoFocus
             />
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
             <div className="flex gap-2">
               <Button type="submit" loading={loading}>
                 Enable MFA
@@ -106,7 +106,7 @@ export function MFASetupForm({ onComplete, onCancel }: MFASetupFormProps) {
     <Card>
       <CardHeader>
         <h3 className="text-lg font-semibold">Enable Two-Factor Authentication</h3>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-[var(--text-secondary)]">
           Verify your password to set up MFA
         </p>
       </CardHeader>
@@ -121,7 +121,7 @@ export function MFASetupForm({ onComplete, onCancel }: MFASetupFormProps) {
             required
             autoFocus
           />
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
           <div className="flex gap-2">
             <Button type="submit" loading={loading}>
               Continue

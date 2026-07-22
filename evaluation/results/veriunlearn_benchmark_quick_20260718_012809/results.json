@@ -1,0 +1,235 @@
+{
+  "config": {
+    "experiment_name": "veriunlearn_benchmark_quick",
+    "description": "VeriUnlearn unlearning algorithm evaluation",
+    "seeds": {
+      "global_seed": 42,
+      "numpy_seed": 42,
+      "torch_seed": 42,
+      "cuda_seed": 42,
+      "python_hash_seed": 42
+    },
+    "datasets": [
+      {
+        "name": "mnist",
+        "root": "evaluation/data",
+        "max_samples": 2000,
+        "train_split": 0.8,
+        "val_split": 0.1,
+        "test_split": 0.1,
+        "num_classes": 10,
+        "input_shape": [
+          1,
+          28,
+          28
+        ],
+        "vocab_size": 30000,
+        "max_seq_length": 512,
+        "normalize": true,
+        "mean": [
+          0.1307
+        ],
+        "std": [
+          0.3081
+        ]
+      }
+    ],
+    "model": {
+      "name": "logistic_regression",
+      "hidden_dim": 128,
+      "num_layers": 2,
+      "dropout": 0.1,
+      "lora_r": 8,
+      "lora_alpha": 16,
+      "lora_dropout": 0.1,
+      "lora_target_modules": [
+        "q_proj",
+        "v_proj"
+      ]
+    },
+    "training": {
+      "batch_size": 64,
+      "learning_rate": 0.001,
+      "weight_decay": 0.0001,
+      "num_epochs": 3,
+      "warmup_steps": 100,
+      "max_grad_norm": 1.0,
+      "optimizer": "adamw",
+      "scheduler": "cosine",
+      "early_stopping_patience": 5,
+      "eval_every": 1
+    },
+    "unlearning": {
+      "algorithms": [
+        "retraining",
+        "sisa",
+        "scrub"
+      ],
+      "forget_ratios": [
+        0.1
+      ],
+      "num_runs": 1,
+      "seed_start": 42
+    },
+    "privacy": {
+      "mia_num_samples": 200,
+      "mia_threshold_percentile": 50.0,
+      "membership_leakage_bins": 50,
+      "attack_confidence_level": 0.95
+    },
+    "output": {
+      "output_dir": "evaluation/results",
+      "export_csv": true,
+      "export_json": true,
+      "export_latex": true,
+      "export_figures": true,
+      "figure_format": "pdf",
+      "figure_dpi": 300,
+      "latex_font_size": "small",
+      "journal_style": true
+    }
+  },
+  "runs": [
+    {
+      "algorithm": "retraining",
+      "dataset": "mnist",
+      "forget_ratio": 0.1,
+      "run_id": 0,
+      "seed": 42,
+      "accuracy_before": 0.0,
+      "precision_before": 0.0,
+      "recall_before": 0.0,
+      "f1_before": 0.0,
+      "accuracy_after": 0.0,
+      "precision_after": 0.0,
+      "recall_after": 0.0,
+      "f1_after": 0.0,
+      "forget_accuracy": 0.0,
+      "memorization_score": 0.0,
+      "mia_success_before": 0.0,
+      "mia_success_after": 0.0,
+      "privacy_leakage": 0.0,
+      "training_time": 0.0,
+      "unlearning_time": 0.0,
+      "speedup": 0.0,
+      "memory_peak_mb": 0.0,
+      "trust_score": 0.0,
+      "utility_loss": 0.0,
+      "knowledge_retention": 0.0,
+      "confusion_matrix_before": [],
+      "confusion_matrix_after": [],
+      "roc_curve_before": {},
+      "roc_curve_after": {},
+      "pr_curve_before": {},
+      "pr_curve_after": {},
+      "elapsed_seconds": 0.0,
+      "error": "torchvision is required for image datasets (mnist, cifar10). Install with: pip install torchvision"
+    },
+    {
+      "algorithm": "sisa",
+      "dataset": "mnist",
+      "forget_ratio": 0.1,
+      "run_id": 0,
+      "seed": 42,
+      "accuracy_before": 0.0,
+      "precision_before": 0.0,
+      "recall_before": 0.0,
+      "f1_before": 0.0,
+      "accuracy_after": 0.0,
+      "precision_after": 0.0,
+      "recall_after": 0.0,
+      "f1_after": 0.0,
+      "forget_accuracy": 0.0,
+      "memorization_score": 0.0,
+      "mia_success_before": 0.0,
+      "mia_success_after": 0.0,
+      "privacy_leakage": 0.0,
+      "training_time": 0.0,
+      "unlearning_time": 0.0,
+      "speedup": 0.0,
+      "memory_peak_mb": 0.0,
+      "trust_score": 0.0,
+      "utility_loss": 0.0,
+      "knowledge_retention": 0.0,
+      "confusion_matrix_before": [],
+      "confusion_matrix_after": [],
+      "roc_curve_before": {},
+      "roc_curve_after": {},
+      "pr_curve_before": {},
+      "pr_curve_after": {},
+      "elapsed_seconds": 0.0,
+      "error": "torchvision is required for image datasets (mnist, cifar10). Install with: pip install torchvision"
+    },
+    {
+      "algorithm": "scrub",
+      "dataset": "mnist",
+      "forget_ratio": 0.1,
+      "run_id": 0,
+      "seed": 42,
+      "accuracy_before": 0.0,
+      "precision_before": 0.0,
+      "recall_before": 0.0,
+      "f1_before": 0.0,
+      "accuracy_after": 0.0,
+      "precision_after": 0.0,
+      "recall_after": 0.0,
+      "f1_after": 0.0,
+      "forget_accuracy": 0.0,
+      "memorization_score": 0.0,
+      "mia_success_before": 0.0,
+      "mia_success_after": 0.0,
+      "privacy_leakage": 0.0,
+      "training_time": 0.0,
+      "unlearning_time": 0.0,
+      "speedup": 0.0,
+      "memory_peak_mb": 0.0,
+      "trust_score": 0.0,
+      "utility_loss": 0.0,
+      "knowledge_retention": 0.0,
+      "confusion_matrix_before": [],
+      "confusion_matrix_after": [],
+      "roc_curve_before": {},
+      "roc_curve_after": {},
+      "pr_curve_before": {},
+      "pr_curve_after": {},
+      "elapsed_seconds": 0.0,
+      "error": "torchvision is required for image datasets (mnist, cifar10). Install with: pip install torchvision"
+    }
+  ],
+  "summary": {
+    "total_runs": 3,
+    "successful": 0,
+    "failed": 3
+  },
+  "hardware_info": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD64 Family 25 Model 68 Stepping 1, AuthenticAMD",
+    "python_version": "3.13.9",
+    "architecture": "64bit",
+    "machine": "AMD64",
+    "hostname": "SANDI",
+    "torch_version": "2.12.1+cpu",
+    "cuda_available": false,
+    "numpy_version": "2.3.5",
+    "sklearn_version": "1.7.2",
+    "scipy_version": "1.16.3"
+  },
+  "git_info": {
+    "commit": "f3843f068c1b",
+    "branch": "master",
+    "dirty": true
+  },
+  "package_versions": {
+    "torch": "2.12.1+cpu",
+    "numpy": "2.3.5",
+    "scipy": "1.16.3",
+    "sklearn": "1.7.2",
+    "transformers": "5.13.1",
+    "peft": "0.19.1",
+    "datasets": "5.0.0",
+    "pandas": "2.3.3",
+    "matplotlib": "3.10.6",
+    "seaborn": "0.13.2"
+  },
+  "timestamp": "2026-07-17T19:58:12"
+}

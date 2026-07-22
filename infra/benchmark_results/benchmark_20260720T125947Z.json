@@ -1,0 +1,25 @@
+[
+  {
+    "dataset": "sst2",
+    "algorithm": "influence",
+    "run_id": "sst2_influence_000_347c1d90",
+    "timestamp": "2026-07-20T12:59:47.362879+00:00",
+    "data_size": 16,
+    "num_features": 80,
+    "num_classes": 2,
+    "accuracy": 0.6428571343421936,
+    "precision_macro": 0.7916666666666667,
+    "recall_macro": 0.6428571428571428,
+    "f1_macro": 0.5906432748538012,
+    "utility_retained": 0.4897959232330322,
+    "latency_ms": 9877,
+    "training_latency_ms": 2763,
+    "mia_success_rate": 0.5,
+    "privacy_leakage": 0.5,
+    "shards_affected": 0,
+    "noise_scale": 0.0,
+    "epsilon": 0.0,
+    "success": true,
+    "error": ""
+  }
+]

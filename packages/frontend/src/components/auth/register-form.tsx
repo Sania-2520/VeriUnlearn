@@ -45,7 +45,7 @@ export function RegisterForm() {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
         <h2 className="text-2xl font-bold text-center">Create Account</h2>
-        <p className="text-sm text-gray-500 text-center mt-1">
+        <p className="text-sm text-[var(--text-secondary)] text-center mt-1">
           Get started with VeriUnlearn
         </p>
       </CardHeader>
@@ -90,15 +90,15 @@ export function RegisterForm() {
             required
             autoComplete="new-password"
           />
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
           <Button type="submit" loading={loading} className="w-full">
             Create Account
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-sm text-[var(--text-secondary)]">
           Already have an account?{" "}
-          <a href="/auth/login" className="text-blue-600 hover:text-blue-800 font-medium">
+          <a href="/auth/login" className="text-[var(--accent)] hover:opacity-80 font-medium">
             Sign in
           </a>
         </p>

@@ -1,0 +1,77 @@
+# Staging overlay — applied on top of ../values.yaml via:
+#   helm upgrade ... -f values/staging.yaml
+global:
+  imageRegistry: ghcr.io/veriunlearn
+
+image:
+  backend:
+    repository: veriunlearn/backend
+    tag: "latest"
+  mlEngine:
+    repository: veriunlearn/ml-engine
+    tag: "latest"
+  frontend:
+    repository: veriunlearn/frontend
+    tag: "latest"
+  celeryWorker:
+    repository: veriunlearn/backend
+    tag: "latest"
+
+replicaCount:
+  backend: 2
+  mlEngine: 1
+  frontend: 2
+  celeryWorker: 2
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: staging.veriunlearn.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+          port: 3000
+        - path: /api
+          pathType: Prefix
+          service: backend
+          port: 8000
+        - path: /ml
+          pathType: Prefix
+          service: ml-engine
+          port: 8001
+  tls:
+    - secretName: veriunlearn-staging-tls
+      hosts:
+        - staging.veriunlearn.com
+
+config:
+  ENVIRONMENT: "staging"
+  CORS_ORIGINS: "https://staging.veriunlearn.com"
+  FRONTEND_URL: "https://staging.veriunlearn.com"
+
+autoscaling:
+  backend:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+  mlEngine:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+  frontend:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+  celeryWorker:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    namespace: monitoring
+    interval: 30s

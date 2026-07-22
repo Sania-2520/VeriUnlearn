@@ -59,7 +59,7 @@ export function LoginForm() {
       <Card className="w-full max-w-md mx-auto">
         <CardHeader>
           <h2 className="text-2xl font-bold text-center">Two-Factor Authentication</h2>
-          <p className="text-sm text-gray-500 text-center mt-1">
+          <p className="text-sm text-[var(--text-secondary)] text-center mt-1">
             Enter the code from your authenticator app
           </p>
         </CardHeader>
@@ -74,7 +74,7 @@ export function LoginForm() {
               required
               autoFocus
             />
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
             <Button type="submit" loading={mfaLoading} className="w-full">
               Verify
             </Button>
@@ -88,7 +88,7 @@ export function LoginForm() {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
         <h2 className="text-2xl font-bold text-center">Sign In</h2>
-        <p className="text-sm text-gray-500 text-center mt-1">
+        <p className="text-sm text-[var(--text-secondary)] text-center mt-1">
           Welcome back to VeriUnlearn
         </p>
       </CardHeader>
@@ -114,21 +114,21 @@ export function LoginForm() {
             required
             autoComplete="current-password"
           />
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
           <Button type="submit" loading={loading} className="w-full">
             Sign In
           </Button>
         </form>
 
         <div className="mt-4 text-center text-sm">
-          <a href="/auth/forgot-password" className="text-blue-600 hover:text-blue-800">
+          <a href="/auth/forgot-password" className="text-[var(--accent)] hover:opacity-80">
             Forgot password?
           </a>
         </div>
 
-        <div className="mt-6 text-center text-sm text-gray-500">
+        <div className="mt-6 text-center text-sm text-[var(--text-secondary)]">
           Don&apos;t have an account?{" "}
-          <a href="/auth/register" className="text-blue-600 hover:text-blue-800 font-medium">
+          <a href="/auth/register" className="text-[var(--accent)] hover:opacity-80 font-medium">
             Sign up
           </a>
         </div>

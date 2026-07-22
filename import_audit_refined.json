@@ -1,0 +1,2241 @@
+{
+  "unused_imports": [
+    {
+      "file": "packages/backend/app/api/deps.py",
+      "line": 4,
+      "import_statement": "from fastapi import Cookie, Depends, Header, HTTPException, Request, status",
+      "imported_name": "Cookie"
+    },
+    {
+      "file": "packages/backend/app/api/deps.py",
+      "line": 4,
+      "import_statement": "from fastapi import Cookie, Depends, Header, HTTPException, Request, status",
+      "imported_name": "Header"
+    },
+    {
+      "file": "packages/backend/app/api/deps.py",
+      "line": 10,
+      "import_statement": "from app.core.rate_limiter import default_rate_limiter",
+      "imported_name": "default_rate_limiter"
+    },
+    {
+      "file": "packages/backend/app/api/v1/adapters.py",
+      "line": 3,
+      "import_statement": "from fastapi import APIRouter, Depends, HTTPException, Query, status",
+      "imported_name": "Query"
+    },
+    {
+      "file": "packages/backend/app/api/v1/admin.py",
+      "line": 13,
+      "import_statement": "from app.infrastructure.database.models import UserModel, UnlearningJobModel, WebhookModel",
+      "imported_name": "WebhookModel"
+    },
+    {
+      "file": "packages/backend/app/api/v1/api_keys.py",
+      "line": 1,
+      "import_statement": "import hashlib",
+      "imported_name": "hashlib"
+    },
+    {
+      "file": "packages/backend/app/api/v1/api_keys.py",
+      "line": 2,
+      "import_statement": "from datetime import datetime, timezone",
+      "imported_name": "timezone"
+    },
+    {
+      "file": "packages/backend/app/api/v1/api_keys.py",
+      "line": 11,
+      "import_statement": "from app.domain.auth.entities import ApiKey, UserRole",
+      "imported_name": "UserRole"
+    },
+    {
+      "file": "packages/backend/app/api/v1/audit.py",
+      "line": 6,
+      "import_statement": "from app.domain.audit.entities import EventType, ActorType, EventStatus",
+      "imported_name": "EventType"
+    },
+    {
+      "file": "packages/backend/app/api/v1/audit.py",
+      "line": 6,
+      "import_statement": "from app.domain.audit.entities import EventType, ActorType, EventStatus",
+      "imported_name": "ActorType"
+    },
+    {
+      "file": "packages/backend/app/api/v1/audit.py",
+      "line": 6,
+      "import_statement": "from app.domain.audit.entities import EventType, ActorType, EventStatus",
+      "imported_name": "EventStatus"
+    },
+    {
+      "file": "packages/backend/app/api/v1/audit.py",
+      "line": 7,
+      "import_statement": "from app.domain.audit.services import AuditService",
+      "imported_name": "AuditService"
+    },
+    {
+      "file": "packages/backend/app/api/v1/auth.py",
+      "line": 6,
+      "import_statement": "from app.api.deps import CurrentUser, DatabaseSession, default_rate_limiter, get_auth_service, get_current_user, require_mfa, require_permission",
+      "imported_name": "DatabaseSession"
+    },
+    {
+      "file": "packages/backend/app/api/v1/auth.py",
+      "line": 6,
+      "import_statement": "from app.api.deps import CurrentUser, DatabaseSession, default_rate_limiter, get_auth_service, get_current_user, require_mfa, require_permission",
+      "imported_name": "default_rate_limiter"
+    },
+    {
+      "file": "packages/backend/app/api/v1/auth.py",
+      "line": 6,
+      "import_statement": "from app.api.deps import CurrentUser, DatabaseSession, default_rate_limiter, get_auth_service, get_current_user, require_mfa, require_permission",
+      "imported_name": "get_current_user"
+    },
+    {
+      "file": "packages/backend/app/api/v1/auth.py",
+      "line": 6,
+      "import_statement": "from app.api.deps import CurrentUser, DatabaseSession, default_rate_limiter, get_auth_service, get_current_user, require_mfa, require_permission",
+      "imported_name": "require_permission"
+    },
+    {
+      "file": "packages/backend/app/api/v1/auth.py",
+      "line": 15,
+      "import_statement": "from app.core.rbac import Permission",
+      "imported_name": "Permission"
+    },
+    {
+      "file": "packages/backend/app/api/v1/auth.py",
+      "line": 19,
+      "import_statement": "from app.domain.auth.entities import UserRole",
+      "imported_name": "UserRole"
+    },
+    {
+      "file": "packages/backend/app/api/v1/auth.py",
+      "line": 20,
+      "import_statement": "from app.core.exceptions import AuthenticationError, ConflictError, NotFoundError",
+      "imported_name": "AuthenticationError"
+    },
+    {
+      "file": "packages/backend/app/api/v1/auth.py",
+      "line": 20,
+      "import_statement": "from app.core.exceptions import AuthenticationError, ConflictError, NotFoundError",
+      "imported_name": "ConflictError"
+    },
+    {
+      "file": "packages/backend/app/api/v1/auth.py",
+      "line": 20,
+      "import_statement": "from app.core.exceptions import AuthenticationError, ConflictError, NotFoundError",
+      "imported_name": "NotFoundError"
+    },
+    {
+      "file": "packages/backend/app/api/v1/benchmarks.py",
+      "line": 1,
+      "import_statement": "from typing import Any, Optional",
+      "imported_name": "Any"
+    },
+    {
+      "file": "packages/backend/app/api/v1/benchmarks.py",
+      "line": 11,
+      "import_statement": "from app.core.config import settings",
+      "imported_name": "settings"
+    },
+    {
+      "file": "packages/backend/app/api/v1/chat.py",
+      "line": 3,
+      "import_statement": "from uuid import uuid4",
+      "imported_name": "uuid4"
+    },
+    {
+      "file": "packages/backend/app/api/v1/chat.py",
+      "line": 8,
+      "import_statement": "from app.api.deps import CurrentUser, DatabaseSession, ChatServiceDep, default_rate_limiter, require_permission",
+      "imported_name": "DatabaseSession"
+    },
+    {
+      "file": "packages/backend/app/api/v1/compliance.py",
+      "line": 3,
+      "import_statement": "from fastapi import APIRouter, Depends, HTTPException, Query, status",
+      "imported_name": "HTTPException"
+    },
+    {
+      "file": "packages/backend/app/api/v1/compliance.py",
+      "line": 5,
+      "import_statement": "from app.api.deps import CurrentUser, DatabaseSession, TenantID, TenantServiceDep, default_rate_limiter, require_permission",
+      "imported_name": "CurrentUser"
+    },
+    {
+      "file": "packages/backend/app/api/v1/compliance.py",
+      "line": 5,
+      "import_statement": "from app.api.deps import CurrentUser, DatabaseSession, TenantID, TenantServiceDep, default_rate_limiter, require_permission",
+      "imported_name": "DatabaseSession"
+    },
+    {
+      "file": "packages/backend/app/api/v1/explainability.py",
+      "line": 1,
+      "import_statement": "from typing import Any, Optional",
+      "imported_name": "Any"
+    },
+    {
+      "file": "packages/backend/app/api/v1/explainability.py",
+      "line": 3,
+      "import_statement": "from fastapi import APIRouter, Depends, HTTPException, Query, status",
+      "imported_name": "Query"
+    },
+    {
+      "file": "packages/backend/app/api/v1/monitoring.py",
+      "line": 9,
+      "import_statement": "from typing import Any, Optional",
+      "imported_name": "Optional"
+    },
+    {
+      "file": "packages/backend/app/api/v1/monitoring.py",
+      "line": 12,
+      "import_statement": "from fastapi import APIRouter, Depends, HTTPException, Query, status",
+      "imported_name": "Query"
+    },
+    {
+      "file": "packages/backend/app/api/v1/providers.py",
+      "line": 1,
+      "import_statement": "import os",
+      "imported_name": "os"
+    },
+    {
+      "file": "packages/backend/app/api/v1/providers.py",
+      "line": 6,
+      "import_statement": "from cryptography.fernet import Fernet",
+      "imported_name": "Fernet"
+    },
+    {
+      "file": "packages/backend/app/api/v1/providers.py",
+      "line": 9,
+      "import_statement": "from sqlalchemy import select, desc, update as sa_update",
+      "imported_name": "sa_update"
+    },
+    {
+      "file": "packages/backend/app/api/v1/providers.py",
+      "line": 12,
+      "import_statement": "from app.core.config import settings",
+      "imported_name": "settings"
+    },
+    {
+      "file": "packages/backend/app/api/v1/rag.py",
+      "line": 7,
+      "import_statement": "from sqlalchemy import select, func, desc, or_, and_, update as sa_update",
+      "imported_name": "or_"
+    },
+    {
+      "file": "packages/backend/app/api/v1/rag.py",
+      "line": 7,
+      "import_statement": "from sqlalchemy import select, func, desc, or_, and_, update as sa_update",
+      "imported_name": "and_"
+    },
+    {
+      "file": "packages/backend/app/api/v1/rag.py",
+      "line": 7,
+      "import_statement": "from sqlalchemy import select, func, desc, or_, and_, update as sa_update",
+      "imported_name": "sa_update"
+    },
+    {
+      "file": "packages/backend/app/api/v1/security.py",
+      "line": 2,
+      "import_statement": "from typing import Optional",
+      "imported_name": "Optional"
+    },
+    {
+      "file": "packages/backend/app/api/v1/security.py",
+      "line": 5,
+      "import_statement": "from fastapi import APIRouter, Depends, HTTPException, Query, status",
+      "imported_name": "Query"
+    },
+    {
+      "file": "packages/backend/app/api/v1/security.py",
+      "line": 7,
+      "import_statement": "from sqlalchemy import select, desc",
+      "imported_name": "desc"
+    },
+    {
+      "file": "packages/backend/app/api/v1/training.py",
+      "line": 1,
+      "import_statement": "from typing import Any, Optional",
+      "imported_name": "Any"
+    },
+    {
+      "file": "packages/backend/app/api/v1/unlearning.py",
+      "line": 5,
+      "import_statement": "from app.api.deps import CurrentUser, DatabaseSession, TenantID, UnlearningServiceDep, default_rate_limiter, require_permission",
+      "imported_name": "CurrentUser"
+    },
+    {
+      "file": "packages/backend/app/api/v1/unlearning.py",
+      "line": 5,
+      "import_statement": "from app.api.deps import CurrentUser, DatabaseSession, TenantID, UnlearningServiceDep, default_rate_limiter, require_permission",
+      "imported_name": "DatabaseSession"
+    },
+    {
+      "file": "packages/backend/app/api/v1/unlearning.py",
+      "line": 5,
+      "import_statement": "from app.api.deps import CurrentUser, DatabaseSession, TenantID, UnlearningServiceDep, default_rate_limiter, require_permission",
+      "imported_name": "default_rate_limiter"
+    },
+    {
+      "file": "packages/backend/app/api/v1/verification.py",
+      "line": 3,
+      "import_statement": "from fastapi import APIRouter, Depends, HTTPException, Query, status",
+      "imported_name": "HTTPException"
+    },
+    {
+      "file": "packages/backend/app/api/v1/verification.py",
+      "line": 6,
+      "import_statement": "from app.api.deps import CurrentUser, DatabaseSession, TenantID, VerificationServiceDep, default_rate_limiter, require_permission",
+      "imported_name": "CurrentUser"
+    },
+    {
+      "file": "packages/backend/app/api/v1/verification.py",
+      "line": 6,
+      "import_statement": "from app.api.deps import CurrentUser, DatabaseSession, TenantID, VerificationServiceDep, default_rate_limiter, require_permission",
+      "imported_name": "DatabaseSession"
+    },
+    {
+      "file": "packages/backend/app/core/middleware.py",
+      "line": 7,
+      "import_statement": "from starlette.types import ASGIApp",
+      "imported_name": "ASGIApp"
+    },
+    {
+      "file": "packages/backend/app/core/middleware.py",
+      "line": 9,
+      "import_statement": "from app.core.config import settings",
+      "imported_name": "settings"
+    },
+    {
+      "file": "packages/backend/app/core/rate_limiter.py",
+      "line": 4,
+      "import_statement": "from typing import Optional",
+      "imported_name": "Optional"
+    },
+    {
+      "file": "packages/backend/app/core/security.py",
+      "line": 4,
+      "import_statement": "from typing import Any, Optional",
+      "imported_name": "Optional"
+    },
+    {
+      "file": "packages/backend/app/core/security.py",
+      "line": 7,
+      "import_statement": "from jose.constants import Algorithms",
+      "imported_name": "Algorithms"
+    },
+    {
+      "file": "packages/backend/app/domain/audit/services.py",
+      "line": 3,
+      "import_statement": "from datetime import datetime, timezone",
+      "imported_name": "datetime"
+    },
+    {
+      "file": "packages/backend/app/domain/audit/services.py",
+      "line": 3,
+      "import_statement": "from datetime import datetime, timezone",
+      "imported_name": "timezone"
+    },
+    {
+      "file": "packages/backend/app/domain/audit/services.py",
+      "line": 6,
+      "import_statement": "from app.domain.audit.entities import AuditEvent, AuditChainHead, EventType, ActorType, EventStatus",
+      "imported_name": "AuditChainHead"
+    },
+    {
+      "file": "packages/backend/app/domain/auth/interfaces.py",
+      "line": 4,
+      "import_statement": "from app.domain.auth.entities import User, Session, Tenant, OAuthAccount, ApiKey",
+      "imported_name": "OAuthAccount"
+    },
+    {
+      "file": "packages/backend/app/domain/auth/services.py",
+      "line": 1,
+      "import_statement": "import secrets",
+      "imported_name": "secrets"
+    },
+    {
+      "file": "packages/backend/app/domain/auth/services.py",
+      "line": 14,
+      "import_statement": "from app.domain.auth.entities import User, Session, Tenant, OAuthAccount, UserRole, TenantPlan",
+      "imported_name": "OAuthAccount"
+    },
+    {
+      "file": "packages/backend/app/domain/auth/services.py",
+      "line": 14,
+      "import_statement": "from app.domain.auth.entities import User, Session, Tenant, OAuthAccount, UserRole, TenantPlan",
+      "imported_name": "TenantPlan"
+    },
+    {
+      "file": "packages/backend/app/domain/auth/services.py",
+      "line": 36,
+      "import_statement": "from app.core.exceptions import AuthenticationError, NotFoundError, ConflictError, AuthorizationError",
+      "imported_name": "AuthorizationError"
+    },
+    {
+      "file": "packages/backend/app/domain/chat/services.py",
+      "line": 1,
+      "import_statement": "import uuid",
+      "imported_name": "uuid"
+    },
+    {
+      "file": "packages/backend/app/domain/compliance/services.py",
+      "line": 10,
+      "import_statement": "from app.core.config import settings",
+      "imported_name": "settings"
+    },
+    {
+      "file": "packages/backend/app/domain/compliance/services.py",
+      "line": 11,
+      "import_statement": "from app.core.exceptions import NotFoundError, ConflictError",
+      "imported_name": "ConflictError"
+    },
+    {
+      "file": "packages/backend/app/domain/compliance/services.py",
+      "line": 13,
+      "import_statement": "from app.domain.auth.entities import Tenant",
+      "imported_name": "Tenant"
+    },
+    {
+      "file": "packages/backend/app/domain/compliance/services.py",
+      "line": 15,
+      "import_statement": "from app.domain.compliance.entities import TenantSettings, Webhook, WebhookEventLog, WebhookStatus, WebhookEventType, DeliveryStatus",
+      "imported_name": "WebhookEventType"
+    },
+    {
+      "file": "packages/backend/app/domain/memory/services.py",
+      "line": 1,
+      "import_statement": "from typing import Any, Optional",
+      "imported_name": "Any"
+    },
+    {
+      "file": "packages/backend/app/domain/memory/services.py",
+      "line": 3,
+      "import_statement": "from app.domain.memory.entities import MemoryEntry, MemoryType, MemoryCategory",
+      "imported_name": "MemoryCategory"
+    },
+    {
+      "file": "packages/backend/app/domain/rag/interfaces.py",
+      "line": 4,
+      "import_statement": "from app.domain.rag.entities import Document, DocumentChunk, OCRResult, SearchResult",
+      "imported_name": "OCRResult"
+    },
+    {
+      "file": "packages/backend/app/domain/rag/services.py",
+      "line": 1,
+      "import_statement": "from typing import Any, Optional",
+      "imported_name": "Any"
+    },
+    {
+      "file": "packages/backend/app/domain/rag/services.py",
+      "line": 3,
+      "import_statement": "from app.domain.rag.entities import Document, DocumentChunk, DocumentStatus, SearchResult",
+      "imported_name": "DocumentChunk"
+    },
+    {
+      "file": "packages/backend/app/domain/rag/services.py",
+      "line": 3,
+      "import_statement": "from app.domain.rag.entities import Document, DocumentChunk, DocumentStatus, SearchResult",
+      "imported_name": "DocumentStatus"
+    },
+    {
+      "file": "packages/backend/app/domain/unlearning/interfaces.py",
+      "line": 4,
+      "import_statement": "from app.domain.unlearning.entities import UnlearningRequest, UnlearningJob, DeletionQueueItem, ModelVersion, ModelShard",
+      "imported_name": "ModelShard"
+    },
+    {
+      "file": "packages/backend/app/domain/unlearning/services.py",
+      "line": 1,
+      "import_statement": "import hashlib",
+      "imported_name": "hashlib"
+    },
+    {
+      "file": "packages/backend/app/domain/unlearning/services.py",
+      "line": 2,
+      "import_statement": "import json",
+      "imported_name": "json"
+    },
+    {
+      "file": "packages/backend/app/domain/unlearning/services.py",
+      "line": 9,
+      "import_statement": "from app.domain.unlearning.entities import UnlearningRequest, UnlearningJob, DeletionQueueItem, ModelVersion, ModelShard, UnlearningStatus, UnlearningPriority, UnlearningAlgorithm, TargetType, DeletionResourceType, DeletionOperation",
+      "imported_name": "ModelShard"
+    },
+    {
+      "file": "packages/backend/app/domain/verification/services.py",
+      "line": 4,
+      "import_statement": "from app.core.config import settings",
+      "imported_name": "settings"
+    },
+    {
+      "file": "packages/backend/app/infrastructure/database/repositories/auth.py",
+      "line": 5,
+      "import_statement": "from sqlalchemy import select, delete, update",
+      "imported_name": "delete"
+    },
+    {
+      "file": "packages/backend/app/infrastructure/database/repositories/auth.py",
+      "line": 8,
+      "import_statement": "from app.domain.auth.entities import User as UserEntity, Session as SessionEntity, Tenant as TenantEntity, OAuthAccount as OAuthAccountEntity, ApiKey as ApiKeyEntity, UserRole, TenantPlan",
+      "imported_name": "OAuthAccountEntity"
+    },
+    {
+      "file": "packages/backend/app/infrastructure/database/repositories/auth.py",
+      "line": 23,
+      "import_statement": "from app.infrastructure.database.models import UserModel, SessionModel, TenantModel, OAuthAccountModel, TenantApiKeyModel",
+      "imported_name": "OAuthAccountModel"
+    },
+    {
+      "file": "packages/backend/app/infrastructure/database/repositories/chat.py",
+      "line": 3,
+      "import_statement": "from sqlalchemy import func, or_",
+      "imported_name": "or_"
+    },
+    {
+      "file": "packages/backend/app/infrastructure/database/repositories/memory.py",
+      "line": 5,
+      "import_statement": "from sqlalchemy import func, or_, delete",
+      "imported_name": "or_"
+    },
+    {
+      "file": "packages/backend/app/infrastructure/database/repositories/memory.py",
+      "line": 5,
+      "import_statement": "from sqlalchemy import func, or_, delete",
+      "imported_name": "delete"
+    },
+    {
+      "file": "packages/backend/app/infrastructure/database/repositories/memory.py",
+      "line": 9,
+      "import_statement": "from app.domain.memory.entities import MemoryEntry, MemoryType, MemoryCategory",
+      "imported_name": "MemoryCategory"
+    },
+    {
+      "file": "packages/backend/app/infrastructure/database/repositories/unlearning.py",
+      "line": 7,
+      "import_statement": "from app.domain.unlearning.entities import UnlearningRequest as UnlearningRequestEntity, UnlearningJob as UnlearningJobEntity, DeletionQueueItem as DeletionQueueItemEntity, ModelVersion as ModelVersionEntity, ModelShard as ModelShardEntity, UnlearningStatus, TargetType, UnlearningPriority, UnlearningAlgorithm, DeletionResourceType, DeletionOperation",
+      "imported_name": "ModelShardEntity"
+    },
+    {
+      "file": "packages/backend/app/infrastructure/database/repositories/unlearning.py",
+      "line": 26,
+      "import_statement": "from app.infrastructure.database.models import UnlearningRequestModel, UnlearningJobModel, DeletionQueueItemModel, ModelVersionModel, ModelShardModel",
+      "imported_name": "ModelShardModel"
+    },
+    {
+      "file": "packages/backend/app/infrastructure/external/email_service.py",
+      "line": 5,
+      "import_statement": "from typing import Optional",
+      "imported_name": "Optional"
+    },
+    {
+      "file": "packages/backend/app/infrastructure/external/oauth_service.py",
+      "line": 2,
+      "import_statement": "from typing import Any, Optional",
+      "imported_name": "Optional"
+    },
+    {
+      "file": "packages/backend/app/main.py",
+      "line": 9,
+      "import_statement": "from app.core.events import register_lifespan_events",
+      "imported_name": "register_lifespan_events"
+    },
+    {
+      "file": "packages/backend/app/workers/notification_tasks.py",
+      "line": 1,
+      "import_statement": "from typing import Any",
+      "imported_name": "Any"
+    },
+    {
+      "file": "packages/backend/app/workers/rag_tasks.py",
+      "line": 1,
+      "import_statement": "from typing import Any",
+      "imported_name": "Any"
+    },
+    {
+      "file": "packages/backend/app/workers/unlearning_tasks.py",
+      "line": 2,
+      "import_statement": "from typing import Any",
+      "imported_name": "Any"
+    },
+    {
+      "file": "packages/backend/app/workers/unlearning_tasks.py",
+      "line": 4,
+      "import_statement": "from celery import Task, chain",
+      "imported_name": "Task"
+    },
+    {
+      "file": "packages/backend/app/workers/unlearning_tasks.py",
+      "line": 4,
+      "import_statement": "from celery import Task, chain",
+      "imported_name": "chain"
+    },
+    {
+      "file": "packages/backend/app/workers/utils.py",
+      "line": 2,
+      "import_statement": "import concurrent.futures",
+      "imported_name": "concurrent.futures"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 14,
+      "import_statement": "from unlearning.algorithms.base import UnlearningContext, UnlearningResult",
+      "imported_name": "UnlearningResult"
+    },
+    {
+      "file": "packages/ml-engine/explainability/__init__.py",
+      "line": 1,
+      "import_statement": "from explainability.base import BaseExplainer, ExplanationResult, FeatureImportance",
+      "imported_name": "BaseExplainer"
+    },
+    {
+      "file": "packages/ml-engine/explainability/__init__.py",
+      "line": 1,
+      "import_statement": "from explainability.base import BaseExplainer, ExplanationResult, FeatureImportance",
+      "imported_name": "ExplanationResult"
+    },
+    {
+      "file": "packages/ml-engine/explainability/__init__.py",
+      "line": 1,
+      "import_statement": "from explainability.base import BaseExplainer, ExplanationResult, FeatureImportance",
+      "imported_name": "FeatureImportance"
+    },
+    {
+      "file": "packages/ml-engine/explainability/__init__.py",
+      "line": 2,
+      "import_statement": "from explainability.shap_explainer import SHAPExplainer",
+      "imported_name": "SHAPExplainer"
+    },
+    {
+      "file": "packages/ml-engine/explainability/__init__.py",
+      "line": 3,
+      "import_statement": "from explainability.lime_explainer import LIMEExplainer",
+      "imported_name": "LIMEExplainer"
+    },
+    {
+      "file": "packages/ml-engine/explainability/__init__.py",
+      "line": 4,
+      "import_statement": "from explainability.integrated_gradients import IntegratedGradientsExplainer",
+      "imported_name": "IntegratedGradientsExplainer"
+    },
+    {
+      "file": "packages/ml-engine/explainability/__init__.py",
+      "line": 5,
+      "import_statement": "from explainability.feature_attribution import FeatureAttribution",
+      "imported_name": "FeatureAttribution"
+    },
+    {
+      "file": "packages/ml-engine/explainability/counterfactual.py",
+      "line": 3,
+      "import_statement": "import uuid",
+      "imported_name": "uuid"
+    },
+    {
+      "file": "packages/ml-engine/explainability/feature_attribution.py",
+      "line": 3,
+      "import_statement": "from typing import Any, Optional",
+      "imported_name": "Optional"
+    },
+    {
+      "file": "packages/ml-engine/explainability/visualization.py",
+      "line": 1,
+      "import_statement": "import base64",
+      "imported_name": "base64"
+    },
+    {
+      "file": "packages/ml-engine/explainability/visualization.py",
+      "line": 2,
+      "import_statement": "import io",
+      "imported_name": "io"
+    },
+    {
+      "file": "packages/ml-engine/inference/model_export.py",
+      "line": 1,
+      "import_statement": "import json",
+      "imported_name": "json"
+    },
+    {
+      "file": "packages/ml-engine/inference/model_export.py",
+      "line": 5,
+      "import_statement": "from typing import Any, Optional",
+      "imported_name": "Any"
+    },
+    {
+      "file": "packages/ml-engine/inference/model_export.py",
+      "line": 9,
+      "import_statement": "from models.single_model import SingleModel, SimpleNet",
+      "imported_name": "SimpleNet"
+    },
+    {
+      "file": "packages/ml-engine/inference/model_export.py",
+      "line": 10,
+      "import_statement": "from models.sharded_classifier import ShardedModel, ShardNet",
+      "imported_name": "ShardNet"
+    },
+    {
+      "file": "packages/ml-engine/inference/service.py",
+      "line": 2,
+      "import_statement": "import hashlib",
+      "imported_name": "hashlib"
+    },
+    {
+      "file": "packages/ml-engine/inference/service.py",
+      "line": 3,
+      "import_statement": "import json",
+      "imported_name": "json"
+    },
+    {
+      "file": "packages/ml-engine/models/sharded_classifier.py",
+      "line": 1,
+      "import_statement": "import math",
+      "imported_name": "math"
+    },
+    {
+      "file": "packages/ml-engine/security/attacks/membership_inference.py",
+      "line": 1,
+      "import_statement": "import math",
+      "imported_name": "math"
+    },
+    {
+      "file": "packages/ml-engine/security/attacks/model_extraction.py",
+      "line": 6,
+      "import_statement": "from torch.optim import Adam",
+      "imported_name": "Adam"
+    },
+    {
+      "file": "packages/ml-engine/security/attacks/model_inversion.py",
+      "line": 1,
+      "import_statement": "import math",
+      "imported_name": "math"
+    },
+    {
+      "file": "packages/ml-engine/security/attacks/shadow_mia.py",
+      "line": 10,
+      "import_statement": "from training.data import Dataset, generate_synthetic_data, generate_nonlinear_data",
+      "imported_name": "generate_nonlinear_data"
+    },
+    {
+      "file": "packages/ml-engine/security/input_validator.py",
+      "line": 3,
+      "import_statement": "from typing import Any, Optional",
+      "imported_name": "Optional"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_algorithms.py",
+      "line": 2,
+      "import_statement": "import torch",
+      "imported_name": "torch"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_attacks.py",
+      "line": 4,
+      "import_statement": "from training.data import generate_synthetic_data, Dataset",
+      "imported_name": "Dataset"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_audit_logger.py",
+      "line": 6,
+      "import_statement": "from security.audit_logger import AuditEntry, AuditLogger",
+      "imported_name": "AuditEntry"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_conversational_pipeline.py",
+      "line": 1,
+      "import_statement": "import json",
+      "imported_name": "json"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_conversational_pipeline.py",
+      "line": 3,
+      "import_statement": "import tempfile",
+      "imported_name": "tempfile"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_e2e_pipeline.py",
+      "line": 2,
+      "import_statement": "import uuid",
+      "imported_name": "uuid"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_explainability.py",
+      "line": 2,
+      "import_statement": "import pytest",
+      "imported_name": "pytest"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_inference.py",
+      "line": 1,
+      "import_statement": "import time",
+      "imported_name": "time"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_inference.py",
+      "line": 4,
+      "import_statement": "import torch",
+      "imported_name": "torch"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_lora_trainer.py",
+      "line": 4,
+      "import_statement": "import shutil",
+      "imported_name": "shutil"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_merkle_tree.py",
+      "line": 1,
+      "import_statement": "import pytest",
+      "imported_name": "pytest"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_mlflow_tracker.py",
+      "line": 1,
+      "import_statement": "import json",
+      "imported_name": "json"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_mlflow_tracker.py",
+      "line": 2,
+      "import_statement": "import os",
+      "imported_name": "os"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_mlflow_tracker.py",
+      "line": 3,
+      "import_statement": "import tempfile",
+      "imported_name": "tempfile"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_mlflow_tracker.py",
+      "line": 5,
+      "import_statement": "import pytest",
+      "imported_name": "pytest"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_model_registry.py",
+      "line": 1,
+      "import_statement": "import json",
+      "imported_name": "json"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_model_registry.py",
+      "line": 3,
+      "import_statement": "import tempfile",
+      "imported_name": "tempfile"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_privacy.py",
+      "line": 2,
+      "import_statement": "import torch",
+      "imported_name": "torch"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_rag_pipeline.py",
+      "line": 1,
+      "import_statement": "import json",
+      "imported_name": "json"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_rag_pipeline.py",
+      "line": 2,
+      "import_statement": "import os",
+      "imported_name": "os"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_rag_pipeline.py",
+      "line": 3,
+      "import_statement": "import tempfile",
+      "imported_name": "tempfile"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_rag_pipeline.py",
+      "line": 4,
+      "import_statement": "from unittest.mock import patch, MagicMock",
+      "imported_name": "MagicMock"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_signatures.py",
+      "line": 1,
+      "import_statement": "import pytest",
+      "imported_name": "pytest"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_zksnark.py",
+      "line": 10,
+      "import_statement": "from verification.merkle_tree import MerkleTree",
+      "imported_name": "MerkleTree"
+    },
+    {
+      "file": "packages/ml-engine/training/adapter_lifecycle.py",
+      "line": 5,
+      "import_statement": "import time",
+      "imported_name": "time"
+    },
+    {
+      "file": "packages/ml-engine/training/continual_learning.py",
+      "line": 3,
+      "import_statement": "import uuid",
+      "imported_name": "uuid"
+    },
+    {
+      "file": "packages/ml-engine/training/continual_learning.py",
+      "line": 4,
+      "import_statement": "from dataclasses import dataclass, field",
+      "imported_name": "field"
+    },
+    {
+      "file": "packages/ml-engine/training/conversational_pipeline.py",
+      "line": 9,
+      "import_statement": "from dataclasses import dataclass, field",
+      "imported_name": "field"
+    },
+    {
+      "file": "packages/ml-engine/training/data.py",
+      "line": 1,
+      "import_statement": "import math",
+      "imported_name": "math"
+    },
+    {
+      "file": "packages/ml-engine/training/data.py",
+      "line": 2,
+      "import_statement": "import random",
+      "imported_name": "random"
+    },
+    {
+      "file": "packages/ml-engine/training/data.py",
+      "line": 4,
+      "import_statement": "from typing import Callable",
+      "imported_name": "Callable"
+    },
+    {
+      "file": "packages/ml-engine/training/ewc.py",
+      "line": 2,
+      "import_statement": "from typing import Any, Optional",
+      "imported_name": "Optional"
+    },
+    {
+      "file": "packages/ml-engine/training/gpu_scheduler.py",
+      "line": 6,
+      "import_statement": "from collections import defaultdict, deque",
+      "imported_name": "defaultdict"
+    },
+    {
+      "file": "packages/ml-engine/training/gpu_scheduler.py",
+      "line": 12,
+      "import_statement": "import numpy as np",
+      "imported_name": "np"
+    },
+    {
+      "file": "packages/ml-engine/training/hpo.py",
+      "line": 1,
+      "import_statement": "import json",
+      "imported_name": "json"
+    },
+    {
+      "file": "packages/ml-engine/training/hpo.py",
+      "line": 6,
+      "import_statement": "from datetime import datetime, timezone",
+      "imported_name": "datetime"
+    },
+    {
+      "file": "packages/ml-engine/training/hpo.py",
+      "line": 6,
+      "import_statement": "from datetime import datetime, timezone",
+      "imported_name": "timezone"
+    },
+    {
+      "file": "packages/ml-engine/training/knowledge_distillation.py",
+      "line": 2,
+      "import_statement": "import time",
+      "imported_name": "time"
+    },
+    {
+      "file": "packages/ml-engine/training/knowledge_distillation.py",
+      "line": 7,
+      "import_statement": "import numpy as np",
+      "imported_name": "np"
+    },
+    {
+      "file": "packages/ml-engine/training/lora_trainer.py",
+      "line": 26,
+      "import_statement": "from training.data import Dataset as VDataset, accuracy_score",
+      "imported_name": "VDataset"
+    },
+    {
+      "file": "packages/ml-engine/training/lora_trainer.py",
+      "line": 26,
+      "import_statement": "from training.data import Dataset as VDataset, accuracy_score",
+      "imported_name": "accuracy_score"
+    },
+    {
+      "file": "packages/ml-engine/training/mlflow_tracker.py",
+      "line": 6,
+      "import_statement": "from dataclasses import dataclass, field",
+      "imported_name": "field"
+    },
+    {
+      "file": "packages/ml-engine/training/model_registry.py",
+      "line": 6,
+      "import_statement": "import time",
+      "imported_name": "time"
+    },
+    {
+      "file": "packages/ml-engine/training/model_registry.py",
+      "line": 10,
+      "import_statement": "from pathlib import Path",
+      "imported_name": "Path"
+    },
+    {
+      "file": "packages/ml-engine/training/model_registry.py",
+      "line": 11,
+      "import_statement": "from typing import Any, Optional",
+      "imported_name": "Any"
+    },
+    {
+      "file": "packages/ml-engine/training/rag_pipeline.py",
+      "line": 6,
+      "import_statement": "import time",
+      "imported_name": "time"
+    },
+    {
+      "file": "packages/ml-engine/training/replay_buffer.py",
+      "line": 7,
+      "import_statement": "from collections import deque",
+      "imported_name": "deque"
+    },
+    {
+      "file": "packages/ml-engine/training/replay_buffer.py",
+      "line": 12,
+      "import_statement": "import numpy as np",
+      "imported_name": "np"
+    },
+    {
+      "file": "packages/ml-engine/unlearning/algorithms/base.py",
+      "line": 3,
+      "import_statement": "from typing import Any, Optional",
+      "imported_name": "Any"
+    },
+    {
+      "file": "packages/ml-engine/unlearning/algorithms/sisa.py",
+      "line": 4,
+      "import_statement": "import torch",
+      "imported_name": "torch"
+    },
+    {
+      "file": "packages/ml-engine/verification/privacy_evaluation.py",
+      "line": 1,
+      "import_statement": "import math",
+      "imported_name": "math"
+    },
+    {
+      "file": "packages/ml-engine/verification/privacy_evaluation.py",
+      "line": 2,
+      "import_statement": "from typing import Any, Optional",
+      "imported_name": "Any"
+    },
+    {
+      "file": "packages/ml-engine/verification/privacy_evaluation.py",
+      "line": 4,
+      "import_statement": "import torch",
+      "imported_name": "torch"
+    },
+    {
+      "file": "packages/ml-engine/verification/quality_metrics.py",
+      "line": 3,
+      "import_statement": "from typing import Any, Callable, Optional",
+      "imported_name": "Callable"
+    },
+    {
+      "file": "packages/ml-engine/verification/signatures.py",
+      "line": 1,
+      "import_statement": "from typing import Any, Optional, Tuple",
+      "imported_name": "Any"
+    },
+    {
+      "file": "packages/ml-engine/verification/zksnark_service.py",
+      "line": 17,
+      "import_statement": "import json",
+      "imported_name": "json"
+    }
+  ],
+  "wildcard_imports": [],
+  "relative_imports": [],
+  "conditional_imports": [
+    {
+      "file": "packages/backend/app/api/v1/admin.py",
+      "line": 83,
+      "import_statement": "from sqlalchemy import update as sa_update",
+      "context": "inside AsyncFunctionDef at line 77"
+    },
+    {
+      "file": "packages/backend/app/api/v1/admin.py",
+      "line": 206,
+      "import_statement": "from uuid import uuid4",
+      "context": "inside AsyncFunctionDef at line 201"
+    },
+    {
+      "file": "packages/backend/app/api/v1/chat.py",
+      "line": 220,
+      "import_statement": "from app.domain.chat.entities import Message, MessageRole, MessageContentType",
+      "context": "inside AsyncFunctionDef at line 191"
+    },
+    {
+      "file": "packages/backend/app/api/v1/chat.py",
+      "line": 221,
+      "import_statement": "import uuid",
+      "context": "inside AsyncFunctionDef at line 191"
+    },
+    {
+      "file": "packages/backend/app/api/v1/chat.py",
+      "line": 298,
+      "import_statement": "from app.domain.chat.entities import FeedbackType",
+      "context": "inside AsyncFunctionDef at line 287"
+    },
+    {
+      "file": "packages/backend/app/api/v1/chat.py",
+      "line": 334,
+      "import_statement": "import json",
+      "context": "inside If at line 333"
+    },
+    {
+      "file": "packages/backend/app/api/v1/datasets.py",
+      "line": 58,
+      "import_statement": "from sqlalchemy import select, func",
+      "context": "inside AsyncFunctionDef at line 52"
+    },
+    {
+      "file": "packages/backend/app/api/v1/datasets.py",
+      "line": 103,
+      "import_statement": "from sqlalchemy import select, desc, func",
+      "context": "inside AsyncFunctionDef at line 95"
+    },
+    {
+      "file": "packages/backend/app/api/v1/datasets.py",
+      "line": 153,
+      "import_statement": "from sqlalchemy import select",
+      "context": "inside AsyncFunctionDef at line 148"
+    },
+    {
+      "file": "packages/backend/app/api/v1/datasets.py",
+      "line": 194,
+      "import_statement": "from sqlalchemy import select",
+      "context": "inside AsyncFunctionDef at line 188"
+    },
+    {
+      "file": "packages/backend/app/api/v1/datasets.py",
+      "line": 221,
+      "import_statement": "from sqlalchemy import select",
+      "context": "inside AsyncFunctionDef at line 216"
+    },
+    {
+      "file": "packages/backend/app/api/v1/experiments.py",
+      "line": 96,
+      "import_statement": "from sqlalchemy import select, desc",
+      "context": "inside AsyncFunctionDef at line 88"
+    },
+    {
+      "file": "packages/backend/app/api/v1/experiments.py",
+      "line": 133,
+      "import_statement": "from sqlalchemy import select",
+      "context": "inside AsyncFunctionDef at line 128"
+    },
+    {
+      "file": "packages/backend/app/api/v1/experiments.py",
+      "line": 195,
+      "import_statement": "from sqlalchemy import select",
+      "context": "inside AsyncFunctionDef at line 189"
+    },
+    {
+      "file": "packages/backend/app/api/v1/experiments.py",
+      "line": 227,
+      "import_statement": "from sqlalchemy import select",
+      "context": "inside AsyncFunctionDef at line 222"
+    },
+    {
+      "file": "packages/backend/app/api/v1/experiments.py",
+      "line": 250,
+      "import_statement": "from sqlalchemy import select, func",
+      "context": "inside AsyncFunctionDef at line 244"
+    },
+    {
+      "file": "packages/backend/app/api/v1/experiments.py",
+      "line": 296,
+      "import_statement": "from sqlalchemy import select",
+      "context": "inside AsyncFunctionDef at line 289"
+    },
+    {
+      "file": "packages/backend/app/api/v1/rag.py",
+      "line": 49,
+      "import_statement": "import json as _json",
+      "context": "inside AsyncFunctionDef at line 43"
+    },
+    {
+      "file": "packages/backend/app/api/v1/rag.py",
+      "line": 50,
+      "import_statement": "import os",
+      "context": "inside AsyncFunctionDef at line 43"
+    },
+    {
+      "file": "packages/backend/app/api/v1/rag.py",
+      "line": 51,
+      "import_statement": "from app.core.config import settings",
+      "context": "inside AsyncFunctionDef at line 43"
+    },
+    {
+      "file": "packages/backend/app/core/cache.py",
+      "line": 66,
+      "import_statement": "from app.core.logging import get_logger",
+      "context": "inside AsyncFunctionDef at line 65"
+    },
+    {
+      "file": "packages/backend/app/core/cache.py",
+      "line": 42,
+      "import_statement": "import fnmatch",
+      "context": "inside If at line 41"
+    },
+    {
+      "file": "packages/backend/app/core/cache.py",
+      "line": 74,
+      "import_statement": "from app.core.logging import get_logger",
+      "context": "inside AsyncFunctionDef at line 73"
+    },
+    {
+      "file": "packages/backend/app/core/cache.py",
+      "line": 79,
+      "import_statement": "from app.core.logging import get_logger",
+      "context": "inside AsyncFunctionDef at line 78"
+    },
+    {
+      "file": "packages/backend/app/core/events.py",
+      "line": 26,
+      "import_statement": "from app.core.database import Base",
+      "context": "inside If at line 25"
+    },
+    {
+      "file": "packages/backend/app/core/events.py",
+      "line": 27,
+      "import_statement": "import app.infrastructure.database.models",
+      "context": "inside If at line 25"
+    },
+    {
+      "file": "packages/backend/app/core/middleware.py",
+      "line": 101,
+      "import_statement": "from app.domain.audit.entities import EventType, ActorType, EventStatus",
+      "context": "inside AsyncFunctionDef at line 98"
+    },
+    {
+      "file": "packages/backend/app/core/middleware.py",
+      "line": 102,
+      "import_statement": "from app.domain.audit.services import AuditService",
+      "context": "inside AsyncFunctionDef at line 98"
+    },
+    {
+      "file": "packages/backend/app/core/middleware.py",
+      "line": 103,
+      "import_statement": "from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository",
+      "context": "inside AsyncFunctionDef at line 98"
+    },
+    {
+      "file": "packages/backend/app/core/middleware.py",
+      "line": 106,
+      "import_statement": "from app.core.database import db",
+      "context": "inside AsyncFunctionDef at line 98"
+    },
+    {
+      "file": "packages/backend/app/core/secrets_manager.py",
+      "line": 22,
+      "import_statement": "import hvac",
+      "context": "inside Try at line 21"
+    },
+    {
+      "file": "packages/backend/app/domain/audit/services.py",
+      "line": 93,
+      "import_statement": "from app.infrastructure.external.blockchain import blockchain_anchor_service",
+      "context": "inside AsyncFunctionDef at line 88"
+    },
+    {
+      "file": "packages/backend/app/infrastructure/database/repositories/chat.py",
+      "line": 99,
+      "import_statement": "from datetime import datetime, timezone",
+      "context": "inside AsyncFunctionDef at line 98"
+    },
+    {
+      "file": "packages/backend/app/infrastructure/database/repositories/chat.py",
+      "line": 204,
+      "import_statement": "from app.domain.chat.entities import MessageRole, MessageContentType, FeedbackType",
+      "context": "inside FunctionDef at line 203"
+    },
+    {
+      "file": "packages/backend/app/infrastructure/database/repositories/chat.py",
+      "line": 276,
+      "import_statement": "from datetime import datetime, timezone",
+      "context": "inside AsyncFunctionDef at line 275"
+    },
+    {
+      "file": "packages/backend/app/infrastructure/database/repositories/rag.py",
+      "line": 87,
+      "import_statement": "from datetime import datetime, timezone",
+      "context": "inside AsyncFunctionDef at line 86"
+    },
+    {
+      "file": "packages/backend/app/main.py",
+      "line": 21,
+      "import_statement": "from app.core.events import startup_event, shutdown_event",
+      "context": "inside AsyncFunctionDef at line 20"
+    },
+    {
+      "file": "packages/backend/app/main.py",
+      "line": 71,
+      "import_statement": "import time",
+      "context": "inside AsyncFunctionDef at line 70"
+    },
+    {
+      "file": "packages/backend/app/main.py",
+      "line": 72,
+      "import_statement": "from app.core.cache import cache",
+      "context": "inside AsyncFunctionDef at line 70"
+    },
+    {
+      "file": "packages/backend/app/main.py",
+      "line": 73,
+      "import_statement": "from app.core.database import db",
+      "context": "inside AsyncFunctionDef at line 70"
+    },
+    {
+      "file": "packages/backend/app/main.py",
+      "line": 74,
+      "import_statement": "from datetime import datetime, timezone",
+      "context": "inside AsyncFunctionDef at line 70"
+    },
+    {
+      "file": "packages/backend/app/main.py",
+      "line": 139,
+      "import_statement": "from app.core.database import db",
+      "context": "inside AsyncFunctionDef at line 138"
+    },
+    {
+      "file": "packages/backend/app/main.py",
+      "line": 119,
+      "import_statement": "from app.infrastructure.external.ml_engine import ml_engine_client",
+      "context": "inside Try at line 118"
+    },
+    {
+      "file": "packages/backend/app/workers/notification_tasks.py",
+      "line": 16,
+      "import_statement": "from app.infrastructure.external.email_service import email_service",
+      "context": "inside FunctionDef at line 14"
+    },
+    {
+      "file": "packages/backend/app/workers/notification_tasks.py",
+      "line": 29,
+      "import_statement": "from app.infrastructure.database.models import WebhookModel, WebhookEventLogModel",
+      "context": "inside FunctionDef at line 27"
+    },
+    {
+      "file": "packages/backend/app/workers/notification_tasks.py",
+      "line": 30,
+      "import_statement": "from datetime import datetime, timezone",
+      "context": "inside FunctionDef at line 27"
+    },
+    {
+      "file": "packages/backend/app/workers/notification_tasks.py",
+      "line": 31,
+      "import_statement": "import hmac",
+      "context": "inside FunctionDef at line 27"
+    },
+    {
+      "file": "packages/backend/app/workers/notification_tasks.py",
+      "line": 32,
+      "import_statement": "import hashlib",
+      "context": "inside FunctionDef at line 27"
+    },
+    {
+      "file": "packages/backend/app/workers/notification_tasks.py",
+      "line": 33,
+      "import_statement": "import json",
+      "context": "inside FunctionDef at line 27"
+    },
+    {
+      "file": "packages/backend/app/workers/notification_tasks.py",
+      "line": 112,
+      "import_statement": "from app.infrastructure.database.models import WebhookModel",
+      "context": "inside FunctionDef at line 110"
+    },
+    {
+      "file": "packages/backend/app/workers/notification_tasks.py",
+      "line": 113,
+      "import_statement": "from datetime import datetime, timezone",
+      "context": "inside FunctionDef at line 110"
+    },
+    {
+      "file": "packages/backend/app/workers/unlearning_tasks.py",
+      "line": 144,
+      "import_statement": "from celery import chain as celery_chain",
+      "context": "inside FunctionDef at line 139"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 515,
+      "import_statement": "from training.data import generate_synthetic_data",
+      "context": "inside AsyncFunctionDef at line 514"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 536,
+      "import_statement": "from unlearning.algorithms.sisa import SISAUnlearning",
+      "context": "inside AsyncFunctionDef at line 514"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 566,
+      "import_statement": "from training.data import generate_synthetic_data",
+      "context": "inside AsyncFunctionDef at line 565"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 583,
+      "import_statement": "from unlearning.algorithms.sisa import SISAUnlearning",
+      "context": "inside AsyncFunctionDef at line 565"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 602,
+      "import_statement": "from verification.zksnark_service import ZKProofService",
+      "context": "inside AsyncFunctionDef at line 601"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 614,
+      "import_statement": "from verification.zksnark_service import ZKProofService, ZKProof, ZKVerificationKey",
+      "context": "inside AsyncFunctionDef at line 613"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 645,
+      "import_statement": "from training.lora_trainer import TrainingConfig",
+      "context": "inside AsyncFunctionDef at line 643"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 925,
+      "import_statement": "from inference.service import InferenceRequest",
+      "context": "inside AsyncFunctionDef at line 923"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 942,
+      "import_statement": "from inference.service import InferenceRequest",
+      "context": "inside AsyncFunctionDef at line 940"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 965,
+      "import_statement": "from inference.service import InferenceRequest",
+      "context": "inside AsyncFunctionDef at line 963"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1087,
+      "import_statement": "from training.conversational_pipeline import Conversation",
+      "context": "inside AsyncFunctionDef at line 1085"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1255,
+      "import_statement": "from unlearning.e2e_pipeline import DeletionRequest",
+      "context": "inside AsyncFunctionDef at line 1253"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1284,
+      "import_statement": "from unlearning.e2e_pipeline import DeletionCertificate",
+      "context": "inside AsyncFunctionDef at line 1282"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1297,
+      "import_statement": "from training.benchmarks import BenchmarkConfig",
+      "context": "inside AsyncFunctionDef at line 1295"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1300,
+      "import_statement": "import asyncio",
+      "context": "inside AsyncFunctionDef at line 1295"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1349,
+      "import_statement": "from training.benchmarks import BenchmarkDataset",
+      "context": "inside AsyncFunctionDef at line 1347"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1420,
+      "import_statement": "from explainability.visualization import ExplanationVisualizer",
+      "context": "inside AsyncFunctionDef at line 1404"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1488,
+      "import_statement": "from explainability.visualization import ExplanationVisualizer",
+      "context": "inside AsyncFunctionDef at line 1468"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1503,
+      "import_statement": "from explainability.visualization import ExplanationVisualizer",
+      "context": "inside AsyncFunctionDef at line 1502"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1525,
+      "import_statement": "from explainability.visualization import ExplanationVisualizer",
+      "context": "inside AsyncFunctionDef at line 1524"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1652,
+      "import_statement": "from unlearning.hybrid_controller import HybridAdaptiveController",
+      "context": "inside AsyncFunctionDef at line 1651"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1754,
+      "import_statement": "from training.gpu_scheduler import JobPriority",
+      "context": "inside AsyncFunctionDef at line 1751"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1777,
+      "import_statement": "from training.gpu_scheduler import JobStatus",
+      "context": "inside AsyncFunctionDef at line 1775"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1839,
+      "import_statement": "from training.benchmarks import BenchmarkMetric",
+      "context": "inside AsyncFunctionDef at line 1837"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1948,
+      "import_statement": "from security.attacks.model_inversion import ModelInversionAttack",
+      "context": "inside AsyncFunctionDef at line 1947"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1949,
+      "import_statement": "from training.data import generate_synthetic_data",
+      "context": "inside AsyncFunctionDef at line 1947"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1950,
+      "import_statement": "from unlearning.algorithms.sisa import SISAUnlearning",
+      "context": "inside AsyncFunctionDef at line 1947"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1951,
+      "import_statement": "from unlearning.algorithms.base import UnlearningContext",
+      "context": "inside AsyncFunctionDef at line 1947"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1976,
+      "import_statement": "from security.attacks.shadow_mia import ShadowModelMIA",
+      "context": "inside AsyncFunctionDef at line 1975"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1977,
+      "import_statement": "from training.data import generate_synthetic_data",
+      "context": "inside AsyncFunctionDef at line 1975"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1978,
+      "import_statement": "from unlearning.algorithms.sisa import SISAUnlearning",
+      "context": "inside AsyncFunctionDef at line 1975"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1979,
+      "import_statement": "from unlearning.algorithms.base import UnlearningContext",
+      "context": "inside AsyncFunctionDef at line 1975"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 2006,
+      "import_statement": "from security.attacks.model_extraction import ModelExtractionAttack",
+      "context": "inside AsyncFunctionDef at line 2005"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 2007,
+      "import_statement": "from training.data import generate_synthetic_data",
+      "context": "inside AsyncFunctionDef at line 2005"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 2008,
+      "import_statement": "from unlearning.algorithms.sisa import SISAUnlearning",
+      "context": "inside AsyncFunctionDef at line 2005"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 2009,
+      "import_statement": "from unlearning.algorithms.base import UnlearningContext",
+      "context": "inside AsyncFunctionDef at line 2005"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 2077,
+      "import_statement": "from training.hpo import HPOptimizer, create_default_param_space",
+      "context": "inside AsyncFunctionDef at line 2076"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 2078,
+      "import_statement": "from training.data import generate_synthetic_data, accuracy_score",
+      "context": "inside AsyncFunctionDef at line 2076"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 2079,
+      "import_statement": "from models.single_model import SingleModel",
+      "context": "inside AsyncFunctionDef at line 2076"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 2080,
+      "import_statement": "import torch",
+      "context": "inside AsyncFunctionDef at line 2076"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 2115,
+      "import_statement": "import os",
+      "context": "inside AsyncFunctionDef at line 2114"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 2128,
+      "import_statement": "from training.hpo import create_default_param_space",
+      "context": "inside AsyncFunctionDef at line 2127"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 2147,
+      "import_statement": "from inference.model_export import ModelExportService",
+      "context": "inside AsyncFunctionDef at line 2146"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 2148,
+      "import_statement": "from unlearning.algorithms.sisa import SISAUnlearning",
+      "context": "inside AsyncFunctionDef at line 2146"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 2149,
+      "import_statement": "from unlearning.algorithms.base import UnlearningContext",
+      "context": "inside AsyncFunctionDef at line 2146"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 284,
+      "import_statement": "from training.lora_trainer import LoRATrainer, TrainingConfig",
+      "context": "inside If at line 283"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 292,
+      "import_statement": "from training.model_registry import ModelRegistry, RegistryConfig",
+      "context": "inside If at line 291"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 300,
+      "import_statement": "from training.rag_pipeline import RAGPipeline, RAGConfig",
+      "context": "inside If at line 299"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 308,
+      "import_statement": "from inference.service import InferenceService, InferenceConfig",
+      "context": "inside If at line 307"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 316,
+      "import_statement": "from training.conversational_pipeline import ConversationalLearningPipeline, PipelineConfig",
+      "context": "inside If at line 315"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 324,
+      "import_statement": "from training.continual_learning import ContinualLearningManager",
+      "context": "inside If at line 323"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 332,
+      "import_statement": "from training.benchmarks import BenchmarkRunner, BenchmarkConfig",
+      "context": "inside If at line 331"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 340,
+      "import_statement": "from training.mlflow_tracker import MLflowExperimentTracker, MLflowConfig",
+      "context": "inside If at line 339"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 348,
+      "import_statement": "from unlearning.e2e_pipeline import E2EUnlearningPipeline",
+      "context": "inside If at line 347"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 356,
+      "import_statement": "from explainability.shap_explainer import SHAPExplainer",
+      "context": "inside If at line 355"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 357,
+      "import_statement": "from explainability.lime_explainer import LIMEExplainer",
+      "context": "inside If at line 355"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 358,
+      "import_statement": "from explainability.integrated_gradients import IntegratedGradientsExplainer",
+      "context": "inside If at line 355"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 359,
+      "import_statement": "from explainability.feature_attribution import FeatureAttribution",
+      "context": "inside If at line 355"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 401,
+      "import_statement": "from training.adapter_lifecycle import AdapterLifecycleManager, LifecycleConfig",
+      "context": "inside If at line 400"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1563,
+      "import_statement": "from explainability.counterfactual import CounterfactualExplainer",
+      "context": "inside If at line 1562"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1574,
+      "import_statement": "from explainability.embedding_viz import EmbeddingVisualizer",
+      "context": "inside If at line 1573"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1693,
+      "import_statement": "from training.knowledge_distillation import KnowledgeDistiller, DistillationConfig",
+      "context": "inside If at line 1692"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1704,
+      "import_statement": "from training.gpu_scheduler import GPUScheduler, SchedulerConfig",
+      "context": "inside If at line 1703"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1714,
+      "import_statement": "import numpy as np",
+      "context": "inside Try at line 1713"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1715,
+      "import_statement": "import torch",
+      "context": "inside Try at line 1713"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1716,
+      "import_statement": "from torch.utils.data import TensorDataset, DataLoader",
+      "context": "inside Try at line 1713"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1819,
+      "import_statement": "import os, shutil",
+      "context": "inside Try at line 1818"
+    },
+    {
+      "file": "packages/ml-engine/api.py",
+      "line": 1861,
+      "import_statement": "import io, csv",
+      "context": "inside If at line 1860"
+    },
+    {
+      "file": "packages/ml-engine/explainability/embedding_viz.py",
+      "line": 7,
+      "import_statement": "from sklearn.decomposition import PCA",
+      "context": "inside Try at line 6"
+    },
+    {
+      "file": "packages/ml-engine/explainability/embedding_viz.py",
+      "line": 13,
+      "import_statement": "import umap",
+      "context": "inside Try at line 12"
+    },
+    {
+      "file": "packages/ml-engine/explainability/embedding_viz.py",
+      "line": 41,
+      "import_statement": "from sklearn.decomposition import PCA as _PCA",
+      "context": "inside If at line 37"
+    },
+    {
+      "file": "packages/ml-engine/explainability/feature_attribution.py",
+      "line": 27,
+      "import_statement": "import torch",
+      "context": "inside Try at line 26"
+    },
+    {
+      "file": "packages/ml-engine/explainability/integrated_gradients.py",
+      "line": 12,
+      "import_statement": "import torch",
+      "context": "inside Try at line 11"
+    },
+    {
+      "file": "packages/ml-engine/explainability/lime_explainer.py",
+      "line": 12,
+      "import_statement": "from lime.lime_tabular import LimeTabularExplainer",
+      "context": "inside Try at line 11"
+    },
+    {
+      "file": "packages/ml-engine/explainability/shap_explainer.py",
+      "line": 12,
+      "import_statement": "import shap",
+      "context": "inside Try at line 11"
+    },
+    {
+      "file": "packages/ml-engine/explainability/shap_explainer.py",
+      "line": 39,
+      "import_statement": "import torch",
+      "context": "inside If at line 36"
+    },
+    {
+      "file": "packages/ml-engine/inference/model_export.py",
+      "line": 99,
+      "import_statement": "import tensorrt as trt",
+      "context": "inside Try at line 98"
+    },
+    {
+      "file": "packages/ml-engine/inference/model_export.py",
+      "line": 178,
+      "import_statement": "import openvino as ov",
+      "context": "inside Try at line 177"
+    },
+    {
+      "file": "packages/ml-engine/inference/model_export.py",
+      "line": 179,
+      "import_statement": "import openvino.tools.mo as mo",
+      "context": "inside Try at line 177"
+    },
+    {
+      "file": "packages/ml-engine/inference/model_export.py",
+      "line": 195,
+      "import_statement": "from openvino.runtime import Core, Type",
+      "context": "inside If at line 194"
+    },
+    {
+      "file": "packages/ml-engine/inference/service.py",
+      "line": 19,
+      "import_statement": "from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer",
+      "context": "inside Try at line 18"
+    },
+    {
+      "file": "packages/ml-engine/inference/service.py",
+      "line": 25,
+      "import_statement": "from peft import PeftModel",
+      "context": "inside Try at line 24"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_audit_logger.py",
+      "line": 260,
+      "import_statement": "import threading",
+      "context": "inside FunctionDef at line 259"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_e2e_pipeline.py",
+      "line": 179,
+      "import_statement": "from unlearning.e2e_pipeline import DeletionCertificate",
+      "context": "inside FunctionDef at line 173"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_hybrid_controller.py",
+      "line": 59,
+      "import_statement": "from unlearning.hybrid_controller import StrategyDecision",
+      "context": "inside FunctionDef at line 58"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_inference.py",
+      "line": 110,
+      "import_statement": "from inference.service import TRANSFORMERS_AVAILABLE",
+      "context": "inside FunctionDef at line 109"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_inference.py",
+      "line": 119,
+      "import_statement": "from inference.service import TRANSFORMERS_AVAILABLE",
+      "context": "inside FunctionDef at line 118"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_inference.py",
+      "line": 126,
+      "import_statement": "from inference.service import TRANSFORMERS_AVAILABLE",
+      "context": "inside FunctionDef at line 125"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_inference.py",
+      "line": 134,
+      "import_statement": "from inference.service import TRANSFORMERS_AVAILABLE",
+      "context": "inside FunctionDef at line 133"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_inference.py",
+      "line": 142,
+      "import_statement": "from inference.service import TRANSFORMERS_AVAILABLE",
+      "context": "inside FunctionDef at line 141"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_inference.py",
+      "line": 150,
+      "import_statement": "from inference.service import TRANSFORMERS_AVAILABLE",
+      "context": "inside FunctionDef at line 149"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_inference.py",
+      "line": 162,
+      "import_statement": "from inference.service import TRANSFORMERS_AVAILABLE",
+      "context": "inside FunctionDef at line 161"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_lora_trainer.py",
+      "line": 316,
+      "import_statement": "from training.lora_trainer import PEFT_AVAILABLE",
+      "context": "inside FunctionDef at line 315"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_mlflow_tracker.py",
+      "line": 111,
+      "import_statement": "from training.mlflow_tracker import MLFLOW_AVAILABLE",
+      "context": "inside FunctionDef at line 108"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_mlflow_tracker.py",
+      "line": 146,
+      "import_statement": "from training.mlflow_tracker import MLFLOW_AVAILABLE",
+      "context": "inside FunctionDef at line 143"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_mlflow_tracker.py",
+      "line": 158,
+      "import_statement": "from training.mlflow_tracker import MLFLOW_AVAILABLE",
+      "context": "inside FunctionDef at line 155"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_mlflow_tracker.py",
+      "line": 165,
+      "import_statement": "from training.mlflow_tracker import MLFLOW_AVAILABLE",
+      "context": "inside FunctionDef at line 162"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_mlflow_tracker.py",
+      "line": 172,
+      "import_statement": "from training.mlflow_tracker import MLFLOW_AVAILABLE",
+      "context": "inside FunctionDef at line 169"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_mlflow_tracker.py",
+      "line": 183,
+      "import_statement": "from training.mlflow_tracker import MLFLOW_AVAILABLE",
+      "context": "inside FunctionDef at line 181"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_privacy.py",
+      "line": 131,
+      "import_statement": "from verification.privacy_evaluation import PrivacyEvaluationReport",
+      "context": "inside AsyncFunctionDef at line 130"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_rag_pipeline.py",
+      "line": 227,
+      "import_statement": "import random",
+      "context": "inside FunctionDef at line 224"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_rag_pipeline.py",
+      "line": 250,
+      "import_statement": "import random",
+      "context": "inside FunctionDef at line 247"
+    },
+    {
+      "file": "packages/ml-engine/tests/test_rag_pipeline.py",
+      "line": 281,
+      "import_statement": "import random",
+      "context": "inside FunctionDef at line 278"
+    },
+    {
+      "file": "packages/ml-engine/training/benchmarks.py",
+      "line": 136,
+      "import_statement": "import asyncio",
+      "context": "inside Try at line 118"
+    },
+    {
+      "file": "packages/ml-engine/training/benchmarks.py",
+      "line": 232,
+      "import_statement": "from security.attacks.membership_inference import MembershipInferenceAttack",
+      "context": "inside Try at line 231"
+    },
+    {
+      "file": "packages/ml-engine/training/conversational_pipeline.py",
+      "line": 684,
+      "import_statement": "from training.lora_trainer import LoRATrainer, TrainingConfig",
+      "context": "inside FunctionDef at line 675"
+    },
+    {
+      "file": "packages/ml-engine/training/conversational_pipeline.py",
+      "line": 688,
+      "import_statement": "from training.model_registry import ModelRegistry, RegistryConfig",
+      "context": "inside FunctionDef at line 675"
+    },
+    {
+      "file": "packages/ml-engine/training/ewc.py",
+      "line": 9,
+      "import_statement": "import torch",
+      "context": "inside Try at line 8"
+    },
+    {
+      "file": "packages/ml-engine/training/ewc.py",
+      "line": 10,
+      "import_statement": "import torch.nn as nn",
+      "context": "inside Try at line 8"
+    },
+    {
+      "file": "packages/ml-engine/training/ewc.py",
+      "line": 11,
+      "import_statement": "import torch.nn.functional as F",
+      "context": "inside Try at line 8"
+    },
+    {
+      "file": "packages/ml-engine/training/gpu_scheduler.py",
+      "line": 110,
+      "import_statement": "import torch",
+      "context": "inside FunctionDef at line 109"
+    },
+    {
+      "file": "packages/ml-engine/training/hpo.py",
+      "line": 97,
+      "import_statement": "import random",
+      "context": "inside FunctionDef at line 91"
+    },
+    {
+      "file": "packages/ml-engine/training/hpo.py",
+      "line": 98,
+      "import_statement": "import math",
+      "context": "inside FunctionDef at line 91"
+    },
+    {
+      "file": "packages/ml-engine/training/hpo.py",
+      "line": 159,
+      "import_statement": "import random",
+      "context": "inside FunctionDef at line 158"
+    },
+    {
+      "file": "packages/ml-engine/training/hpo.py",
+      "line": 43,
+      "import_statement": "import optuna",
+      "context": "inside Try at line 42"
+    },
+    {
+      "file": "packages/ml-engine/training/hpo.py",
+      "line": 164,
+      "import_statement": "import math",
+      "context": "inside If at line 163"
+    },
+    {
+      "file": "packages/ml-engine/training/knowledge_distillation.py",
+      "line": 226,
+      "import_statement": "import os",
+      "context": "inside Try at line 140"
+    },
+    {
+      "file": "packages/ml-engine/training/lora_trainer.py",
+      "line": 21,
+      "import_statement": "from peft import LoraConfig, get_peft_model, TaskType, PeftModel",
+      "context": "inside Try at line 20"
+    },
+    {
+      "file": "packages/ml-engine/training/lora_trainer.py",
+      "line": 29,
+      "import_statement": "import mlflow",
+      "context": "inside Try at line 28"
+    },
+    {
+      "file": "packages/ml-engine/training/lora_trainer.py",
+      "line": 230,
+      "import_statement": "from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig",
+      "context": "inside FunctionDef at line 229"
+    },
+    {
+      "file": "packages/ml-engine/training/mlflow_tracker.py",
+      "line": 13,
+      "import_statement": "import mlflow",
+      "context": "inside Try at line 12"
+    },
+    {
+      "file": "packages/ml-engine/training/mlflow_tracker.py",
+      "line": 14,
+      "import_statement": "import mlflow.pytorch",
+      "context": "inside Try at line 12"
+    },
+    {
+      "file": "packages/ml-engine/training/mlflow_tracker.py",
+      "line": 15,
+      "import_statement": "import mlflow.sklearn",
+      "context": "inside Try at line 12"
+    },
+    {
+      "file": "packages/ml-engine/training/mlflow_tracker.py",
+      "line": 16,
+      "import_statement": "from mlflow.tracking import MlflowClient",
+      "context": "inside Try at line 12"
+    },
+    {
+      "file": "packages/ml-engine/training/mlflow_tracker.py",
+      "line": 23,
+      "import_statement": "import torch",
+      "context": "inside Try at line 22"
+    },
+    {
+      "file": "packages/ml-engine/training/mlflow_tracker.py",
+      "line": 572,
+      "import_statement": "import sys",
+      "context": "inside Try at line 560"
+    },
+    {
+      "file": "packages/ml-engine/training/mlflow_tracker.py",
+      "line": 63,
+      "import_statement": "import pynvml",
+      "context": "inside Try at line 62"
+    },
+    {
+      "file": "packages/ml-engine/training/rag_pipeline.py",
+      "line": 14,
+      "import_statement": "from qdrant_client import QdrantClient",
+      "context": "inside Try at line 13"
+    },
+    {
+      "file": "packages/ml-engine/training/rag_pipeline.py",
+      "line": 15,
+      "import_statement": "from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, FieldCondition, MatchValue",
+      "context": "inside Try at line 13"
+    },
+    {
+      "file": "packages/ml-engine/training/rag_pipeline.py",
+      "line": 29,
+      "import_statement": "from sentence_transformers import SentenceTransformer",
+      "context": "inside Try at line 28"
+    },
+    {
+      "file": "packages/ml-engine/training/rag_pipeline.py",
+      "line": 320,
+      "import_statement": "from docx import Document as DocxDocument",
+      "context": "inside FunctionDef at line 319"
+    },
+    {
+      "file": "packages/ml-engine/training/rag_pipeline.py",
+      "line": 346,
+      "import_statement": "import csv",
+      "context": "inside FunctionDef at line 345"
+    },
+    {
+      "file": "packages/ml-engine/training/rag_pipeline.py",
+      "line": 455,
+      "import_statement": "import math",
+      "context": "inside FunctionDef at line 454"
+    },
+    {
+      "file": "packages/ml-engine/training/rag_pipeline.py",
+      "line": 281,
+      "import_statement": "from pdf2image import convert_from_path",
+      "context": "inside Try at line 280"
+    },
+    {
+      "file": "packages/ml-engine/training/rag_pipeline.py",
+      "line": 282,
+      "import_statement": "import pytesseract",
+      "context": "inside Try at line 280"
+    },
+    {
+      "file": "packages/ml-engine/training/rag_pipeline.py",
+      "line": 295,
+      "import_statement": "import PyPDF2",
+      "context": "inside Try at line 294"
+    },
+    {
+      "file": "packages/ml-engine/training/rag_pipeline.py",
+      "line": 306,
+      "import_statement": "from pdf2image import convert_from_path",
+      "context": "inside Try at line 305"
+    },
+    {
+      "file": "packages/ml-engine/training/rag_pipeline.py",
+      "line": 307,
+      "import_statement": "import pytesseract",
+      "context": "inside Try at line 305"
+    },
+    {
+      "file": "packages/ml-engine/training/rag_pipeline.py",
+      "line": 415,
+      "import_statement": "import random",
+      "context": "inside If at line 414"
+    },
+    {
+      "file": "packages/ml-engine/training/rag_pipeline.py",
+      "line": 435,
+      "import_statement": "import random",
+      "context": "inside If at line 434"
+    },
+    {
+      "file": "packages/ml-engine/unlearning/hybrid_controller.py",
+      "line": 21,
+      "import_statement": "import torch",
+      "context": "inside Try at line 20"
+    },
+    {
+      "file": "packages/ml-engine/verification/quality_metrics.py",
+      "line": 124,
+      "import_statement": "from security.attacks.membership_inference import MembershipInferenceAttack",
+      "context": "inside Try at line 123"
+    },
+    {
+      "file": "packages/ml-engine/verification/quality_metrics.py",
+      "line": 168,
+      "import_statement": "import torch",
+      "context": "inside Try at line 167"
+    },
+    {
+      "file": "packages/ml-engine/verification/quality_metrics.py",
+      "line": 198,
+      "import_statement": "import torch",
+      "context": "inside Try at line 197"
+    }
+  ],
+  "circular_import_risks": []
+}

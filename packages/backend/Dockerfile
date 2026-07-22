@@ -1,6 +1,8 @@
 # ─── Build Stage ────────────────────────────────────────────
 FROM python:3.12-slim AS builder
 
+ARG APP_ENV=production
+
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \

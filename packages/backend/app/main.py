@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from contextlib import asynccontextmanager
 
+import sqlalchemy
+
 from app.core.config import settings
 from app.core.events import register_lifespan_events
 from app.core.exception_handlers import register_error_handlers
@@ -83,7 +85,7 @@ async def health_check():
     try:
         async with db.session_factory() as session:
             await session.execute(
-                __import__("sqlalchemy").text("SELECT 1")
+                sqlalchemy.text("SELECT 1")
             )
         db_latency = round((time.perf_counter() - db_start) * 1000, 2)
         health_status["components"]["database"] = {
@@ -138,9 +140,10 @@ async def readiness_check():
 
     try:
         async with db.session_factory() as session:
-            await session.execute(__import__("sqlalchemy").text("SELECT 1"))
+            await session.execute(sqlalchemy.text("SELECT 1"))
         return {"status": "ready"}
-    except Exception:
+    except Exception as e:
+        logger.warning("Readiness check failed: %s", e)
         from fastapi.responses import JSONResponse
         return JSONResponse({"status": "not_ready"}, status_code=503)
 

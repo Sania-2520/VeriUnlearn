@@ -76,7 +76,7 @@ export default function DocumentsPage() {
       if (!res.ok) throw new Error("Upload failed");
       queryClient.invalidateQueries({ queryKey: ["documents"] });
       (e.currentTarget as HTMLFormElement).reset();
-    } catch {}
+    } catch (e) { console.error("Failed to upload document:", e); }
     setUploading(false);
   };
 

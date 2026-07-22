@@ -1,0 +1,97 @@
+[
+  {
+    "request_id": "del-req-bfe74a1b98f3",
+    "user_email": "demo@veriunlearn.ai",
+    "dataset": "cifar10",
+    "adapter_name": "LoRA-cifar10-r8",
+    "algorithm": "sisa",
+    "target_indices": [
+      3164,
+      9886,
+      21222,
+      25875,
+      42659
+    ],
+    "reason": "GDPR Art.17 erasure",
+    "status": "completed",
+    "submitted_at": "2026-04-22T12:00:00+00:00",
+    "completed_at": "2026-04-24T10:53:00+00:00",
+    "verification_certificate_id": "cert-sisa-cifar10"
+  },
+  {
+    "request_id": "del-req-9456bdfa12ea",
+    "user_email": "demo@veriunlearn.ai",
+    "dataset": "cifar100",
+    "adapter_name": "LoRA-cifar100-r16",
+    "algorithm": "influence",
+    "target_indices": [
+      4747,
+      6168,
+      23965,
+      35119,
+      38193
+    ],
+    "reason": "GDPR Art.17 erasure",
+    "status": "verified",
+    "submitted_at": "2026-04-27T08:39:00+00:00",
+    "completed_at": "2026-04-29T07:32:00+00:00",
+    "verification_certificate_id": "cert-certified-cifar10"
+  },
+  {
+    "request_id": "del-req-a697f8b99a46",
+    "user_email": "demo@veriunlearn.ai",
+    "dataset": "tiny_imagenet",
+    "adapter_name": "LoRA-tiny-r8",
+    "algorithm": "certified",
+    "target_indices": [
+      2457,
+      3801,
+      5632,
+      14070,
+      33255
+    ],
+    "reason": "GDPR Art.17 erasure",
+    "status": "in_progress",
+    "submitted_at": "2026-05-02T05:18:00+00:00",
+    "completed_at": null,
+    "verification_certificate_id": null
+  },
+  {
+    "request_id": "del-req-bc0e142195cb",
+    "user_email": "demo@veriunlearn.ai",
+    "dataset": "cifar10",
+    "adapter_name": "LoRA-cifar10-r16",
+    "algorithm": "hybrid",
+    "target_indices": [
+      4578,
+      5944,
+      15772,
+      27405,
+      28419
+    ],
+    "reason": "GDPR Art.17 erasure",
+    "status": "completed",
+    "submitted_at": "2026-05-07T02:57:00+00:00",
+    "completed_at": "2026-05-09T01:50:00+00:00",
+    "verification_certificate_id": "cert-influence-cifar10"
+  },
+  {
+    "request_id": "del-req-d9c2b1bc8ab6",
+    "user_email": "demo@veriunlearn.ai",
+    "dataset": "cifar100",
+    "adapter_name": "LoRA-cifar100-r8",
+    "algorithm": "sisa",
+    "target_indices": [
+      3873,
+      8113,
+      27821,
+      36113,
+      37057
+    ],
+    "reason": "GDPR Art.17 erasure",
+    "status": "verified",
+    "submitted_at": "2026-05-11T23:36:00+00:00",
+    "completed_at": "2026-05-13T22:29:00+00:00",
+    "verification_certificate_id": "cert-hybrid-cifar10"
+  }
+]

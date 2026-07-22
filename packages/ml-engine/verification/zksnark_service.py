@@ -15,7 +15,10 @@ py_ecc, circom) or integrate with a cloud HSM/attestation service.
 
 import hashlib
 import json
+import logging
 from typing import Any, Optional
+
+logger = logging.getLogger(__name__)
 
 from verification.merkle_tree import MerkleTree
 from verification.signatures import SignatureManager
@@ -249,6 +252,7 @@ class ZKProofService:
             pub_key = self.sig_manager.load_public_key(vk.public_key_pem)
             sig_valid = self.sig_manager.verify(expected_root_hash, signature, pub_key)
         except Exception:
+            logger.warning("ZK proof verification raised unexpected exception")
             sig_valid = False
 
         if not sig_valid:

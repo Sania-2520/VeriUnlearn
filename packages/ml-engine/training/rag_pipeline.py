@@ -517,8 +517,11 @@ class VectorStore:
                         self.config.qdrant_collection,
                     )
             except Exception as exc:
-                logger.error("Failed to ensure Qdrant collection: %s", exc)
-                raise
+                logger.warning(
+                    "Failed to ensure Qdrant collection (%s) – falling back to in-memory store",
+                    exc,
+                )
+                self._client = None
         self._collection_initialized = True
 
     # ------------------------------------------------------------------ #
@@ -770,6 +773,7 @@ class VectorStore:
                 info = self._client.get_collection(self.config.qdrant_collection)
                 return info.points_count or 0
             except Exception:
+                logger.warning("Qdrant collection count failed")
                 return 0
         return len(self._mem_store)
 

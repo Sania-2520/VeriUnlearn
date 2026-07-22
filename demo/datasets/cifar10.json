@@ -1,0 +1,31 @@
+{
+  "id": "cifar10",
+  "name": "CIFAR-10",
+  "classes": 10,
+  "samples": 50000,
+  "size_mb": 168,
+  "modality": "image",
+  "description": "60,000 32x32 color images across 10 mutually exclusive classes. Standard benchmark for machine-unlearning evaluations.",
+  "sample_labels": [
+    "airplane",
+    "automobile",
+    "bird",
+    "cat",
+    "deer",
+    "dog",
+    "frog",
+    "horse",
+    "ship",
+    "truck"
+  ],
+  "example_record": {
+    "id": "cifar10-00000001",
+    "label": "airplane",
+    "features_dim": 3072
+  },
+  "source_license": "MIT",
+  "split": {
+    "train": 45000,
+    "test": 5000
+  }
+}

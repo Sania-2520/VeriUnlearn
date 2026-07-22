@@ -135,19 +135,19 @@ async def get_certificate(
     verification_service: VerificationServiceDep = ...,
 ):
     certificate = await verification_service.get_certificate(certificate_hash)
-    if certificate is None:
-        try:
-            ml_cert = await ml_engine_client.generate_certificate(
-                target_data_ids=[certificate_hash],
-                model_name="",
-                data_size=0,
-                regulatory="gdpr",
-            )
-            return {"certificate": ml_cert}
-        except MLEngineClientError as e:
-            logger.warning("ML engine certificate generation failed for hash %s: %s", certificate_hash, str(e))
-            return {"certificate": None}
-    return {"certificate": certificate}
+    if certificate is not None:
+        return {"certificate": certificate}
+    try:
+        ml_cert = await ml_engine_client.generate_certificate(
+            target_data_ids=[certificate_hash],
+            model_name="",
+            data_size=0,
+            regulatory="gdpr",
+        )
+        return {"certificate": ml_cert}
+    except MLEngineClientError as e:
+        logger.warning("ML engine certificate generation failed for hash %s: %s", certificate_hash, str(e))
+        raise HTTPException(status_code=404, detail=f"Certificate {certificate_hash} not found")
 
 
 @router.post("/proofs/generate-zksnark", status_code=status.HTTP_201_CREATED)

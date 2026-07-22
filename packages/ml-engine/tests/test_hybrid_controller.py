@@ -18,7 +18,7 @@ class TestHybridAdaptiveController:
         )
         strategies = controller.select_strategies(context)
         assert len(strategies) >= 1
-        assert any(s.name == "InfluenceFunction" for s in strategies)
+        assert any(s.algorithm_name == "influence" for s in strategies)
 
     @pytest.mark.asyncio
     async def test_large_data_high_accuracy(self, controller):
@@ -30,8 +30,8 @@ class TestHybridAdaptiveController:
         )
         strategies = controller.select_strategies(context)
         assert len(strategies) >= 1
-        names = [s.name for s in strategies]
-        assert "CertifiedRemoval" in names
+        names = [s.algorithm_name for s in strategies]
+        assert "certified" in names
 
     @pytest.mark.asyncio
     async def test_execute_returns_result(self, controller):
@@ -56,7 +56,10 @@ class TestHybridAdaptiveController:
         assert len(result.metrics) >= 1
 
     def test_deduplicate_removes_duplicates(self, controller):
-        from unlearning.algorithms.sisa import SISAUnlearning
-        strategies = [SISAUnlearning(), SISAUnlearning()]
+        from unlearning.hybrid_controller import StrategyDecision
+        strategies = [
+            StrategyDecision(algorithm_name="sisa"),
+            StrategyDecision(algorithm_name="sisa"),
+        ]
         deduped = controller._deduplicate(strategies)
         assert len(deduped) == 1

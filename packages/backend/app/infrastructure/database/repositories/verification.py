@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import select, func, desc, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.verification.entities import (
@@ -79,7 +79,7 @@ class SQLAlchemyDeletionProofRepository(DeletionProofRepository):
 
     async def update(self, proof: DeletionProofEntity) -> DeletionProofEntity:
         await self._session.execute(
-            __import__("sqlalchemy").update(DeletionProofModel)
+            update(DeletionProofModel)
             .where(DeletionProofModel.id == proof.id)
             .values(
                 verified=proof.verified,

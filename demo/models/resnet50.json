@@ -1,0 +1,15 @@
+{
+  "id": "resnet50",
+  "name": "ResNet-50",
+  "framework": "pytorch",
+  "params_m": 25.6,
+  "architecture": "ResNet-50 (convolutional, 50 layers)",
+  "pretrained_source": "torchvision",
+  "license": "Apache-2.0",
+  "supported_adapters": [
+    "lora"
+  ],
+  "training_dataset": "cifar100",
+  "top1_accuracy": 0.76,
+  "created_at": "2026-01-31T15:40:00+00:00"
+}

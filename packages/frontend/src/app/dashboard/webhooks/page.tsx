@@ -8,11 +8,12 @@ import { clsx } from "clsx"
 import * as webhookApi from "@/lib/api/webhooks"
 import type { Webhook, WebhookEventLog, WebhookTestResult } from "@/lib/types/webhooks"
 import { formatDate } from "@/lib/utils"
+import { AlertCircle } from "lucide-react"
 
 const statusColors: Record<string, string> = {
-  active: "bg-green-100 text-green-700",
-  failing: "bg-red-100 text-red-700",
-  disabled: "bg-gray-100 text-gray-600",
+  active: "bg-[var(--success-soft)] text-[var(--success)]",
+  failing: "bg-[var(--danger-soft)] text-[var(--danger)]",
+  disabled: "bg-[var(--bg-subtle)] text-[var(--text-secondary)]",
 }
 
 const eventOptions = [
@@ -64,7 +65,7 @@ function WebhookForm({
       <Input id="wh-url" label="Endpoint URL" type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://example.com/webhook" required />
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Subscribe to Events</label>
+        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Subscribe to Events</label>
         <div className="grid grid-cols-2 gap-2">
           {eventOptions.map((event) => (
             <label key={event} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -72,7 +73,7 @@ function WebhookForm({
                 type="checkbox"
                 checked={events.includes(event)}
                 onChange={() => toggleEvent(event)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="rounded border-[var(--border-default)] text-[var(--accent)] focus:ring-[var(--ring)]"
               />
               {event}
             </label>
@@ -87,7 +88,7 @@ function WebhookForm({
           value={timeoutMs} onChange={(e) => setTimeoutMs(Number(e.target.value))} />
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
 
       <div className="flex gap-3">
         <Button type="submit" loading={saving}>{initial?.id ? "Update" : "Create"} Webhook</Button>
@@ -104,7 +105,7 @@ function LogViewer({ webhookId, onClose }: { webhookId: string; onClose: () => v
   useEffect(() => {
     webhookApi.getWebhookLogs(webhookId, { page_size: 50 }).then((res) => {
       setLogs(res.data)
-    }).catch(() => {}).finally(() => setLoading(false))
+    }).catch((err) => console.error("Failed to fetch webhook logs:", err)).finally(() => setLoading(false))
   }, [webhookId])
 
   return (
@@ -115,16 +116,16 @@ function LogViewer({ webhookId, onClose }: { webhookId: string; onClose: () => v
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading...</p>
+        <p className="text-sm text-[var(--text-secondary)]">Loading...</p>
       ) : logs.length === 0 ? (
-        <p className="text-sm text-gray-500">No delivery logs yet</p>
+        <p className="text-sm text-[var(--text-secondary)]">No delivery logs yet</p>
       ) : (
         <div className="space-y-2 max-h-80 overflow-y-auto">
           {logs.map((log) => (
-            <div key={log.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-sm">
+            <div key={log.id} className="flex items-center justify-between p-3 bg-[var(--bg-subtle)] rounded-lg text-sm">
               <div>
                 <p className="font-medium text-xs">{log.event_type}</p>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
                   Attempt {log.attempt_count}/{log.max_attempts}
                   {log.response_code && ` · HTTP ${log.response_code}`}
                   {" · "}{formatDate(log.created_at)}
@@ -132,9 +133,9 @@ function LogViewer({ webhookId, onClose }: { webhookId: string; onClose: () => v
               </div>
               <span className={clsx(
                 "text-xs px-2 py-0.5 rounded-full",
-                log.status === "delivered" ? "bg-green-100 text-green-700" :
-                log.status === "failed" ? "bg-red-100 text-red-700" :
-                "bg-yellow-100 text-yellow-700"
+                log.status === "delivered" ? "bg-[var(--success-soft)] text-[var(--success)]" :
+                log.status === "failed" ? "bg-[var(--danger-soft)] text-[var(--danger)]" :
+                "bg-[var(--warning-soft)] text-[var(--warning)]"
               )}>
                 {log.status}
               </span>
@@ -236,23 +237,31 @@ export default function WebhooksPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Webhooks</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage outgoing webhook endpoints for event notifications</p>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Webhooks</h1>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">Manage outgoing webhook endpoints for event notifications</p>
         </div>
         <Button onClick={() => { setShowForm(true); setEditing(null) }}>Add Webhook</Button>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <div className="flex items-center gap-2 p-3 bg-[var(--danger-soft)] border border-[var(--danger-border)] rounded-lg text-sm text-[var(--danger)]">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {error}
+          <button onClick={() => setError("")} className="ml-auto text-[var(--danger)] hover:text-[var(--danger-border)] cursor-pointer">
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Test Result Toast */}
       {testResult && (
-        <Card className={testResult.success ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
+        <Card className={testResult.success ? "border-[var(--success-border)] bg-[var(--success-soft)]" : "border-[var(--danger-border)] bg-[var(--danger-soft)]"}>
           <CardContent className="flex items-center justify-between py-3">
             <div>
-              <p className={clsx("text-sm font-medium", testResult.success ? "text-green-700" : "text-red-700")}>
+              <p className={clsx("text-sm font-medium", testResult.success ? "text-[var(--success)]" : "text-[var(--danger)]")}>
                 {testResult.success ? "✓ Webhook test successful" : "✗ Webhook test failed"}
               </p>
-              <p className="text-xs text-gray-600 mt-0.5">
+              <p className="text-xs text-[var(--text-secondary)] mt-0.5">
                 {testResult.status_code && `HTTP ${testResult.status_code} · `}
                 {testResult.duration_ms !== null && `${testResult.duration_ms}ms`}
                 {testResult.error && ` · ${testResult.error}`}
@@ -293,17 +302,17 @@ export default function WebhooksPage() {
       <Card>
         <CardContent className="pt-6">
           {loading ? (
-            <p className="text-sm text-gray-500 py-8 text-center">Loading...</p>
+            <p className="text-sm text-[var(--text-secondary)] py-8 text-center">Loading...</p>
           ) : webhooks.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500 font-medium">No webhooks configured</p>
-              <p className="text-sm text-gray-400 mt-1">Create a webhook to receive event notifications</p>
+              <p className="text-[var(--text-secondary)] font-medium">No webhooks configured</p>
+              <p className="text-sm text-[var(--text-tertiary)] mt-1">Create a webhook to receive event notifications</p>
               <Button className="mt-4" onClick={() => setShowForm(true)}>Add Webhook</Button>
             </div>
           ) : (
             <div className="space-y-3">
               {webhooks.map((wh) => (
-                <div key={wh.id} className="border border-gray-200 rounded-lg p-4">
+                <div key={wh.id} className="border border-[var(--border-default)] rounded-lg p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -312,22 +321,22 @@ export default function WebhooksPage() {
                           {wh.status}
                         </span>
                         {!wh.is_active && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--bg-subtle)] text-[var(--text-secondary)]">
                             paused
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 mt-0.5 font-mono break-all">{wh.url}</p>
+                      <p className="text-xs text-[var(--text-secondary)] mt-0.5 font-mono break-all">{wh.url}</p>
                       <div className="flex items-center gap-2 mt-1.5">
                         <div className="flex flex-wrap gap-1">
                           {wh.events.slice(0, 3).map((ev) => (
-                            <span key={ev} className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded">{ev}</span>
+                            <span key={ev} className="text-xs px-1.5 py-0.5 bg-[var(--accent-soft)] text-[var(--accent)] rounded">{ev}</span>
                           ))}
                           {wh.events.length > 3 && (
-                            <span className="text-xs px-1.5 py-0.5 bg-gray-50 text-gray-500 rounded">+{wh.events.length - 3}</span>
+                            <span className="text-xs px-1.5 py-0.5 bg-[var(--bg-subtle)] text-[var(--text-secondary)] rounded">+{wh.events.length - 3}</span>
                           )}
                         </div>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-[var(--text-tertiary)]">
                           {wh.consecutive_failures > 0 && `${wh.consecutive_failures} failures · `}
                           {wh.last_success_at ? `Last OK: ${formatDate(wh.last_success_at)}` : "Never tested"}
                         </span>

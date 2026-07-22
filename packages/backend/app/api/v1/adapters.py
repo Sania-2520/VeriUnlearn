@@ -122,6 +122,17 @@ async def rollback_adapter(
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
 
 
+@router.get("/controller/health", status_code=status.HTTP_200_OK)
+async def get_controller_health(
+    current_user: CurrentUser,
+    session: DatabaseSession,
+):
+    try:
+        return await ml_engine_client.get_controller_health()
+    except MLEngineClientError as e:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
+
+
 @router.get("/{adapter_name}/versions", status_code=status.HTTP_200_OK)
 async def get_versions(
     adapter_name: str,
@@ -212,17 +223,6 @@ async def record_adapter_metrics(
             latency_ms=request.latency_ms,
             success=request.success,
         )
-    except MLEngineClientError as e:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
-
-
-@router.get("/controller/health", status_code=status.HTTP_200_OK)
-async def get_controller_health(
-    current_user: CurrentUser,
-    session: DatabaseSession,
-):
-    try:
-        return await ml_engine_client.get_controller_health()
     except MLEngineClientError as e:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
 

@@ -154,7 +154,7 @@ NFR-044: Alembic migrations for database schema.
 
 | Layer | Technology | Justification |
 |---|---|---|
-| Frontend | Next.js 14, TypeScript, Tailwind CSS, shadcn/ui | SSR, type safety, utility-first styling |
+| Frontend | Next.js 15, TypeScript, Tailwind CSS, shadcn/ui | SSR, type safety, utility-first styling |
 | Backend | FastAPI, Python 3.13 | Async, auto OpenAPI, modern Python |
 | Database | PostgreSQL 16, SQLAlchemy 2.0 | ACID compliance, async ORM |
 | Cache/Queue | Redis 7, Celery 5 | Task queue, result backend |

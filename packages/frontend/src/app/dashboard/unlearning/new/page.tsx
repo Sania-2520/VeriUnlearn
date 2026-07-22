@@ -50,8 +50,8 @@ export default function NewUnlearningRequestPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">New Unlearning Request</h1>
-        <p className="text-sm text-gray-500 mt-1">Submit a data deletion request for the Right to be Forgotten</p>
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">New Unlearning Request</h1>
+        <p className="text-sm text-[var(--text-secondary)] mt-1">Submit a data deletion request for the Right to be Forgotten</p>
       </div>
 
       <Card>
@@ -68,7 +68,7 @@ export default function NewUnlearningRequestPage() {
             />
 
             <div>
-              <label htmlFor="target-ids" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="target-ids" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
                 Target Data IDs
               </label>
               <textarea
@@ -77,21 +77,21 @@ export default function NewUnlearningRequestPage() {
                 onChange={(e) => setTargetDataIds(e.target.value)}
                 placeholder="One ID per line&#10;data_000001&#10;data_000002"
                 rows={5}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:border-[var(--brand)]"
                 required
               />
-              <p className="text-xs text-gray-400 mt-1">Enter one data ID per line</p>
+              <p className="text-xs text-[var(--text-tertiary)] mt-1">Enter one data ID per line</p>
             </div>
 
             <div>
-              <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="priority" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
                 Priority
               </label>
               <select
                 id="priority"
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as typeof priority)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-[var(--border-default)] px-3 py-2 text-sm bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -101,14 +101,14 @@ export default function NewUnlearningRequestPage() {
             </div>
 
             <div>
-              <label htmlFor="regulatory" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="regulatory" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
                 Regulatory Framework
               </label>
               <select
                 id="regulatory"
                 value={regulatory}
                 onChange={(e) => setRegulatory(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-[var(--border-default)] px-3 py-2 text-sm bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
               >
                 <option value="gdpr">GDPR</option>
                 <option value="ccpa">CCPA</option>
@@ -117,7 +117,7 @@ export default function NewUnlearningRequestPage() {
               </select>
             </div>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
 
             <div className="flex gap-3">
               <Button type="submit" loading={loading}>Submit Request</Button>

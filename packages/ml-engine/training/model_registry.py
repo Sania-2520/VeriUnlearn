@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import os
 import shutil
 import time
@@ -11,6 +12,8 @@ from typing import Any, Optional
 
 from verification.merkle_tree import MerkleTree
 from verification.signatures import SignatureManager
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -137,13 +140,14 @@ class ModelRegistry:
             shutil.copy2(checkpoint_path, dest_checkpoint)
         final_checkpoint_path = dest_checkpoint
 
-        target_for_hash = adapter_path if adapter_path else checkpoint_path
+        target_for_hash = final_adapter_path if adapter_path else final_checkpoint_path
         if os.path.isdir(target_for_hash):
             sha256_hash = self._compute_sha256_dir(target_for_hash)
         else:
             sha256_hash = self._compute_sha256_file(target_for_hash)
 
         merkle_root = ""
+        registered_at = datetime.now(timezone.utc).isoformat()
         if self.config.enable_merkle_chaining:
             tree = MerkleTree()
             version_data = json.dumps({
@@ -151,7 +155,7 @@ class ModelRegistry:
                 "model_name": model_name,
                 "sha256": sha256_hash,
                 "algorithm": algorithm,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": registered_at,
             }, sort_keys=True)
             if parent_merkle_root:
                 tree.add_leaf(parent_merkle_root)
@@ -189,6 +193,7 @@ class ModelRegistry:
             sha256=sha256_hash,
             merkle_root=merkle_root,
             artifact_location=version_dir,
+            created_at=registered_at,
             created_by=created_by,
             tags=tags or {},
             gpu_hours=gpu_hours,
@@ -339,6 +344,7 @@ class ModelRegistry:
                     )
                     result["signature_valid"] = sig_valid
                 except Exception:
+                    logger.warning("Model signature validation failed")
                     result["signature_valid"] = False
             else:
                 result["signature_valid"] = not self.config.enable_signature_verification
@@ -537,7 +543,7 @@ class ModelRegistry:
                             try:
                                 total_disk_bytes += os.path.getsize(filepath)
                             except OSError:
-                                pass
+                                logger.debug("Could not stat file %s", filepath, exc_info=True)
 
         total_disk_gb = round(total_disk_bytes / (1024 ** 3), 4)
 

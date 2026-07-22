@@ -62,3 +62,12 @@ minio-data/
 .coverage
 htmlcov/
 coverage.xml
+
+# Build artifacts
+tsconfig.tsbuildinfo
+
+# Python virtual environments
+.local/
+
+# Stale PoC secrets
+proofs/users.json

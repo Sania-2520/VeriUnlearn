@@ -1,0 +1,136 @@
+# Production overlay — applied on top of ../values.yaml via:
+#   helm upgrade ... -f values/production.yaml
+global:
+  imageRegistry: ghcr.io/veriunlearn
+
+image:
+  backend:
+    repository: veriunlearn/backend
+    tag: "latest"
+  mlEngine:
+    repository: veriunlearn/ml-engine
+    tag: "latest"
+  frontend:
+    repository: veriunlearn/frontend
+    tag: "latest"
+  celeryWorker:
+    repository: veriunlearn/backend
+    tag: "latest"
+
+replicaCount:
+  backend: 3
+  mlEngine: 1
+  frontend: 3
+  celeryWorker: 3
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: veriunlearn.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+          port: 3000
+        - path: /api
+          pathType: Prefix
+          service: backend
+          port: 8000
+        - path: /ml
+          pathType: Prefix
+          service: ml-engine
+          port: 8001
+  tls:
+    - secretName: veriunlearn-tls
+      hosts:
+        - veriunlearn.com
+
+config:
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "info"
+  CORS_ORIGINS: "https://veriunlearn.com"
+  FRONTEND_URL: "https://veriunlearn.com"
+
+resources:
+  backend:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  mlEngine:
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+      nvidia.com/gpu: 1
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+      nvidia.com/gpu: 1
+  frontend:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 300m
+      memory: 512Mi
+  celeryWorker:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+autoscaling:
+  backend:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  mlEngine:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 75
+  frontend:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  celeryWorker:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 75
+
+podDisruptionBudget:
+  backend:
+    enabled: true
+    minAvailable: 2
+  mlEngine:
+    enabled: true
+    minAvailable: 1
+  frontend:
+    enabled: true
+    minAvailable: 2
+  celeryWorker:
+    enabled: true
+    minAvailable: 2
+
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    namespace: monitoring
+    interval: 30s

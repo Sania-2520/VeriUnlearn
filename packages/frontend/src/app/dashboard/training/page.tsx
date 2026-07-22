@@ -13,7 +13,6 @@ import {
   Layers,
   Settings,
   BarChart3,
-  ChevronRight,
 } from "lucide-react"
 
 interface TrainingConfig {
@@ -79,8 +78,8 @@ export default function TrainingPage() {
     try {
       const res = await listCheckpoints()
       setCheckpoints(res.data || res.checkpoints || [])
-    } catch {
-      // silently fail
+    } catch (err) {
+      console.error("Failed to fetch checkpoints:", err)
     } finally {
       setIsLoadingCheckpoints(false)
     }
@@ -107,7 +106,8 @@ export default function TrainingPage() {
       setActiveJob(res)
       setSuccess("Training job started successfully")
       setTimeout(() => setSuccess(null), 5000)
-    } catch {
+    } catch (err) {
+      console.error("Failed to start training job:", err)
       setError("Failed to start training job")
     } finally {
       setIsStarting(false)
@@ -122,29 +122,29 @@ export default function TrainingPage() {
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">LoRA Training</h1>
-          <p className="text-sm text-gray-400 mt-1">Configure and run LoRA fine-tuning jobs</p>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">LoRA Training</h1>
+          <p className="text-sm text-[var(--text-tertiary)] mt-1">Configure and run LoRA fine-tuning jobs</p>
         </div>
         <button
           onClick={fetchCheckpoints}
-          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white bg-[#2f2f2f] hover:bg-[#3a3a3a] border border-[#2f2f2f] hover:border-gray-500 rounded-lg transition-colors cursor-pointer"
+          className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-hover)] hover:bg-[var(--bg-active)] border border-[var(--bg-hover)] hover:border-[var(--border-strong)] rounded-lg transition-colors cursor-pointer"
         >
           <RefreshCw className="h-4 w-4" />
         </button>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 p-3 bg-red-950/30 border border-red-900/40 rounded-lg text-sm text-red-400">
+        <div className="flex items-center gap-2 p-3 bg-[var(--danger-soft)] border border-[var(--danger-border)] rounded-lg text-sm text-[var(--danger)]">
           <AlertCircle className="h-4 w-4 shrink-0" />
           {error}
-          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-300 cursor-pointer">
+          <button onClick={() => setError(null)} className="ml-auto text-[var(--danger)] hover:text-[var(--danger-border)] cursor-pointer">
             ×
           </button>
         </div>
       )}
 
       {success && (
-        <div className="flex items-center gap-2 p-3 bg-emerald-950/30 border border-emerald-900/40 rounded-lg text-sm text-emerald-400">
+        <div className="flex items-center gap-2 p-3 bg-[var(--brand-soft)] border border-[var(--brand-border)] rounded-lg text-sm text-[var(--brand)]">
           <CheckCircle className="h-4 w-4 shrink-0" />
           {success}
         </div>
@@ -152,99 +152,99 @@ export default function TrainingPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Training Configuration */}
-        <div className="lg:col-span-2 bg-[#171717] border border-[#2f2f2f]/60 rounded-xl p-5">
+        <div className="lg:col-span-2 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-5">
           <div className="flex items-center gap-2 mb-5">
-            <Settings className="h-4 w-4 text-emerald-500" />
-            <h2 className="text-sm font-semibold text-gray-200">Training Configuration</h2>
+            <Settings className="h-4 w-4 text-[var(--brand)]" />
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Training Configuration</h2>
           </div>
 
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs text-gray-400 font-medium">Model Name *</label>
+                <label className="text-xs text-[var(--text-tertiary)] font-medium">Model Name *</label>
                 <input
                   type="text"
                   value={config.model_name}
                   onChange={(e) => updateConfig("model_name", e.target.value)}
                   placeholder="e.g. llama-3.2-3b"
-                  className="w-full px-3 py-2 bg-[#212121] border border-[#2f2f2f] focus:border-gray-500 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none transition-colors"
+                  className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-default)] focus:border-[var(--border-strong)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none transition-colors"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs text-gray-400 font-medium">Dataset Path *</label>
+                <label className="text-xs text-[var(--text-tertiary)] font-medium">Dataset Path *</label>
                 <input
                   type="text"
                   value={config.dataset_path}
                   onChange={(e) => updateConfig("dataset_path", e.target.value)}
                   placeholder="e.g. /data/training_data.jsonl"
-                  className="w-full px-3 py-2 bg-[#212121] border border-[#2f2f2f] focus:border-gray-500 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none transition-colors"
+                  className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-default)] focus:border-[var(--border-strong)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none transition-colors"
                 />
               </div>
             </div>
 
-            <div className="border-t border-[#2f2f2f]/40 pt-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3">LoRA Parameters</p>
+            <div className="border-t border-[var(--border-default)] pt-4">
+              <p className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider font-semibold mb-3">LoRA Parameters</p>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 font-medium">Rank</label>
+                  <label className="text-xs text-[var(--text-tertiary)] font-medium">Rank</label>
                   <input
                     type="number"
                     value={config.lora_rank}
                     onChange={(e) => updateConfig("lora_rank", parseInt(e.target.value) || 16)}
-                    className="w-full px-3 py-2 bg-[#212121] border border-[#2f2f2f] focus:border-gray-500 rounded-lg text-sm text-white focus:outline-none transition-colors"
+                    className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-default)] focus:border-[var(--border-strong)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none transition-colors"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 font-medium">Alpha</label>
+                  <label className="text-xs text-[var(--text-tertiary)] font-medium">Alpha</label>
                   <input
                     type="number"
                     value={config.lora_alpha}
                     onChange={(e) => updateConfig("lora_alpha", parseInt(e.target.value) || 32)}
-                    className="w-full px-3 py-2 bg-[#212121] border border-[#2f2f2f] focus:border-gray-500 rounded-lg text-sm text-white focus:outline-none transition-colors"
+                    className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-default)] focus:border-[var(--border-strong)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none transition-colors"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 font-medium">Learning Rate</label>
+                  <label className="text-xs text-[var(--text-tertiary)] font-medium">Learning Rate</label>
                   <input
                     type="text"
                     value={config.learning_rate}
                     onChange={(e) => updateConfig("learning_rate", parseFloat(e.target.value) || 2e-4)}
-                    className="w-full px-3 py-2 bg-[#212121] border border-[#2f2f2f] focus:border-gray-500 rounded-lg text-sm text-white focus:outline-none transition-colors"
+                    className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-default)] focus:border-[var(--border-strong)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none transition-colors"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 font-medium">Max Seq Length</label>
+                  <label className="text-xs text-[var(--text-tertiary)] font-medium">Max Seq Length</label>
                   <input
                     type="number"
                     value={config.max_seq_length}
                     onChange={(e) => updateConfig("max_seq_length", parseInt(e.target.value) || 512)}
-                    className="w-full px-3 py-2 bg-[#212121] border border-[#2f2f2f] focus:border-gray-500 rounded-lg text-sm text-white focus:outline-none transition-colors"
+                    className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-default)] focus:border-[var(--border-strong)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none transition-colors"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="border-t border-[#2f2f2f]/40 pt-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3">Training Parameters</p>
+            <div className="border-t border-[var(--border-default)] pt-4">
+              <p className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider font-semibold mb-3">Training Parameters</p>
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 font-medium">Epochs</label>
+                  <label className="text-xs text-[var(--text-tertiary)] font-medium">Epochs</label>
                   <input
                     type="number"
                     value={config.epochs}
                     onChange={(e) => updateConfig("epochs", parseInt(e.target.value) || 3)}
                     min={1}
-                    className="w-full px-3 py-2 bg-[#212121] border border-[#2f2f2f] focus:border-gray-500 rounded-lg text-sm text-white focus:outline-none transition-colors"
+                    className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-default)] focus:border-[var(--border-strong)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none transition-colors"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 font-medium">Batch Size</label>
+                  <label className="text-xs text-[var(--text-tertiary)] font-medium">Batch Size</label>
                   <input
                     type="number"
                     value={config.batch_size}
                     onChange={(e) => updateConfig("batch_size", parseInt(e.target.value) || 8)}
                     min={1}
-                    className="w-full px-3 py-2 bg-[#212121] border border-[#2f2f2f] focus:border-gray-500 rounded-lg text-sm text-white focus:outline-none transition-colors"
+                    className="w-full px-3 py-2 bg-[var(--bg-app)] border border-[var(--border-default)] focus:border-[var(--border-strong)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none transition-colors"
                   />
                 </div>
               </div>
@@ -262,37 +262,37 @@ export default function TrainingPage() {
         {/* Training Progress Sidebar */}
         <div className="space-y-4">
           {/* Active Job */}
-          <div className="bg-[#171717] border border-[#2f2f2f]/60 rounded-xl p-5">
+          <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-5">
             <div className="flex items-center gap-2 mb-4">
-              <BarChart3 className="h-4 w-4 text-emerald-500" />
-              <h2 className="text-sm font-semibold text-gray-200">Training Progress</h2>
+              <BarChart3 className="h-4 w-4 text-[var(--brand)]" />
+              <h2 className="text-sm font-semibold text-[var(--text-primary)]">Training Progress</h2>
             </div>
 
             {activeJob ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">Status</span>
+                  <span className="text-xs text-[var(--text-tertiary)]">Status</span>
                   <span className={`text-xs px-2 py-0.5 rounded-full border ${
                     activeJob.status === "running"
-                      ? "bg-emerald-950/30 text-emerald-400 border-emerald-900/40"
+                      ? "bg-[var(--brand-soft)] text-[var(--brand)] border-[var(--brand-border)]"
                       : activeJob.status === "completed"
-                        ? "bg-emerald-950/30 text-emerald-400 border-emerald-900/40"
+                        ? "bg-[var(--brand-soft)] text-[var(--brand)] border-[var(--brand-border)]"
                         : activeJob.status === "failed"
-                          ? "bg-red-950/30 text-red-400 border-red-900/40"
-                          : "bg-yellow-950/30 text-yellow-400 border-yellow-900/40"
+                          ? "bg-[var(--danger-soft)] text-[var(--danger)] border-[var(--danger-border)]"
+                          : "bg-[var(--warning-soft)] text-[var(--warning)] border-[var(--warning-border)]"
                   }`}>
                     {activeJob.status}
                   </span>
                 </div>
 
                 <div>
-                  <div className="flex justify-between text-xs text-gray-400 mb-1.5">
+                  <div className="flex justify-between text-xs text-[var(--text-tertiary)] mb-1.5">
                     <span>Progress</span>
                     <span>{activeJob.progress}%</span>
                   </div>
-                  <div className="w-full h-2 bg-[#2f2f2f] rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-[var(--bg-hover)] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                      className="h-full bg-[var(--brand)] rounded-full transition-all duration-500"
                       style={{ width: `${activeJob.progress}%` }}
                     />
                   </div>
@@ -302,26 +302,26 @@ export default function TrainingPage() {
                   <div className="space-y-2">
                     {activeJob.metrics.loss !== undefined && (
                       <div className="flex justify-between text-xs">
-                        <span className="text-gray-500">Loss</span>
-                        <span className="text-gray-300 font-mono">{activeJob.metrics.loss.toFixed(4)}</span>
+                        <span className="text-[var(--text-tertiary)]">Loss</span>
+                        <span className="text-[var(--text-secondary)] font-mono">{activeJob.metrics.loss.toFixed(4)}</span>
                       </div>
                     )}
                     {activeJob.metrics.accuracy !== undefined && (
                       <div className="flex justify-between text-xs">
-                        <span className="text-gray-500">Accuracy</span>
-                        <span className="text-gray-300 font-mono">{(activeJob.metrics.accuracy * 100).toFixed(2)}%</span>
+                        <span className="text-[var(--text-tertiary)]">Accuracy</span>
+                        <span className="text-[var(--text-secondary)] font-mono">{(activeJob.metrics.accuracy * 100).toFixed(2)}%</span>
                       </div>
                     )}
                     {activeJob.metrics.learning_rate !== undefined && (
                       <div className="flex justify-between text-xs">
-                        <span className="text-gray-500">Learning Rate</span>
-                        <span className="text-gray-300 font-mono">{activeJob.metrics.learning_rate.toExponential(2)}</span>
+                        <span className="text-[var(--text-tertiary)]">Learning Rate</span>
+                        <span className="text-[var(--text-secondary)] font-mono">{activeJob.metrics.learning_rate.toExponential(2)}</span>
                       </div>
                     )}
                   </div>
                 )}
 
-                <div className="space-y-1 text-xs text-gray-500">
+                <div className="space-y-1 text-xs text-[var(--text-tertiary)]">
                   {activeJob.started_at && (
                     <div className="flex items-center gap-1.5">
                       <Clock className="h-3 w-3" />
@@ -335,7 +335,7 @@ export default function TrainingPage() {
                     </div>
                   )}
                   {activeJob.error_message && (
-                    <div className="flex items-start gap-1.5 text-red-400">
+                    <div className="flex items-start gap-1.5 text-[var(--danger)]">
                       <XCircle className="h-3 w-3 mt-0.5 shrink-0" />
                       {activeJob.error_message}
                     </div>
@@ -343,7 +343,7 @@ export default function TrainingPage() {
                 </div>
               </div>
             ) : (
-              <div className="text-center py-6 text-gray-500">
+              <div className="text-center py-6 text-[var(--text-tertiary)]">
                 <Play className="h-6 w-6 mx-auto mb-2 opacity-40" />
                 <p className="text-xs">No active training job</p>
               </div>
@@ -351,38 +351,38 @@ export default function TrainingPage() {
           </div>
 
           {/* Checkpoints */}
-          <div className="bg-[#171717] border border-[#2f2f2f]/60 rounded-xl p-5">
+          <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-5">
             <div className="flex items-center gap-2 mb-4">
-              <Layers className="h-4 w-4 text-emerald-500" />
-              <h2 className="text-sm font-semibold text-gray-200">Checkpoints</h2>
-              <span className="text-xs text-gray-500 ml-auto">{checkpoints.length}</span>
+              <Layers className="h-4 w-4 text-[var(--brand)]" />
+              <h2 className="text-sm font-semibold text-[var(--text-primary)]">Checkpoints</h2>
+              <span className="text-xs text-[var(--text-tertiary)] ml-auto">{checkpoints.length}</span>
             </div>
 
             {isLoadingCheckpoints ? (
               <div className="flex items-center justify-center py-6">
-                <div className="animate-spin h-5 w-5 border-2 border-emerald-500 border-t-transparent rounded-full" />
+                <div className="animate-spin h-5 w-5 border-2 border-[var(--brand)] border-t-transparent rounded-full" />
               </div>
             ) : checkpoints.length === 0 ? (
-              <div className="text-center py-6 text-gray-500">
+              <div className="text-center py-6 text-[var(--text-tertiary)]">
                 <Layers className="h-6 w-6 mx-auto mb-2 opacity-40" />
                 <p className="text-xs">No checkpoints yet</p>
               </div>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {checkpoints.map((cp) => (
-                  <div key={cp.id} className="p-2.5 bg-[#212121] border border-[#2f2f2f] rounded-lg">
+                  <div key={cp.id} className="p-2.5 bg-[var(--bg-app)] border border-[var(--border-default)] rounded-lg">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium text-gray-300">
+                      <span className="text-xs font-medium text-[var(--text-secondary)]">
                         Step {cp.step} · Epoch {cp.epoch}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-[var(--text-tertiary)]">
                         {new Date(cp.created_at).toLocaleTimeString()}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-gray-500">
-                      <span>Loss: <span className="text-gray-300 font-mono">{cp.loss.toFixed(4)}</span></span>
+                    <div className="flex items-center gap-3 text-xs text-[var(--text-tertiary)]">
+                      <span>Loss: <span className="text-[var(--text-secondary)] font-mono">{cp.loss.toFixed(4)}</span></span>
                       {cp.accuracy !== undefined && (
-                        <span>Acc: <span className="text-gray-300 font-mono">{(cp.accuracy * 100).toFixed(1)}%</span></span>
+                        <span>Acc: <span className="text-[var(--text-secondary)] font-mono">{(cp.accuracy * 100).toFixed(1)}%</span></span>
                       )}
                     </div>
                   </div>

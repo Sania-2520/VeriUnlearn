@@ -1825,6 +1825,7 @@ async def export_checkpoint(request: dict):
             return {"exported": True, "source": src, "destination": dst}
         return {"exported": False, "error": f"Checkpoint {checkpoint_id} not found"}
     except Exception as e:
+        logger.error("export_checkpoint failed: %s", str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 

@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
@@ -164,9 +165,7 @@ class SQLAlchemySessionRepository(SessionRepository):
             .where(SessionModel.id == sid)
             .values(
                 is_revoked=True,
-                revoked_at=__import__("datetime").datetime.now(
-                    __import__("datetime").timezone.utc
-                ),
+                revoked_at=datetime.now(timezone.utc),
             )
         )
 
@@ -180,9 +179,7 @@ class SQLAlchemySessionRepository(SessionRepository):
             )
             .values(
                 is_revoked=True,
-                revoked_at=__import__("datetime").datetime.now(
-                    __import__("datetime").timezone.utc
-                ),
+                revoked_at=datetime.now(timezone.utc),
             )
         )
 
@@ -257,7 +254,7 @@ class SQLAlchemyTenantRepository(TenantRepository):
     async def update(self, tenant: TenantEntity) -> TenantEntity:
         tid = UUID(tenant.id) if isinstance(tenant.id, str) else tenant.id
         await self._session.execute(
-            __import__("sqlalchemy").update(TenantModel)
+            update(TenantModel)
             .where(TenantModel.id == tid)
             .values(
                 name=tenant.name,
@@ -355,7 +352,7 @@ class SQLAlchemyApiKeyRepository(ApiKeyRepository):
         await self._session.execute(
             update(TenantApiKeyModel)
             .where(TenantApiKeyModel.id == aid)
-            .values(last_used_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc))
+            .values(last_used_at=datetime.now(timezone.utc))
         )
 
     @staticmethod

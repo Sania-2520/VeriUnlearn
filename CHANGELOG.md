@@ -25,3 +25,40 @@
 - Makefile deploy/seed/benchmark/graphs targets
 - Demo seed data script
 - Updated CI/CD pipelines
+
+## Development
+
+### Security Fixes
+- Fixed authentication bypass vulnerability in middleware chain
+- Patched path traversal in file upload endpoints
+- Hardened JWT token validation and refresh flow
+- Added input sanitization across all API endpoints
+- Enforced HTTPS redirect and secure cookie flags in production
+
+### Test Coverage Improvements
+- Expanded test suite to 753 tests (backend, ml-engine, frontend)
+- Added integration tests for adapter lifecycle (register, activate, rollback, canary)
+- Added load/throughput and concurrent request test suites
+- Improved mock coverage for external services (Qdrant, MinIO, RabbitMQ)
+- Added regression tests for previously reported bugs
+
+### Documentation Improvements
+- Added 69+ documentation files across architecture, API, security, and user guides
+- Expanded developer onboarding guide with Docker-only workflow
+- Added API contract documentation for all REST endpoints
+- Created troubleshooting guide and FAQ
+- Improved inline code documentation across Python and TypeScript packages
+
+### Deployment Fixes
+- Added Docker healthchecks for all services in docker-compose.yml
+- Fixed secrets management for production environment variables
+- Corrected Helm chart values for resource limits and replicas
+- Updated CI/CD pipeline to run security scans (Trivy + Gitleaks) on every push
+- Fixed Nginx reverse-proxy configuration for WebSocket endpoints
+
+### UX Improvements
+- Added loading state indicators across all frontend views
+- Implemented React error boundaries for graceful failure handling
+- Improved form validation feedback with inline error messages
+- Added toast notifications for async operation outcomes
+- Enhanced dark mode support across dashboard components

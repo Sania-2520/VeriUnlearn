@@ -45,7 +45,7 @@ export default function LineagePage() {
         const data = await res.json();
         setVersions(data.versions || []);
       }
-    } catch {}
+    } catch (e) { console.error("Failed to load versions:", e); }
     setLoading(false);
   };
 
@@ -53,7 +53,7 @@ export default function LineagePage() {
     try {
       const res = await fetch("/api/v1/registry/stats", { headers: authHeaders() });
       if (res.ok) setStats(await res.json());
-    } catch {}
+    } catch (e) { console.error("Failed to load stats:", e); }
   };
 
   const fetchLineage = async (versionId: number) => {
@@ -64,7 +64,7 @@ export default function LineagePage() {
         const data = await res.json();
         setLineage(data.lineage || []);
       }
-    } catch {}
+    } catch (e) { console.error("Failed to load lineage:", e); }
   };
 
   return (

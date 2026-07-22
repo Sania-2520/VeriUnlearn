@@ -43,7 +43,7 @@ export default function PrivacyPage() {
       if (res.ok) {
         setRequests(await res.json());
       }
-    } catch {}
+    } catch (e) { console.error("Failed to load requests:", e); }
     setLoading(false);
   };
 
@@ -67,7 +67,7 @@ export default function PrivacyPage() {
         setAlgorithm("");
         fetchRequests();
       }
-    } catch {}
+    } catch (e) { console.error("Failed to create request:", e); }
     setSubmitting(false);
   };
 
@@ -79,7 +79,7 @@ export default function PrivacyPage() {
         headers: authHeaders(),
       });
       if (res.ok) fetchRequests();
-    } catch {}
+    } catch (e) { console.error("Failed to execute request:", e); }
     setExecutingId(null);
   };
 
@@ -98,7 +98,7 @@ export default function PrivacyPage() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       }
-    } catch {}
+    } catch (e) { console.error("Failed to export data:", e); }
     setExporting(false);
   };
 
@@ -114,7 +114,7 @@ export default function PrivacyPage() {
         localStorage.removeItem("access_token");
         window.location.href = "/login";
       }
-    } catch {}
+    } catch (e) { console.error("Failed to delete account:", e); }
     setDeleting(false);
   };
 

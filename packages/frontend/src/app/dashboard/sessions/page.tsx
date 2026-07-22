@@ -51,28 +51,28 @@ export default function SessionsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Sessions</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage your active sessions</p>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Sessions</h1>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">Manage your active sessions</p>
         </div>
         <Button variant="danger" onClick={handleRevokeAll}>
           Revoke All
         </Button>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
 
       <Card>
         <CardContent className="pt-6">
           {loading ? (
-            <p className="text-sm text-gray-500">Loading...</p>
+            <p className="text-sm text-[var(--text-secondary)]">Loading...</p>
           ) : sessions.length === 0 ? (
-            <p className="text-sm text-gray-500">No active sessions</p>
+            <p className="text-sm text-[var(--text-secondary)]">No active sessions</p>
           ) : (
             <div className="space-y-3">
               {sessions.map((session) => (
                 <div
                   key={session.id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                  className="flex items-center justify-between p-4 bg-[var(--bg-subtle)] rounded-lg"
                 >
                   <div>
                     <div className="flex items-center gap-2">
@@ -80,12 +80,12 @@ export default function SessionsPage() {
                         {session.user_agent ? session.user_agent.split(" ")[0] : "Unknown device"}
                       </p>
                       {session.is_current && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
                           Current
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">
                       {session.ip_address && `${session.ip_address} · `}
                       Created {formatDate(session.created_at)}
                       {session.expires_at && ` · Expires ${formatDate(session.expires_at)}`}
