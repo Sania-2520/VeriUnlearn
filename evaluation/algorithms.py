@@ -350,6 +350,51 @@ class Retraining(UnlearningAlgorithm):
 # ---------------------------------------------------------------------------
 
 
+class _ShardedEnsemble:
+    """Wraps SISA's per-shard models into a single sklearn-compatible estimator.
+
+    Applies each shard's scaler/vectorizer before calling predict, then
+    aggregates via majority vote.
+    """
+    def __init__(self, sisa: "SISA") -> None:
+        self._sisa = sisa
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        n = X.shape[0]
+        votes: list[np.ndarray] = []
+        for s_idx in range(self._sisa.num_shards):
+            est = self._sisa._shard_models[s_idx]
+            if est is None:
+                votes.append(np.full(n, -1, dtype=int))
+                continue
+            scl = self._sisa._shard_scalers[s_idx]
+            if scl is not None:
+                X_t = scl.transform(X)
+            else:
+                X_t = X
+            votes.append(est.predict(X_t))
+        votes_arr = np.array(votes)
+        final = np.zeros(n, dtype=int)
+        for i in range(n):
+            valid = votes_arr[:, i][votes_arr[:, i] >= 0]
+            if len(valid) > 0:
+                final[i] = np.bincount(valid).argmax()
+        return final
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        probas: list[np.ndarray] = []
+        for s_idx in range(self._sisa.num_shards):
+            est = self._sisa._shard_models[s_idx]
+            if est is None:
+                continue
+            scl = self._sisa._shard_scalers[s_idx]
+            X_t = scl.transform(X) if scl is not None else X
+            probas.append(est.predict_proba(X_t))
+        if not probas:
+            return np.zeros((X.shape[0], 2))
+        return np.mean(probas, axis=0)
+
+
 class SISA(UnlearningAlgorithm):
     """Sharded Isolated Sliced Aggregated unlearning.
 
@@ -432,7 +477,7 @@ class SISA(UnlearningAlgorithm):
         val_acc = accuracy_score(dataset.y_test, all_preds)
 
         return TrainResult(
-            estimator=shard_models,  # type: ignore[arg-type]
+            estimator=_ShardedEnsemble(self),
             vectorizer=None,
             scaler=None,
             train_accuracy=0.0,
@@ -502,7 +547,7 @@ class SISA(UnlearningAlgorithm):
         post_preds = self._predict_aggregated(X_test)
 
         return UnlearnResult(
-            estimator=self._shard_models,  # type: ignore[arg-type]
+            estimator=_ShardedEnsemble(self),
             vectorizer=None,
             scaler=None,
             unlearning_time_s=float(unlearn_time),

@@ -1,6 +1,8 @@
-# VeriUnlearn — Engineering Certification: READY for Phase 2
+# VeriUnlearn — Phase 2 Scientific Validation: COMPLETE
 
-**Tests**: 217/217 pass | **Security**: All CRITICAL/HIGH fixed | **Config**: Zero placeholder secrets
+**Tests**: 90/90 benchmark runs pass | **Security**: All CRITICAL/HIGH fixed | **Config**: Zero placeholder secrets
+**Phase 2 Report**: [`SCIENTIFIC_VALIDATION.md`](SCIENTIFIC_VALIDATION.md)
+**Figures**: `evaluation/results/phase2_validation/figures/`
 
 ---
 
