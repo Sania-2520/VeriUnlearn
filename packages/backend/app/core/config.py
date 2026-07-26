@@ -20,7 +20,7 @@ class LogLevel(str, Enum):
     CRITICAL = "CRITICAL"
 
 
-_PLACEHOLDER_SUBSTRINGS = ["change-me", "changeme", "placeholder", "replace-with"]
+_PLACEHOLDER_SUBSTRINGS = ["change-me", "changeme", "change_me", "placeholder", "replace-with"]
 
 
 def _is_placeholder(val: str) -> bool:

@@ -264,7 +264,7 @@ def _get_peak_memory_mb() -> float:
             _, peak = tracemalloc.get_traced_memory()
             return peak / (1024 * 1024)
     except Exception:
-        pass
+        logger.debug("tracemalloc not available for memory tracking")
     try:
         import resource
         usage = resource.getrusage(resource.RUSAGE_SELF)

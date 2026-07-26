@@ -207,7 +207,7 @@ class SQLAlchemyMessageRepository(MessageRepository):
             try:
                 feedback = FeedbackType(model.feedback)
             except ValueError:
-                pass
+                logger.warning("Invalid feedback value in DB: %s", model.feedback)
         return Message(
             id=model.id,
             session_id=model.session_id,

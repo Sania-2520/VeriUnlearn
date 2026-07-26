@@ -83,7 +83,7 @@ async def get_current_user(
                 "mfa_verified": payload.get("mfa_verified", False),
             }
         except TokenError:
-            pass
+            logger.debug("JWT token verification failed, falling through to API key auth")
 
     api_key = request.headers.get("X-API-Key")
     if api_key:
