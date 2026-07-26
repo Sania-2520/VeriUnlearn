@@ -1,3 +1,4 @@
+import os
 from enum import Enum
 from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -19,6 +20,17 @@ class LogLevel(str, Enum):
     CRITICAL = "CRITICAL"
 
 
+_PLACEHOLDER_SUBSTRINGS = ["change-me", "changeme", "placeholder", "replace-with"]
+
+
+def _is_placeholder(val: str) -> bool:
+    lowered = val.lower()
+    for substr in _PLACEHOLDER_SUBSTRINGS:
+        if substr in lowered:
+            return True
+    return False
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -31,7 +43,6 @@ class Settings(BaseSettings):
     environment: Environment = Environment.DEVELOPMENT
     debug: bool = True
     log_level: LogLevel = LogLevel.DEBUG
-    secret_key: str = Field(default="change-me", min_length=32)
     app_name: str = "VeriUnlearn"
     version: str = "1.0.0"
     domain: str = "localhost:3000"
@@ -46,29 +57,28 @@ class Settings(BaseSettings):
         return self.environment == Environment.DEVELOPMENT
 
     # ─── PostgreSQL ─────────────────────────────────────────
-    database_url: str = Field(
-        default="postgresql+asyncpg://veriunlearn:veriunlearn@localhost:5432/veriunlearn"
-    )
+    database_url: str = ""
     database_pool_size: int = 20
     database_max_overflow: int = 40
     database_echo: bool = False
 
     # ─── Redis ──────────────────────────────────────────────
-    redis_url: str = Field(default="redis://:password@localhost:6379/0")
+    redis_url: str = ""
     redis_socket_timeout: int = 5
     redis_retry_on_timeout: bool = True
 
     # ─── RabbitMQ ───────────────────────────────────────────
-    rabbitmq_url: str = Field(default="amqp://guest:guest@localhost:5672/")
+    rabbitmq_url: str = ""
 
     # ─── Celery ────────────────────────────────────────────
-    celery_broker_url: str = Field(default="redis://:password@localhost:6379/1")
-    celery_result_backend: str = Field(default="redis://:password@localhost:6379/2")
+    celery_broker_url: str = ""
+    celery_result_backend: str = ""
     celery_worker_concurrency: int = 4
     celery_task_always_eager: bool = False
 
     # ─── JWT ──────────────────────────────────────────────
-    jwt_secret_key: str = Field(default="change-me-jwt-secret", min_length=32)
+    secret_key: str = Field(default="", min_length=0)
+    jwt_secret_key: str = Field(default="", min_length=0)
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 15
     jwt_refresh_token_expire_days: int = 7
@@ -95,20 +105,14 @@ class Settings(BaseSettings):
     # ─── AI Providers ───────────────────────────────────────
     openai_api_key: Optional[str] = None
     openai_organization: Optional[str] = None
-
     anthropic_api_key: Optional[str] = None
-
     google_api_key: Optional[str] = None
-
     azure_openai_endpoint: Optional[str] = None
     azure_openai_key: Optional[str] = None
     azure_openai_deployment: Optional[str] = None
-
     ollama_base_url: str = "http://localhost:11434"
     ollama_default_model: str = "llama3"
-
     vllm_base_url: str = "http://localhost:8000"
-
     huggingface_api_token: Optional[str] = None
 
     # ─── Qdrant ─────────────────────────────────────────────
@@ -123,7 +127,7 @@ class Settings(BaseSettings):
     # ─── MinIO ──────────────────────────────────────────────
     minio_endpoint: str = "localhost:9000"
     minio_access_key: str = "veriunlearn"
-    minio_secret_key: str = Field(default="change-me-minio", min_length=8)
+    minio_secret_key: str = Field(default="", min_length=0)
     minio_use_ssl: bool = False
     minio_documents_bucket: str = "documents"
     minio_uploads_bucket: str = "uploads"
@@ -133,7 +137,7 @@ class Settings(BaseSettings):
     minio_temp_bucket: str = "temp"
 
     # ─── ML Engine ──────────────────────────────────────────
-    ml_engine_url: str = Field(default="http://ml-engine:8001")
+    ml_engine_url: str = "http://localhost:8001"
     ml_engine_api_key: Optional[str] = None
     ml_model_cache_dir: str = "/data/model_cache"
     ml_default_embedding_model: str = "BAAI/bge-large-en-v1.5"
@@ -213,7 +217,7 @@ class Settings(BaseSettings):
 
     @property
     def allowed_upload_types_list(self) -> List[str]:
-        return self.allowed_upload_types.split(",")
+        return [t.strip() for t in self.allowed_upload_types.split(",")]
 
     @property
     def max_upload_size_bytes(self) -> int:
@@ -225,7 +229,7 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins_list(self) -> List[str]:
-        return self.cors_origins.split(",")
+        return [o.strip() for o in self.cors_origins.split(",")]
 
     # ─── Vault ──────────────────────────────────────────────
     vault_enabled: bool = False
@@ -248,10 +252,21 @@ class Settings(BaseSettings):
     @field_validator("secret_key", "jwt_secret_key")
     @classmethod
     def validate_secret_keys(cls, v: str) -> str:
+        if not v:
+            raise ValueError("Secret key must not be empty. Set via SECRET_KEY / JWT_SECRET_KEY env var.")
         if len(v) < 32:
-            raise ValueError(
-                f"Secret keys must be at least 32 characters (got {len(v)})"
-            )
+            raise ValueError(f"Secret keys must be at least 32 characters (got {len(v)})")
+        if _is_placeholder(v):
+            raise ValueError(f"Secret key contains placeholder text — generate a strong random key.")
+        return v
+
+    @field_validator("database_url")
+    @classmethod
+    def validate_database_url(cls, v: str) -> str:
+        if not v:
+            raise ValueError("DATABASE_URL must be set")
+        if not any(dialect in v for dialect in ("postgresql", "sqlite")):
+            raise ValueError(f"DATABASE_URL must be a PostgreSQL or SQLite connection string")
         return v
 
 

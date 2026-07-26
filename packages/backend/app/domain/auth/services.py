@@ -140,9 +140,6 @@ class AuthService:
             locked_until = ensure_aware(user.locked_until)
             if locked_until and locked_until > datetime.now(timezone.utc):
                 raise AuthenticationError("Account is temporarily locked")
-            user.is_locked = False
-            user.failed_login_attempts = 0
-            await self._user_repo.update(user)
 
         if not verify_password(password, user.password_hash):
             user.failed_login_attempts += 1
@@ -153,6 +150,8 @@ class AuthService:
             raise AuthenticationError("Invalid email or password")
 
         user.failed_login_attempts = 0
+        user.is_locked = False
+        user.locked_until = None
         user.last_login_at = datetime.now(timezone.utc)
         user.last_login_ip = ip_address
         await self._user_repo.update(user)
@@ -195,6 +194,16 @@ class AuthService:
         data = await cache.get(f"mfa:challenge:{challenge_token}")
         if not data:
             raise AuthenticationError("Invalid or expired MFA challenge")
+
+        attempts_key = f"mfa:attempts:{challenge_token}"
+        attempts_raw = await cache.get(attempts_key)
+        attempts = 0
+        if isinstance(attempts_raw, (int, str)):
+            attempts = int(attempts_raw)
+        if attempts >= 5:
+            await cache.delete(f"mfa:challenge:{challenge_token}")
+            raise AuthenticationError("Too many MFA attempts — challenge invalidated")
+        await cache.set(attempts_key, attempts + 1, ttl=timedelta(minutes=5))
 
         user = await self._user_repo.get_by_id(data["user_id"])
         if not user or not user.is_active:
@@ -439,6 +448,8 @@ class AuthService:
 
         user.password_hash = hash_password(new_password)
         await self._user_repo.update(user)
+
+        await self._session_repo.revoke_all_for_user(user_id)
 
         await self._audit.record(
             tenant_id=user.tenant_id,

@@ -646,6 +646,17 @@ class TestApiKeyManagement:
             "/api/v1/auth/register",
             json={"email": email, "password": "SecureP@ss123!", "full_name": "API Key Mgr"},
         )
+
+        from app.core.database import db
+        async with db.session_factory() as session:
+            from app.infrastructure.database.models import UserModel
+            from sqlalchemy import select, update
+            result = await session.execute(select(UserModel).where(UserModel.email == email))
+            user = result.scalar_one_or_none()
+            if user:
+                user.role = "admin"
+                await session.commit()
+
         resp = await client.post(
             "/api/v1/auth/login",
             json={"email": email, "password": "SecureP@ss123!"},
@@ -742,6 +753,17 @@ class TestApiKeyAuth:
             "/api/v1/auth/register",
             json={"email": email, "password": "SecureP@ss123!", "full_name": "API Key Auth"},
         )
+
+        from app.core.database import db
+        async with db.session_factory() as session:
+            from app.infrastructure.database.models import UserModel
+            from sqlalchemy import select
+            result = await session.execute(select(UserModel).where(UserModel.email == email))
+            user = result.scalar_one_or_none()
+            if user:
+                user.role = "admin"
+                await session.commit()
+
         resp = await client.post(
             "/api/v1/auth/login",
             json={"email": email, "password": "SecureP@ss123!"},

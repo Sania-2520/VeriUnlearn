@@ -28,7 +28,6 @@ def create_error_response(
         },
         "meta": {
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "version": settings.version,
         },
     }
     if details:

@@ -36,7 +36,7 @@ async def _register_and_upgrade(client: AsyncClient, email: str) -> str:
 
 class TestSettingsAPI:
     async def test_get_default_settings(self, client: AsyncClient):
-        token = await _register_and_login(client)
+        token = await _register_and_upgrade(client, "settings-default@example.com")
         headers = {"Authorization": f"Bearer {token}"}
 
         resp = await client.get("/api/v1/compliance/settings", headers=headers)
@@ -71,12 +71,12 @@ class TestSettingsAPI:
         )
         assert resp.status_code == 401
 
-    async def test_member_can_read_settings(self, client: AsyncClient):
+    async def test_member_cannot_read_settings(self, client: AsyncClient):
         token = await _register_and_login(client, "member-settings@example.com")
         headers = {"Authorization": f"Bearer {token}"}
 
         resp = await client.get("/api/v1/compliance/settings", headers=headers)
-        assert resp.status_code == 200
+        assert resp.status_code == 403
 
     async def test_member_cannot_write_settings(self, client: AsyncClient):
         token = await _register_and_login(client, "member-write@example.com")

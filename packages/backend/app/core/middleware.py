@@ -11,6 +11,18 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+_SENSITIVE_HEADERS = {"authorization", "x-api-key", "cookie", "set-cookie", "x-api-key"}
+_SENSITIVE_QUERY_PARAMS = {"token", "key", "secret", "password", "api_key", "access_token"}
+
+
+def _redact_sensitive(request: Request) -> dict:
+    headers = dict(request.headers)
+    for key in headers:
+        if key.lower() in _SENSITIVE_HEADERS:
+            headers[key] = "[REDACTED]"
+    query = str(request.url.query) if request.url.query else ""
+    return {"headers": headers, "query": query}
+
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(
@@ -55,9 +67,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "default-src 'self'",
             "script-src 'self'",
             "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data: blob: https:",
+            "img-src 'self' data: blob:",
             "font-src 'self' data:",
-            "connect-src 'self' https: wss:",
+            "connect-src 'self'",
             "frame-ancestors 'none'",
             "form-action 'self'",
             "base-uri 'self'",
@@ -73,11 +85,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
 
-        if response.status_code in (200, 201, 202):
-            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
-            response.headers["Pragma"] = "no-cache"
-            response.headers["Expires"] = "0"
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
 
         return response
 

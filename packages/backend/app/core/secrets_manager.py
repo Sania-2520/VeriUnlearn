@@ -80,7 +80,7 @@ class SecretsManager:
             return f.encrypt(plaintext.encode()).decode()
         except Exception as e:
             logger.error("Failed to encrypt API key: %s", str(e))
-            return plaintext
+            raise
 
     def decrypt_api_key(self, ciphertext: Optional[str]) -> Optional[str]:
         if not ciphertext:
@@ -90,8 +90,8 @@ class SecretsManager:
             f = Fernet(key)
             return f.decrypt(ciphertext.encode()).decode()
         except Exception:
-            logger.exception("Failed to decrypt API key, returning ciphertext")
-            return ciphertext
+            logger.exception("Failed to decrypt API key")
+            return None
 
 
 secrets_manager = SecretsManager()

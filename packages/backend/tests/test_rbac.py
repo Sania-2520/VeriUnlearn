@@ -189,6 +189,14 @@ class TestMFAEnforcement:
             "/api/v1/auth/register",
             json={"email": email, "password": "SecureP@ss123!", "full_name": email.split("@")[0]},
         )
+        from app.core.database import db
+        from sqlalchemy import update
+        from app.infrastructure.database.models import UserModel
+        async with db.session_factory() as session:
+            await session.execute(
+                update(UserModel).where(UserModel.email == email).values(role="admin")
+            )
+            await session.commit()
         resp = await client.post("/api/v1/auth/login", json={"email": email, "password": "SecureP@ss123!"})
         token = resp.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}

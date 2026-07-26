@@ -92,10 +92,16 @@ async def get_current_user(
         key_record = await api_key_repo.get_by_key_hash(key_hash)
         if key_record and key_record.is_active:
             await api_key_repo.update_last_used(key_record.id)
+            creator_role = UserRole.MEMBER.value
+            if key_record.created_by:
+                user_repo = SQLAlchemyUserRepository(session)
+                creator = await user_repo.get_by_id(key_record.created_by)
+                if creator:
+                    creator_role = creator.role.value
             return {
                 "user_id": key_record.created_by,
                 "tenant_id": key_record.tenant_id,
-                "role": UserRole.ADMIN.value,
+                "role": creator_role,
                 "email": None,
                 "jti": None,
                 "auth_type": "api_key",

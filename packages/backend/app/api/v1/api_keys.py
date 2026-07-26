@@ -19,7 +19,7 @@ router = APIRouter(dependencies=[Depends(default_rate_limiter), Depends(require_
 
 class CreateApiKeyRequest(BaseModel):
     name: str
-    scopes: list[str] = ["*"]
+    scopes: list[str] = []
 
 
 class ApiKeyResponse(BaseModel):
@@ -79,6 +79,7 @@ async def create_api_key(
 async def list_api_keys(
     current_user: CurrentUser,
     session: DatabaseSession,
+    _mfa: Annotated[None, Depends(require_mfa)] = None,
 ):
     tenant_id = current_user["tenant_id"]
     repo = SQLAlchemyApiKeyRepository(session)

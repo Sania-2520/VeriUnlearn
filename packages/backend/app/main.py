@@ -52,10 +52,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-allowed = settings.allowed_hosts_list if settings.allowed_hosts else (["*"] if settings.debug else [settings.domain])
+allowed_hosts = settings.allowed_hosts_list if settings.allowed_hosts else (["*"] if settings.debug else [settings.domain])
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=allowed,
+    allowed_hosts=allowed_hosts,
 )
 
 
@@ -92,10 +92,10 @@ async def health_check():
             "status": "healthy",
             "latency_ms": db_latency,
         }
-    except Exception as e:
+    except Exception:
+        logger.warning("Health check: database unhealthy")
         health_status["components"]["database"] = {
             "status": "unhealthy",
-            "error": str(e),
         }
         health_status["status"] = "degraded"
 
@@ -107,10 +107,10 @@ async def health_check():
             "status": "healthy",
             "latency_ms": cache_latency,
         }
-    except Exception as e:
+    except Exception:
+        logger.warning("Health check: cache unhealthy")
         health_status["components"]["cache"] = {
             "status": "unhealthy",
-            "error": str(e),
         }
         health_status["status"] = "degraded"
 
@@ -124,10 +124,10 @@ async def health_check():
             "latency_ms": ml_latency,
             "algorithms": ml_health.get("algorithms", []),
         }
-    except Exception as e:
+    except Exception:
+        logger.warning("Health check: ml_engine unhealthy")
         health_status["components"]["ml_engine"] = {
             "status": "unhealthy",
-            "error": str(e),
         }
         health_status["status"] = "degraded"
 
