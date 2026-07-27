@@ -71,3 +71,18 @@ tsconfig.tsbuildinfo
 
 # Stale PoC secrets
 proofs/users.json
+
+# Evaluation data files (downloaded at runtime)
+evaluation/data/
+
+# Evaluation results checkpoints
+evaluation/results/.checkpoint.json
+evaluation/results/*/.checkpoint.json
+
+# Backup files
+*.bak
+*.bak2
+*.b64
+
+# Logs
+logs/
