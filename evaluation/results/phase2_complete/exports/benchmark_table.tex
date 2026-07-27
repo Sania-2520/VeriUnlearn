@@ -1,0 +1,17 @@
+\begin{table*}[t]
+\centering
+\caption{Unlearning Algorithm Benchmark Results}
+\label{tab:benchmark}
+\small
+\begin{tabular}{lcccccccccccccccc}
+\toprule
+Algorithm & Accuracy After & Accuracy Before & F1 After & F1 Before & Forget Accuracy & Knowledge Retention & Memorization Score & Mia Success After & Mia Success Before & Precision After & Precision Before & Privacy Leak & Recall After & Recall Before & Trust Score & Utility Loss \\
+\midrule
+Retrain & 0.6411 $\pm$ 0.2252 & 0.6513 $\pm$ 0.2263 & 0.6350 $\pm$ 0.2277 & 0.6464 $\pm$ 0.2290 & 0.6388 $\pm$ 0.2356 & 0.9855 $\pm$ 0.0773 & \textbf{-0.6301 $\pm$ 0.6541} & 0.5742 $\pm$ 0.0857 & \textbf{0.5837 $\pm$ 0.1081} & 0.6504 $\pm$ 0.2261 & 0.6578 $\pm$ 0.2237 & 0.2650 $\pm$ 0.0746 & 0.6402 $\pm$ 0.2243 & 0.6506 $\pm$ 0.2245 & 0.6500 $\pm$ 0.0475 & 0.0102 $\pm$ 0.0307 \\
+SISA & \textbf{0.5311 $\pm$ 0.1933} & \textbf{0.5470 $\pm$ 0.1973} & \textbf{0.5054 $\pm$ 0.1994} & \textbf{0.5247 $\pm$ 0.2019} & 0.5222 $\pm$ 0.2029 & 0.9720 $\pm$ 0.0575 & -0.1964 $\pm$ 0.1629 & 0.6115 $\pm$ 0.0456 & 0.6226 $\pm$ 0.0508 & \textbf{0.5673 $\pm$ 0.2017} & \textbf{0.5799 $\pm$ 0.2069} & 0.3431 $\pm$ 0.0513 & \textbf{0.5272 $\pm$ 0.1919} & \textbf{0.5433 $\pm$ 0.1954} & 0.5610 $\pm$ 0.0204 & 0.0159 $\pm$ 0.0340 \\
+Scrub & 0.6320 $\pm$ 0.2448 & 0.6513 $\pm$ 0.2263 & 0.6245 $\pm$ 0.2479 & 0.6464 $\pm$ 0.2290 & 0.8185 $\pm$ 0.2308 & 0.9474 $\pm$ 0.0973 & -0.6301 $\pm$ 0.6541 & \textbf{0.5000 $\pm$ 0.0000} & 0.5837 $\pm$ 0.1081 & 0.6567 $\pm$ 0.2242 & 0.6578 $\pm$ 0.2237 & 0.3302 $\pm$ 0.1771 & 0.6323 $\pm$ 0.2427 & 0.6506 $\pm$ 0.2245 & \textbf{0.5370 $\pm$ 0.0579} & 0.0193 $\pm$ 0.0426 \\
+Infl. Func. & 0.6424 $\pm$ 0.2234 & 0.6513 $\pm$ 0.2263 & 0.6363 $\pm$ 0.2260 & 0.6464 $\pm$ 0.2290 & 0.6330 $\pm$ 0.2369 & 0.9902 $\pm$ 0.0808 & -0.6301 $\pm$ 0.6541 & 0.5817 $\pm$ 0.0942 & 0.5837 $\pm$ 0.1081 & 0.6514 $\pm$ 0.2261 & 0.6578 $\pm$ 0.2237 & \textbf{0.2582 $\pm$ 0.0703} & 0.6415 $\pm$ 0.2223 & 0.6506 $\pm$ 0.2245 & 0.6470 $\pm$ 0.0511 & \textbf{0.0090 $\pm$ 0.0316} \\
+Fine-tune & 0.6154 $\pm$ 0.2551 & 0.6513 $\pm$ 0.2263 & 0.6109 $\pm$ 0.2571 & 0.6464 $\pm$ 0.2290 & \textbf{0.4878 $\pm$ 0.2319} & \textbf{0.9038 $\pm$ 0.1489} & -0.6301 $\pm$ 0.6541 & 0.5000 $\pm$ 0.0000 & 0.5837 $\pm$ 0.1081 & 0.6192 $\pm$ 0.2549 & 0.6578 $\pm$ 0.2237 & 0.3261 $\pm$ 0.1770 & 0.6151 $\pm$ 0.2539 & 0.6506 $\pm$ 0.2245 & 0.6491 $\pm$ 0.0930 & 0.0359 $\pm$ 0.0489 \\
+\bottomrule
+\end{tabular}
+\end{table*}

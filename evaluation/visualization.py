@@ -167,17 +167,31 @@ class PublicationVisualizer:
         out = Path(output_dir)
         out.mkdir(parents=True, exist_ok=True)
         paths: list[str] = []
-        paths.append(self.plot_benchmark_heatmap(results.summary, str(out / "benchmark_heatmap")))
+        raw_summary = results.summary()
+        algo_means: dict[str, dict[str, float]] = {}
+        for algo in results.algorithm_names:
+            algo_means[algo] = {}
+            metric_sums: dict[str, list[float]] = {}
+            ds_data = raw_summary.get(algo, {})
+            for ds, fr_data in ds_data.items():
+                for fr_str, metrics in fr_data.items():
+                    for metric, stats in metrics.items():
+                        if stats.get("n", 0) > 0:
+                            metric_sums.setdefault(metric, []).append(stats["mean"])
+            for metric, vals in metric_sums.items():
+                algo_means[algo][metric] = float(np.mean(vals))
+        viz_summary = {"algorithm_means": algo_means}
+        paths.append(self.plot_benchmark_heatmap(viz_summary, str(out / "benchmark_heatmap")))
         paths.append(self.plot_confusion_matrices(results, str(out / "confusion_matrices")))
         paths.append(self.plot_roc_curves(results, str(out / "roc_curves")))
         paths.append(self.plot_pr_curves(results, str(out / "pr_curves")))
-        paths.append(self.plot_radar_chart(results.summary, str(out / "radar_chart")))
+        paths.append(self.plot_radar_chart(viz_summary, str(out / "radar_chart")))
         for metric in ("accuracy_after", "f1_after", "forget_accuracy", "trust_score"):
-            paths.append(self.plot_metric_bars(results.summary, metric, str(out / f"bars_{metric}")))
+            paths.append(self.plot_metric_bars(viz_summary, metric, str(out / f"bars_{metric}")))
         for metric in ("accuracy_after", "trust_score"):
             paths.append(self.plot_forget_ratio_sensitivity(results, metric, str(out / f"sensitivity_{metric}")))
-        paths.append(self.plot_privacy_utility_tradeoff(results.summary, str(out / "privacy_utility_tradeoff")))
-        paths.append(self.plot_efficiency_comparison(results.summary, str(out / "efficiency_comparison")))
+        paths.append(self.plot_privacy_utility_tradeoff(viz_summary, str(out / "privacy_utility_tradeoff")))
+        paths.append(self.plot_efficiency_comparison(viz_summary, str(out / "efficiency_comparison")))
         paths.append(self.plot_run_distributions(results, str(out / "run_distributions")))
         return [p for p in paths if p]
 

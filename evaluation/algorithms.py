@@ -251,7 +251,7 @@ class Retraining(UnlearningAlgorithm):
         t0 = time.perf_counter()
 
         if dataset.is_text and dataset.texts is not None:
-            vectorizer = TfidfVectorizer(max_features=5000, stop_words="english")
+            vectorizer = TfidfVectorizer(max_features=5000)
             X = vectorizer.fit_transform(dataset.texts)
             X_test = vectorizer.transform(dataset.texts_test)
         else:
@@ -307,7 +307,7 @@ class Retraining(UnlearningAlgorithm):
 
         if dataset.is_text and dataset.texts is not None:
             texts_retain = [dataset.texts[i] for i in retain_indices]
-            vectorizer = TfidfVectorizer(max_features=5000, stop_words="english")
+            vectorizer = TfidfVectorizer(max_features=5000)
             X = vectorizer.fit_transform(texts_retain)
         else:
             scaler = StandardScaler()
@@ -359,16 +359,19 @@ class _ShardedEnsemble:
     def __init__(self, sisa: "SISA") -> None:
         self._sisa = sisa
 
-    def predict(self, X: np.ndarray) -> np.ndarray:
-        n = X.shape[0]
+    def predict(self, X: np.ndarray | list[str]) -> np.ndarray:
+        n = len(X)
         votes: list[np.ndarray] = []
         for s_idx in range(self._sisa.num_shards):
             est = self._sisa._shard_models[s_idx]
             if est is None:
                 votes.append(np.full(n, -1, dtype=int))
                 continue
+            vec = self._sisa._shard_vectorizers[s_idx]
             scl = self._sisa._shard_scalers[s_idx]
-            if scl is not None:
+            if vec is not None:
+                X_t = vec.transform(X)
+            elif scl is not None:
                 X_t = scl.transform(X)
             else:
                 X_t = X
@@ -381,17 +384,24 @@ class _ShardedEnsemble:
                 final[i] = np.bincount(valid).argmax()
         return final
 
-    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+    def predict_proba(self, X: np.ndarray | list[str]) -> np.ndarray:
+        n = len(X)
         probas: list[np.ndarray] = []
         for s_idx in range(self._sisa.num_shards):
             est = self._sisa._shard_models[s_idx]
             if est is None:
                 continue
+            vec = self._sisa._shard_vectorizers[s_idx]
             scl = self._sisa._shard_scalers[s_idx]
-            X_t = scl.transform(X) if scl is not None else X
+            if vec is not None:
+                X_t = vec.transform(X)
+            elif scl is not None:
+                X_t = scl.transform(X)
+            else:
+                X_t = X
             probas.append(est.predict_proba(X_t))
         if not probas:
-            return np.zeros((X.shape[0], 2))
+            return np.zeros((n, 2))
         return np.mean(probas, axis=0)
 
 
@@ -449,7 +459,7 @@ class SISA(UnlearningAlgorithm):
             scl: StandardScaler | None = None
 
             if dataset.is_text and dataset.texts is not None:
-                vec = TfidfVectorizer(max_features=5000, stop_words="english")
+                vec = TfidfVectorizer(max_features=5000)
                 texts_shard = [dataset.texts[i] for i in shard_idx_arr]
                 X_s = vec.fit_transform(texts_shard)
             else:
@@ -526,7 +536,7 @@ class SISA(UnlearningAlgorithm):
             scl: StandardScaler | None = None
 
             if dataset.is_text and dataset.texts is not None:
-                vec = TfidfVectorizer(max_features=5000, stop_words="english")
+                vec = TfidfVectorizer(max_features=5000)
                 texts_shard = [dataset.texts[i] for i in remaining_in_shard]
                 X_s = vec.fit_transform(texts_shard)
             else:
@@ -655,7 +665,7 @@ class SCRUB(UnlearningAlgorithm):
         t0 = time.perf_counter()
 
         if dataset.is_text and dataset.texts is not None:
-            vectorizer = TfidfVectorizer(max_features=5000, stop_words="english")
+            vectorizer = TfidfVectorizer(max_features=5000)
             X = vectorizer.fit_transform(dataset.texts)
             X_test = vectorizer.transform(dataset.texts_test)
         else:
@@ -841,7 +851,7 @@ class InfluenceFunctions(UnlearningAlgorithm):
         t0 = time.perf_counter()
 
         if dataset.is_text and dataset.texts is not None:
-            vectorizer = TfidfVectorizer(max_features=5000, stop_words="english")
+            vectorizer = TfidfVectorizer(max_features=5000)
             X = vectorizer.fit_transform(dataset.texts)
             X_test = vectorizer.transform(dataset.texts_test)
         else:
@@ -1078,7 +1088,7 @@ class FineTuneForgetting(UnlearningAlgorithm):
         t0 = time.perf_counter()
 
         if dataset.is_text and dataset.texts is not None:
-            vectorizer = TfidfVectorizer(max_features=5000, stop_words="english")
+            vectorizer = TfidfVectorizer(max_features=5000)
             X = vectorizer.fit_transform(dataset.texts)
             X_test = vectorizer.transform(dataset.texts_test)
         else:

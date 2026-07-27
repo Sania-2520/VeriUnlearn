@@ -1,7 +1,7 @@
 """Experiment runner — orchestrates the full VeriUnlearn benchmark pipeline.
 
 Integrates with the existing evaluation modules:
-- ``evaluation.datasets`` for loading & splitting
+- ``evaluation.data_loading`` for loading & splitting
 - ``evaluation.algorithms`` for unlearning strategies
 - ``evaluation.metrics`` for MetricsComputer and per-metric functions
 """
@@ -59,7 +59,7 @@ except ImportError:
     )
 
 try:
-    from evaluation.datasets import (
+    from evaluation.data_loading import (
         DatasetBundle,
         create_forget_set,
         load_dataset,
@@ -67,7 +67,7 @@ try:
     )
 except ImportError:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    from evaluation.datasets import (
+    from evaluation.data_loading import (
         DatasetBundle,
         create_forget_set,
         load_dataset,
@@ -78,6 +78,7 @@ try:
     from evaluation.algorithms import (
         EvalDataset,
         UnlearningAlgorithm,
+        _ShardedEnsemble,
         get_algorithm,
         list_algorithms,
     )
@@ -86,6 +87,7 @@ except ImportError:
     from evaluation.algorithms import (
         EvalDataset,
         UnlearningAlgorithm,
+        _ShardedEnsemble,
         get_algorithm,
         list_algorithms,
     )
@@ -240,13 +242,15 @@ def _bundle_to_eval_dataset(
 
 def _extract_texts(dataset) -> list[str]:
     """Pull raw text strings from a _TextClassificationDataset."""
+    if hasattr(dataset, "_texts"):
+        return dataset._texts
+    if hasattr(dataset, "dataset") and hasattr(dataset.dataset, "_texts"):
+        return [dataset.dataset._texts[i] for i in dataset.indices]
     texts: list[str] = []
     for i in range(len(dataset)):
         sample = dataset[i]
         if isinstance(sample, dict) and "input_ids" in sample:
             break
-        if hasattr(dataset, "_texts"):
-            return dataset._texts
         texts.append(str(sample))
     return texts
 
@@ -975,6 +979,8 @@ def _transform_for_algo(
         X = eval_ds.X[:n]
         if isinstance(estimator, list):
             return X
+        if isinstance(estimator, _ShardedEnsemble) and eval_ds.texts is not None:
+            return eval_ds.texts[:n]
         if result.vectorizer is not None and eval_ds.texts is not None:
             texts_sub = eval_ds.texts[:n]
             return result.vectorizer.transform(texts_sub)
@@ -987,6 +993,8 @@ def _transform_for_algo(
         X_test = eval_ds.X_test[:n]
         if isinstance(estimator, list):
             return X_test
+        if isinstance(estimator, _ShardedEnsemble) and eval_ds.texts_test is not None:
+            return eval_ds.texts_test[:n]
         if result.vectorizer is not None and eval_ds.texts_test is not None:
             texts_sub = eval_ds.texts_test[:n]
             return result.vectorizer.transform(texts_sub)
@@ -997,6 +1005,8 @@ def _transform_for_algo(
     if split == "test":
         if isinstance(estimator, list):
             return eval_ds.X_test
+        if isinstance(estimator, _ShardedEnsemble) and eval_ds.texts_test is not None:
+            return eval_ds.texts_test
         if result.vectorizer is not None and eval_ds.texts_test is not None:
             return result.vectorizer.transform(eval_ds.texts_test)
         if result.scaler is not None:
@@ -1007,6 +1017,8 @@ def _transform_for_algo(
         X_forget = eval_ds.X[indices]
         if isinstance(estimator, list):
             return X_forget
+        if isinstance(estimator, _ShardedEnsemble) and eval_ds.texts is not None:
+            return [eval_ds.texts[i] for i in indices]
         if result.vectorizer is not None and eval_ds.texts is not None:
             texts_f = [eval_ds.texts[i] for i in indices]
             return result.vectorizer.transform(texts_f)

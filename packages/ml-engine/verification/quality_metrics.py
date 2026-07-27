@@ -68,7 +68,7 @@ class QualityEvaluator:
                 scores.append(1.0 - float(np.mean(np.abs(pred))))
             return float(np.mean(scores)) if scores else 0.5
         except Exception:
-            logger.warning("_measure_completeness failed: falling back to random value")
+            logger.exception("_measure_completeness failed: falling back to random value")
             return self._rng.uniform(0.7, 0.95)
 
     def _measure_completeness_std(self, model: Any, deleted_data: Any) -> float:
@@ -82,7 +82,7 @@ class QualityEvaluator:
                 scores.append(1.0 - float(np.mean(np.abs(pred))))
             return float(np.std(scores)) if len(scores) > 1 else 0.0
         except Exception:
-            logger.warning("_measure_completeness_std failed: falling back to random value")
+            logger.exception("_measure_completeness_std failed: falling back to random value")
             return self._rng.uniform(0.01, 0.1)
 
     def _measure_forget_rate(self, model: Any, deleted_data: Any) -> float:
@@ -101,7 +101,7 @@ class QualityEvaluator:
                         correct += 1
             return correct / max(total, 1)
         except Exception:
-            logger.warning("_measure_forget_rate failed: falling back to random value")
+            logger.exception("_measure_forget_rate failed: falling back to random value")
             return self._rng.uniform(0.6, 0.9)
 
     def _measure_retained_utility(self, model: Any, retained_data: Any, test_data: Any) -> float:
@@ -120,7 +120,7 @@ class QualityEvaluator:
                         correct += 1
             return correct / max(total, 1)
         except Exception:
-            logger.warning("_measure_retained_utility failed: falling back to random value")
+            logger.exception("_measure_retained_utility failed: falling back to random value")
             return self._rng.uniform(0.75, 0.95)
 
     def _measure_mia_risk(self, model: Any, deleted_data: Any, retained_data: Any) -> float:
@@ -137,7 +137,7 @@ class QualityEvaluator:
             result = attack.attack(model, target, m_feat, nm_feat)
             return result.get("overall_accuracy", 0.5)
         except Exception:
-            logger.warning("_measure_mia_risk failed: falling back to random value")
+            logger.exception("_measure_mia_risk failed: falling back to random value")
             return self._rng.uniform(0.3, 0.55)
 
     def _measure_canary_memorization(self, model: Any, data: Any) -> float:
@@ -152,7 +152,7 @@ class QualityEvaluator:
                 scores.append(confidence)
             return float(np.mean(scores)) if scores else 0.5
         except Exception:
-            logger.warning("_measure_canary_memorization failed: falling back to random value")
+            logger.exception("_measure_canary_memorization failed: falling back to random value")
             return self._rng.uniform(0.1, 0.3)
 
     def _measure_inversion_resistance(self, model: Any, deleted_data: Any) -> float:
@@ -167,7 +167,7 @@ class QualityEvaluator:
                 scores.append(entropy)
             return float(np.mean(scores)) if scores else 0.8
         except Exception:
-            logger.warning("_measure_inversion_resistance failed: falling back to random value")
+            logger.exception("_measure_inversion_resistance failed: falling back to random value")
             return self._rng.uniform(0.7, 0.9)
 
     def _measure_gradient_similarity(self, orig: Any, unlearned: Any, data: Any) -> float:
@@ -198,7 +198,7 @@ class QualityEvaluator:
                 similarities.append(float(cos_sim.item()))
             return float(np.mean(similarities)) if similarities else 0.0
         except Exception:
-            logger.warning("_measure_gradient_similarity failed: falling back to random value")
+            logger.exception("_measure_gradient_similarity failed: falling back to random value")
             return self._rng.uniform(0.0, 0.15)
 
     def _measure_weight_divergence(self, orig: Any, unlearned: Any) -> float:
@@ -211,7 +211,7 @@ class QualityEvaluator:
                 diffs.append(float(torch.norm(op - up).item()))
             return float(np.mean(diffs)) if diffs else 0.0
         except Exception:
-            logger.warning("_measure_weight_divergence failed: falling back to random value")
+            logger.exception("_measure_weight_divergence failed: falling back to random value")
             return self._rng.uniform(0.1, 0.3)
 
     def _compute_overall(self, report: UnlearningQualityReport) -> float:

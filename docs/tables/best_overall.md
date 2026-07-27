@@ -1,0 +1,16 @@
+# Best Performing Algorithm per Metric
+
+| Metric | Best Algorithm | Best Value |
+| --- | --- | --- |
+| Accuracy After | Infl. Func. | 0.6424 |
+| F1 Score After | Infl. Func. | 0.6363 |
+| Forget Accuracy | Scrub | 0.8185 |
+| Trust Score | Retrain | 0.6500 |
+| Utility Loss [lower is better] | Infl. Func. | 8.9667e-03 |
+| Knowledge Retention | Infl. Func. | 0.9902 |
+| MIA Success After [lower is better] | Scrub | 0.5000 |
+| Privacy Leakage [lower is better] | Infl. Func. | 0.2582 |
+| Training Time [lower is better] | Infl. Func. | 0.3980 |
+| Unlearning Time [lower is better] | SISA | 0.4623 |
+| Speedup [higher is better] | SISA | 1.6128 |
+

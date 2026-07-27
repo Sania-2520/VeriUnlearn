@@ -1,0 +1,103 @@
+# ─── VeriUnlearn Dependency Lock File ───────────────────────────────────────
+# This file pins ALL dependencies across the root project, backend, and
+# ml-engine packages to ensure reproducible environments.
+# Install with: pip install -r requirements.lock.txt
+# ────────────────────────────────────────────────────────────────────────────
+
+# ─── ML/AI Framework ─────────────────────────────────────────────────────
+torch>=2.4.0,<2.6.0
+torchvision>=0.19.0,<0.21.0
+transformers>=4.44.0,<4.48.0
+sentence-transformers>=3.3.0,<3.4.0
+accelerate>=1.2.0,<1.4.0
+peft>=0.14.0,<0.20.0
+scikit-learn>=1.6.0,<1.8.0
+numpy>=1.26.0,<2.4.0
+scipy>=1.14.0,<1.17.0
+
+# ─── Web Framework ──────────────────────────────────────────────────────
+fastapi>=0.115.0,<0.117.0
+uvicorn[standard]>=0.34.0,<0.35.0
+pydantic>=2.10.0,<2.12.0
+pydantic-settings>=2.7.0,<2.8.0
+python-multipart>=0.0.19,<0.0.21
+
+# ─── Database ───────────────────────────────────────────────────────────
+sqlalchemy[asyncio]>=2.0.36,<2.2.0
+asyncpg>=0.30.0,<0.31.0
+alembic>=1.14.0,<1.15.0
+psycopg2-binary>=2.9.10,<2.10.0
+
+# ─── Cache & Queue ──────────────────────────────────────────────────────
+redis[hiredis]>=5.2.1,<5.3.0
+celery>=5.4.0,<5.6.0
+flower>=2.0.1,<2.1.0
+
+# ─── Auth & Security ────────────────────────────────────────────────────
+python-jose[cryptography]>=3.3.0,<3.4.0
+passlib[bcrypt]>=1.7.4,<1.8.0
+bcrypt>=4.0.1,<4.2.0
+httpx>=0.28.0,<0.29.0
+authlib>=1.4.0,<1.5.0
+pyotp>=2.9.0,<2.10.0
+cryptography>=44.0.0,<46.0.0
+pysha3>=1.0.2,<1.1.0
+
+# ─── AI Providers ───────────────────────────────────────────────────────
+openai>=1.58.1,<1.60.0
+anthropic>=0.47.0,<0.49.0
+google-genai>=1.3.0,<1.5.0
+
+# ─── Storage & Search ───────────────────────────────────────────────────
+minio>=7.2.0,<7.3.0
+qdrant-client>=1.13.0,<1.15.0
+
+# ─── OCR & Document Processing ──────────────────────────────────────────
+pytesseract>=0.3.13,<0.4.0
+pdf2image>=1.17.0,<1.18.0
+python-docx>=1.1.2,<1.2.0
+openpyxl>=3.1.5,<3.2.0
+
+# ─── Monitoring ─────────────────────────────────────────────────────────
+prometheus-client>=0.21.1,<0.22.0
+opentelemetry-api>=1.29.0,<1.30.0
+opentelemetry-sdk>=1.29.0,<1.30.0
+opentelemetry-instrumentation-fastapi>=0.50b0,<0.51b0
+opentelemetry-exporter-otlp>=1.29.0,<1.30.0
+sentry-sdk>=2.20.0,<2.22.0
+
+# ─── Experiment Tracking ────────────────────────────────────────────────
+mlflow>=2.18.0,<2.20.0
+
+# ─── Visualization ──────────────────────────────────────────────────────
+matplotlib>=3.10.0,<3.12.0
+seaborn>=0.13.0,<0.14.0
+Pillow>=11.1.0,<11.2.0
+
+# ─── Dashboard ──────────────────────────────────────────────────────────
+streamlit>=1.40.0,<1.42.0
+
+# ─── Data ───────────────────────────────────────────────────────────────
+datasets>=3.2.0,<5.2.0
+pandas>=2.2.0,<2.5.0
+
+# ─── Report Generation ──────────────────────────────────────────────────
+fpdf2>=2.8.0,<2.9.0
+
+# ─── Utility ────────────────────────────────────────────────────────────
+python-dotenv>=1.0.1,<1.1.0
+pyyaml>=6.0.2,<6.1.0
+aiofiles>=24.1.0,<25.0.0
+tenacity>=9.0.0,<9.1.0
+python-dateutil>=2.9.0,<2.10.0
+email-validator>=2.2.0,<2.3.0
+tqdm>=4.67.0,<4.68.0
+
+# ─── Logging ────────────────────────────────────────────────────────────
+python-json-logger>=3.2.1,<3.3.0
+structlog>=24.4.0,<24.5.0
+
+# ─── Development / Testing ──────────────────────────────────────────────
+pytest>=8.3.0,<8.4.0
+pytest-cov>=6.0.0,<6.1.0
+pytest-asyncio>=0.25.0,<0.26.0

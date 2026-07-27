@@ -1,0 +1,24 @@
+Section,Parameter,Value
+Model,Name,logistic_regression
+Model,Hidden Dimension,128
+Model,Number of Layers,2
+Model,Dropout,0.1
+Model,LoRA Rank,8
+Model,LoRA Alpha,16
+Model,LoRA Dropout,0.1
+Training,Optimizer,AdamW
+Training,Scheduler,Cosine
+Training,Learning Rate,0.001
+Training,Weight Decay,0.0001
+Training,Batch Size,128
+Training,Epochs,10
+Training,Warmup Steps,100
+Training,Max Grad Norm,1.0
+Training,Early Stopping Patience,5
+Unlearning,Forget Ratios,"5\%, 10\%, 25\%"
+Unlearning,Runs per Config,5
+Unlearning,Seed Start,42
+Privacy,MIA Samples,200
+Privacy,MIA Threshold Percentile,50\%
+Privacy,Leakage Bins,50
+Privacy,Attack Confidence,0.95

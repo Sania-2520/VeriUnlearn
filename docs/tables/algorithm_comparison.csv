@@ -1,0 +1,6 @@
+Algorithm,Description,Category,Forgetting Mechanism,Computational Cost
+Retrain,Complete model retraining from scratch on remaining data,Exact,Discard all parameters; retrain on remaining data,High (full retraining)
+SISA,"Sharded, Isolated, Sliced, and Aggregated training for efficient data removal",Amnesiac,Retrain only affected shards,Medium (shard-level retraining)
+Scrub,Approximates unlearning by perturbing model parameters using influence-based gradients,Approximate,Gradient-based parameter perturbation,Low (single pass)
+Infl. Func.,Uses influence functions to estimate and reverse the effect of training points,Approximate,Influence function estimation and param. correction,Medium (per-sample)
+Fine-tune,Fine-tunes the model on the data remaining after forgetting,Approximate,Gradient descent on retained data,Low (few epochs)

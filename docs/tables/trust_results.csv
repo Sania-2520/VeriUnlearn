@@ -1,0 +1,16 @@
+Algorithm,MNIST,CIFAR-10,IMDB,AG News
+Retrain (Trust Score),0.6016,0.6987,0.6512,0.6483
+Retrain (Utility Loss),7.6000e-03,6.0000e-03,0.0115,0.0157
+Retrain (Knowledge Retention),0.9917,0.9865,0.9845,0.9792
+SISA (Trust Score),0.5447,0.5741,0.5621,0.5633
+SISA (Utility Loss),0.0304,4.8000e-03,5.7333e-03,0.0228
+SISA (Knowledge Retention),0.9531,0.9776,0.9927,0.9646
+Scrub (Trust Score),0.4908,0.4760,0.6040,0.5772
+Scrub (Utility Loss),0.0175,0.0480,0.0200,-8.2667e-03
+Scrub (Knowledge Retention),0.9788,0.8263,0.9738,1.0108
+Infl. Func. (Trust Score),0.5925,0.6910,0.6566,0.6481
+Infl. Func. (Utility Loss),5.0667e-03,2.0000e-03,0.0105,0.0183
+Infl. Func. (Knowledge Retention),0.9951,1.0039,0.9858,0.9759
+Fine-tune (Trust Score),0.5583,0.5729,0.7095,0.7558
+Fine-tune (Utility Loss),0.0539,0.0855,-8.2667e-03,0.0125
+Fine-tune (Knowledge Retention),0.9340,0.6866,1.0113,0.9835

@@ -1,0 +1,10 @@
+# Resource Usage per Algorithm
+
+| Algorithm | Peak Memory (MB) | CPU Usage | GPU Usage |
+| --- | --- | --- | --- |
+| Retrain | N/A | N/A | N/A |
+| SISA | N/A | N/A | N/A |
+| Scrub | N/A | N/A | N/A |
+| Infl. Func. | N/A | N/A | N/A |
+| Fine-tune | N/A | N/A | N/A |
+

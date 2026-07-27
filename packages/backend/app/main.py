@@ -93,7 +93,7 @@ async def health_check():
             "latency_ms": db_latency,
         }
     except Exception:
-        logger.warning("Health check: database unhealthy")
+        logger.warning("Health check: database unhealthy", exc_info=True)
         health_status["components"]["database"] = {
             "status": "unhealthy",
         }

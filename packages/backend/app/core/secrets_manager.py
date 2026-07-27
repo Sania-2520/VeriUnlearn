@@ -7,6 +7,9 @@ from cryptography.fernet import Fernet
 from app.core.config import settings
 from app.core.logging import get_logger
 
+_PBKDF2_ITERATIONS = 600000
+_PBKDF2_SALT = b"veriunlearn-key-derivation-v1"
+
 logger = get_logger(__name__)
 
 
@@ -75,7 +78,7 @@ class SecretsManager:
         if not plaintext:
             return None
         try:
-            key = base64.urlsafe_b64encode(hashlib.sha256(settings.secret_key.encode()).digest())
+            key = base64.urlsafe_b64encode(hashlib.pbkdf2_hmac("sha256", settings.secret_key.encode(), _PBKDF2_SALT, _PBKDF2_ITERATIONS, dklen=32))
             f = Fernet(key)
             return f.encrypt(plaintext.encode()).decode()
         except Exception as e:
@@ -86,7 +89,7 @@ class SecretsManager:
         if not ciphertext:
             return None
         try:
-            key = base64.urlsafe_b64encode(hashlib.sha256(settings.secret_key.encode()).digest())
+            key = base64.urlsafe_b64encode(hashlib.pbkdf2_hmac("sha256", settings.secret_key.encode(), _PBKDF2_SALT, _PBKDF2_ITERATIONS, dklen=32))
             f = Fernet(key)
             return f.decrypt(ciphertext.encode()).decode()
         except Exception:

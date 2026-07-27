@@ -46,7 +46,7 @@ def test_config():
 
 
 def test_datasets():
-    from evaluation.datasets import load_by_name
+from evaluation.data_loading import load_by_name
 
     for name in ["mnist", "cifar10", "imdb", "ag_news"]:
         try:
@@ -67,7 +67,7 @@ def test_datasets():
 
 def test_algorithms():
     from evaluation.algorithms import get_algorithm, list_algorithms
-    from evaluation.datasets import load_by_name, create_forget_set
+    from evaluation.data_loading import load_by_name, create_forget_set
     from evaluation.config import SeedConfig
     from evaluation.runner import _bundle_to_eval_dataset
 

@@ -1,4 +1,5 @@
 import hashlib
+import hmac
 from typing import Annotated, Any
 
 from fastapi import Cookie, Depends, Header, HTTPException, Request, status
@@ -8,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.cache import cache
 from app.core.database import get_db
 from app.core.rate_limiter import default_rate_limiter
+from app.core.config import settings
 from app.core.security import token_manager, TokenError
 from app.core.rbac import Permission, check_permission
 from app.domain.auth.services import AuthService
@@ -26,6 +28,7 @@ from app.infrastructure.database.repositories.auth import (
     SQLAlchemyApiKeyRepository,
 )
 from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
+from app.core.logging import get_logger
 from app.infrastructure.database.repositories.chat import (
     SQLAlchemyChatSessionRepository,
     SQLAlchemyMessageRepository,
@@ -46,6 +49,8 @@ from app.infrastructure.database.repositories.compliance import (
     SQLAlchemyWebhookRepository,
     SQLAlchemyWebhookEventLogRepository,
 )
+
+logger = get_logger(__name__)
 
 security_scheme = HTTPBearer(auto_error=False)
 
@@ -88,7 +93,7 @@ async def get_current_user(
     api_key = request.headers.get("X-API-Key")
     if api_key:
         api_key_repo = SQLAlchemyApiKeyRepository(session)
-        key_hash = hashlib.sha384(api_key.encode()).hexdigest()
+        key_hash = hmac.new(settings.secret_key.encode(), api_key.encode(), hashlib.sha384).hexdigest()
         key_record = await api_key_repo.get_by_key_hash(key_hash)
         if key_record and key_record.is_active:
             await api_key_repo.update_last_used(key_record.id)
