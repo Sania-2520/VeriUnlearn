@@ -23,7 +23,6 @@ x-backend-env: &backend-env
   JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-jwt-secret-key-at-least-32-chars-long!!}
   APP_SECRET_KEY: ${APP_SECRET_KEY:-dev-app-secret-key-at-least-32-chars-long!!!}
   CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
-  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
   PROMETHEUS_ENABLED: ${PROMETHEUS_ENABLED:-true}
   LOG_FORMAT: ${LOG_FORMAT:-json}
 
@@ -128,6 +127,11 @@ services:
       start_period: 10s
     restart: unless-stopped
     stop_grace_period: 1m
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
     networks:
       - veriunlearn-network
     labels:
@@ -310,13 +314,18 @@ services:
       frontend:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:80"]
       interval: 15s
       timeout: 5s
       retries: 3
       start_period: 10s
     restart: unless-stopped
     stop_grace_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
     networks:
       - veriunlearn-network
     labels:
@@ -339,6 +348,17 @@ services:
       - "--web.console.libraries=/usr/share/prometheus/console_libraries"
       - "--web.console.templates=/usr/share/prometheus/consoles"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     networks:
       - veriunlearn-network
     labels:
@@ -363,6 +383,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 128M
     networks:
       - veriunlearn-network
     labels:
@@ -390,6 +415,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     networks:
       - veriunlearn-network
     labels:
@@ -412,6 +442,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
     networks:
       - veriunlearn-network
     labels:

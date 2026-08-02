@@ -1,8 +1,9 @@
 import os
 from enum import Enum
 from typing import List, Optional
+
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, field_validator
 
 
 class Environment(str, Enum):
@@ -21,6 +22,17 @@ class LogLevel(str, Enum):
 
 
 _PLACEHOLDER_SUBSTRINGS = ["change-me", "changeme", "change_me", "placeholder", "replace-with"]
+
+# Real-looking default secrets that must NEVER be used outside development/testing.
+# These ship in docker-compose.yml / .env.example as thin `${VAR:-default}` fallbacks
+# and must be rejected at startup in non-development environments.
+DEV_DEFAULT_CREDENTIALS = {
+    "DB_PASSWORD": "veriunlearn_secret",
+    "REDIS_PASSWORD": "veriunlearn_secret",
+    "MINIO_SECRET": "veriunlearn_secret",
+    "JWT_SECRET": "dev-jwt-secret-key-at-least-32-chars-long!!",
+    "APP_SECRET": "dev-app-secret-key-at-least-32-chars-long!!!",
+}
 
 
 def _is_placeholder(val: str) -> bool:
@@ -257,7 +269,7 @@ class Settings(BaseSettings):
         if len(v) < 32:
             raise ValueError(f"Secret keys must be at least 32 characters (got {len(v)})")
         if _is_placeholder(v):
-            raise ValueError(f"Secret key contains placeholder text — generate a strong random key.")
+            raise ValueError("Secret key contains placeholder text — generate a strong random key.")
         return v
 
     @field_validator("database_url")
@@ -266,8 +278,35 @@ class Settings(BaseSettings):
         if not v:
             raise ValueError("DATABASE_URL must be set")
         if not any(dialect in v for dialect in ("postgresql", "sqlite")):
-            raise ValueError(f"DATABASE_URL must be a PostgreSQL or SQLite connection string")
+            raise ValueError("DATABASE_URL must be a PostgreSQL or SQLite connection string")
         return v
+
+    @model_validator(mode="after")
+    def reject_dev_default_credentials_outside_development(self) -> "Settings":
+        raw_env = os.getenv("APP_ENV", os.getenv("ENVIRONMENT", "")).lower()
+        if raw_env not in ("production", "prod", "staging"):
+            return self
+
+        defaults = DEV_DEFAULT_CREDENTIALS
+        offenders: list[str] = []
+
+        if defaults["DB_PASSWORD"] in self.database_url:
+            offenders.append("DATABASE_URL (uses default DB password)")
+        if defaults["REDIS_PASSWORD"] in self.redis_url:
+            offenders.append("REDIS_URL (uses default Redis password)")
+        if self.minio_secret_key == defaults["MINIO_SECRET"]:
+            offenders.append("MINIO_SECRET_KEY (veriunlearn_secret)")
+        if self.jwt_secret_key == defaults["JWT_SECRET"]:
+            offenders.append("JWT_SECRET_KEY (dev-jwt-secret... default)")
+        if self.secret_key == defaults["APP_SECRET"]:
+            offenders.append("SECRET_KEY (dev-app-secret... default)")
+
+        if offenders:
+            raise ValueError(
+                f"[{raw_env}] Refusing to start with built-in dev/default secrets. "
+                f"Generate strong random secrets (see artifacts/DEPLOYMENT_CHECKLIST.md). Offenders: {', '.join(offenders)}"
+            )
+        return self
 
 
 settings = Settings()

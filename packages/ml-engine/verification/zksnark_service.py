@@ -1,21 +1,25 @@
 """
-Simulated zk-SNARK proof service for development and testing.
+SIMULATED zk-SNARK proof service for development and testing.
 
-This module provides a hash-based simulation of zk-SNARK proof generation and
-verification. It uses SHA-256 hashing and Ed25519 signatures instead of actual
-zero-knowledge elliptic curve arithmetic (Groth16, PLONK, etc.). The classes
-ZKProvingKey, ZKVerificationKey, and ZKProofService are placeholder types that
-imply a full circuit-based system was planned but not yet realized.
+IMPORTANT (honesty note): This module is a **hash-based simulator**, NOT a real
+zero-knowledge proof system. It substitutes SHA-256 hashing and Ed25519 signatures for
+actual zero-knowledge elliptic-curve arithmetic (Groth16, PLONK, circom, etc.). The
+classes ZKProvingKey, ZKVerificationKey, and ZKProofService expose ZK-shaped objects but
+produce NO cryptographic zero-knowledge guarantees beyond a Merkle-inclusion proof bound by
+a conventional digital signature.
 
-SECURITY NOTE: This implementation provides NO cryptographic zero-knowledge
-guarantees. It is suitable for integration testing and development workflows
-only. For production use, replace with a real zk-SNARK library (e.g., snarkjs,
-py_ecc, circom) or integrate with a cloud HSM/attestation service.
+In non-development environments this module REFUSES to generate proofs unless the operator
+explicitly opts in by setting VERIUNLEARN_ALLOW_SIMULATED_ZK=1. Use this only when the
+consumer fully understands the proof is simulated.
+
+SECURITY NOTE: For production, replace with a real zk-SNARK library (e.g., snarkjs,
+py_ecc, circom) or a cloud HSM/attestation service.
 """
 
 import hashlib
 import json
 import logging
+import os
 from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -23,6 +27,8 @@ logger = logging.getLogger(__name__)
 from verification.merkle_tree import MerkleTree
 from verification.signatures import SignatureManager
 
+# Modules that consider the default runtime "production". Tests and local dev are excluded.
+SIMULATED_ZK_OPT_IN_ENV = "VERIUNLEARN_ALLOW_SIMULATED_ZK"
 
 __all__ = [
     "ZKProofService",
@@ -31,6 +37,18 @@ __all__ = [
     "ZKVerificationKey",
     "ZKProvingKey",
 ]
+
+
+def _assert_simulation_allowed() -> None:
+    """Raise if a non-development environment would use the simulated zk-SNARK."""
+    env = os.getenv("APP_ENV", os.getenv("VERIUNLEARN_ENV", "")).lower()
+    if env in ("production", "prod"):
+        if os.getenv(SIMULATED_ZK_OPT_IN_ENV, "").lower() != "true":
+            raise ZKProofError(
+                "Simulated zk-SNARK is not permitted in a production environment. "
+                "Set VERIUNLEARN_ALLOW_SIMULATED_ZK=true only if you explicitly accept "
+                "that this produces NO zero-knowledge cryptographic guarantees."
+            )
 
 
 class ZKProofError(Exception):
@@ -121,6 +139,7 @@ class ZKProof:
 
 class ZKProofService:
     def __init__(self, hash_algorithm: str = "sha3_256") -> None:
+        _assert_simulation_allowed()
         self.hash_algorithm = hash_algorithm
         self.sig_manager = SignatureManager()
 

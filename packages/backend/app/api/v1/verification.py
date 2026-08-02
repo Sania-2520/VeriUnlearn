@@ -4,8 +4,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
 from app.api.deps import (
-    CurrentUser,
-    DatabaseSession,
     TenantID,
     VerificationServiceDep,
     default_rate_limiter,
@@ -13,7 +11,7 @@ from app.api.deps import (
 )
 from app.core.logging import get_logger
 from app.core.rbac import Permission
-from app.infrastructure.external.ml_engine import ml_engine_client, MLEngineClientError
+from app.infrastructure.external.ml_engine import MLEngineClientError, ml_engine_client
 
 logger = get_logger(__name__)
 
@@ -184,6 +182,8 @@ async def generate_zksnark_proof(
         "zk_proof": proof.zk_proof,
         "verified": proof.verified,
         "ml_proof": ml_proof_result,
+        "proving_scheme": "SIMULATED",
+        "disclaimer": "Hash-based simulation, NOT a real zero-knowledge proof. Do not rely on cryptographic guarantees.",
         "created_at": proof.created_at.isoformat() if proof.created_at else None,
     }
 

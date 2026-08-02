@@ -1,103 +1,116 @@
-# ─── VeriUnlearn Dependency Lock File ───────────────────────────────────────
-# This file pins ALL dependencies across the root project, backend, and
-# ml-engine packages to ensure reproducible environments.
-# Install with: pip install -r requirements.lock.txt
-# ────────────────────────────────────────────────────────────────────────────
+aiofiles==24.1.0
+alembic==1.14.0
+amqp==5.3.1
+annotated-types==0.8.0
+anthropic==0.47.0
+anyio==4.14.2
+argon2-cffi==25.1.0
+argon2-cffi-bindings==25.1.0
+asgiref==3.12.1
+asyncpg==0.30.0
+authlib==1.4.0
+bcrypt==4.0.1
+billiard==4.2.4
+celery==5.4.0
+certifi==2026.7.22
+cffi==2.1.0
+charset-normalizer==3.4.9
+click==8.4.2
+click-didyoumean==0.3.1
+click-plugins==1.1.1.2
+click-repl==0.3.0
+colorama==0.4.6
+cryptography==50.0.0
+deprecated==1.3.1
+distro==1.9.0
+dnspython==2.8.0
+ecdsa==0.19.2
+email-validator==2.2.0
+fastapi==0.115.6
+flower==2.0.1
+google-auth==2.56.2
+google-genai==1.3.0
+googleapis-common-protos==1.75.0
+greenlet==3.5.4
+grpcio==1.83.0
+grpcio-tools==1.71.2
+h11==0.16.0
+h2==4.4.0
+hiredis==3.4.0
+hpack==4.2.0
+httpcore==1.0.9
+httptools==0.8.0
+httpx[http2]==0.28.1
+humanize==4.16.0
+hyperframe==6.1.0
+idna==3.18
+importlib-metadata==8.5.0
+jiter==0.16.0
+kombu==5.6.2
+mako==1.3.12
+markupsafe==3.0.3
+minio==7.2.14
+numpy==2.5.1
+openai==1.58.1
+opentelemetry-api==1.29.0
+opentelemetry-exporter-otlp==1.29.0
+opentelemetry-exporter-otlp-proto-common==1.29.0
+opentelemetry-exporter-otlp-proto-grpc==1.29.0
+opentelemetry-exporter-otlp-proto-http==1.29.0
+opentelemetry-instrumentation==0.50b0
+opentelemetry-instrumentation-asgi==0.50b0
+opentelemetry-instrumentation-fastapi==0.50b0
+opentelemetry-proto==1.29.0
+opentelemetry-sdk==1.29.0
+opentelemetry-semantic-conventions==0.50b0
+opentelemetry-util-http==0.50b0
+packaging==26.2
+passlib[bcrypt]==1.7.4
+pillow==11.1.0
+portalocker==2.10.1
+prometheus-client==0.21.1
+prompt-toolkit==3.0.53
+protobuf==5.29.6
+psycopg2-binary==2.9.10
+pyasn1==0.6.4
+pyasn1-modules==0.4.2
+pycparser==3.0
+pycryptodome==3.23.0
+pydantic==2.10.3
+pydantic-core==2.27.1
+pydantic-settings==2.7.0
+pyotp==2.9.0
+python-dateutil==2.9.0
+python-dotenv==1.0.1
+python-jose[cryptography]==3.3.0
+python-json-logger==3.2.1
+python-multipart==0.0.19
+pytz==2026.3.post1
+pywin32==312
+pyyaml==6.0.2
+qdrant-client==1.13.0
+redis[hiredis]==5.2.1
+requests==2.34.2
+rsa==4.9.1
+sentry-sdk==2.20.0
+six==1.17.0
+sniffio==1.3.1
+sqlalchemy[asyncio]==2.0.36
+starlette==0.41.3
+structlog==24.4.0
+tenacity==9.0.0
+tornado==6.5.7
+tqdm==4.70.0
+typing-extensions==4.16.0
+tzdata==2026.3
+urllib3==2.7.0
+uvicorn[standard]==0.34.0
+vine==5.1.0
+watchfiles==1.2.0
+wcwidth==0.8.2
+websockets==14.2
+wrapt==1.17.3
+zipp==4.1.0
 
-# ─── ML/AI Framework ─────────────────────────────────────────────────────
-torch>=2.4.0,<2.6.0
-torchvision>=0.19.0,<0.21.0
-transformers>=4.44.0,<4.48.0
-sentence-transformers>=3.3.0,<3.4.0
-accelerate>=1.2.0,<1.4.0
-peft>=0.14.0,<0.20.0
-scikit-learn>=1.6.0,<1.8.0
-numpy>=1.26.0,<2.4.0
-scipy>=1.14.0,<1.17.0
-
-# ─── Web Framework ──────────────────────────────────────────────────────
-fastapi>=0.115.0,<0.117.0
-uvicorn[standard]>=0.34.0,<0.35.0
-pydantic>=2.10.0,<2.12.0
-pydantic-settings>=2.7.0,<2.8.0
-python-multipart>=0.0.19,<0.0.21
-
-# ─── Database ───────────────────────────────────────────────────────────
-sqlalchemy[asyncio]>=2.0.36,<2.2.0
-asyncpg>=0.30.0,<0.31.0
-alembic>=1.14.0,<1.15.0
-psycopg2-binary>=2.9.10,<2.10.0
-
-# ─── Cache & Queue ──────────────────────────────────────────────────────
-redis[hiredis]>=5.2.1,<5.3.0
-celery>=5.4.0,<5.6.0
-flower>=2.0.1,<2.1.0
-
-# ─── Auth & Security ────────────────────────────────────────────────────
-python-jose[cryptography]>=3.3.0,<3.4.0
-passlib[bcrypt]>=1.7.4,<1.8.0
-bcrypt>=4.0.1,<4.2.0
-httpx>=0.28.0,<0.29.0
-authlib>=1.4.0,<1.5.0
-pyotp>=2.9.0,<2.10.0
-cryptography>=44.0.0,<46.0.0
-pysha3>=1.0.2,<1.1.0
-
-# ─── AI Providers ───────────────────────────────────────────────────────
-openai>=1.58.1,<1.60.0
-anthropic>=0.47.0,<0.49.0
-google-genai>=1.3.0,<1.5.0
-
-# ─── Storage & Search ───────────────────────────────────────────────────
-minio>=7.2.0,<7.3.0
-qdrant-client>=1.13.0,<1.15.0
-
-# ─── OCR & Document Processing ──────────────────────────────────────────
-pytesseract>=0.3.13,<0.4.0
-pdf2image>=1.17.0,<1.18.0
-python-docx>=1.1.2,<1.2.0
-openpyxl>=3.1.5,<3.2.0
-
-# ─── Monitoring ─────────────────────────────────────────────────────────
-prometheus-client>=0.21.1,<0.22.0
-opentelemetry-api>=1.29.0,<1.30.0
-opentelemetry-sdk>=1.29.0,<1.30.0
-opentelemetry-instrumentation-fastapi>=0.50b0,<0.51b0
-opentelemetry-exporter-otlp>=1.29.0,<1.30.0
-sentry-sdk>=2.20.0,<2.22.0
-
-# ─── Experiment Tracking ────────────────────────────────────────────────
-mlflow>=2.18.0,<2.20.0
-
-# ─── Visualization ──────────────────────────────────────────────────────
-matplotlib>=3.10.0,<3.12.0
-seaborn>=0.13.0,<0.14.0
-Pillow>=11.1.0,<11.2.0
-
-# ─── Dashboard ──────────────────────────────────────────────────────────
-streamlit>=1.40.0,<1.42.0
-
-# ─── Data ───────────────────────────────────────────────────────────────
-datasets>=3.2.0,<5.2.0
-pandas>=2.2.0,<2.5.0
-
-# ─── Report Generation ──────────────────────────────────────────────────
-fpdf2>=2.8.0,<2.9.0
-
-# ─── Utility ────────────────────────────────────────────────────────────
-python-dotenv>=1.0.1,<1.1.0
-pyyaml>=6.0.2,<6.1.0
-aiofiles>=24.1.0,<25.0.0
-tenacity>=9.0.0,<9.1.0
-python-dateutil>=2.9.0,<2.10.0
-email-validator>=2.2.0,<2.3.0
-tqdm>=4.67.0,<4.68.0
-
-# ─── Logging ────────────────────────────────────────────────────────────
-python-json-logger>=3.2.1,<3.3.0
-structlog>=24.4.0,<24.5.0
-
-# ─── Development / Testing ──────────────────────────────────────────────
-pytest>=8.3.0,<8.4.0
-pytest-cov>=6.0.0,<6.1.0
-pytest-asyncio>=0.25.0,<0.26.0
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools

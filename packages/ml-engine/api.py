@@ -1,21 +1,22 @@
+import contextlib
+import json
+import logging
 import os
+import uuid
+from typing import Any, Optional
+
+import numpy as np
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
-from typing import Any, Optional
-import json
-import uuid
-import logging
-import contextlib
-import numpy as np
 
-from unlearning.hybrid_controller import HybridAdaptiveController
+from security.attacks.membership_inference import LossBasedMIA, MembershipInferenceAttack
 from unlearning.algorithms.base import UnlearningContext, UnlearningResult
+from unlearning.hybrid_controller import HybridAdaptiveController
 from verification.merkle_tree import MerkleTree
-from verification.signatures import SignatureManager
 from verification.privacy_evaluation import PrivacyEvaluator
-from security.attacks.membership_inference import MembershipInferenceAttack, LossBasedMIA
+from verification.signatures import SignatureManager
 
 logger = logging.getLogger("veriunlearn.ml_engine")
 
@@ -297,7 +298,7 @@ def get_model_registry():
 def get_rag_pipeline():
     global _rag_pipeline
     if _rag_pipeline is None:
-        from training.rag_pipeline import RAGPipeline, RAGConfig
+        from training.rag_pipeline import RAGConfig, RAGPipeline
         _rag_pipeline = RAGPipeline(RAGConfig())
     return _rag_pipeline
 
@@ -305,7 +306,7 @@ def get_rag_pipeline():
 def get_inference_service():
     global _inference_service
     if _inference_service is None:
-        from inference.service import InferenceService, InferenceConfig
+        from inference.service import InferenceConfig, InferenceService
         _inference_service = InferenceService(InferenceConfig())
     return _inference_service
 
@@ -329,7 +330,7 @@ def get_continual_learning():
 def get_benchmark_runner():
     global _benchmark_runner
     if _benchmark_runner is None:
-        from training.benchmarks import BenchmarkRunner, BenchmarkConfig
+        from training.benchmarks import BenchmarkConfig, BenchmarkRunner
         _benchmark_runner = BenchmarkRunner(BenchmarkConfig())
     return _benchmark_runner
 
@@ -337,7 +338,7 @@ def get_benchmark_runner():
 def get_mlflow_tracker():
     global _mlflow_tracker
     if _mlflow_tracker is None:
-        from training.mlflow_tracker import MLflowExperimentTracker, MLflowConfig
+        from training.mlflow_tracker import MLflowConfig, MLflowExperimentTracker
         _mlflow_tracker = MLflowExperimentTracker(MLflowConfig())
     return _mlflow_tracker
 
@@ -353,10 +354,10 @@ def get_e2e_pipeline():
 def get_explainer_manager():
     global _explainer_manager
     if _explainer_manager is None:
-        from explainability.shap_explainer import SHAPExplainer
-        from explainability.lime_explainer import LIMEExplainer
-        from explainability.integrated_gradients import IntegratedGradientsExplainer
         from explainability.feature_attribution import FeatureAttribution
+        from explainability.integrated_gradients import IntegratedGradientsExplainer
+        from explainability.lime_explainer import LIMEExplainer
+        from explainability.shap_explainer import SHAPExplainer
 
         class ExplainerManager:
             def __init__(self):
@@ -606,12 +607,17 @@ async def generate_zksnark_proof(request: ZKProofRequest):
         leaf_data=request.leaf_data,
         all_leaves=request.all_leaves,
     )
-    return proof.to_dict()
+    result = proof.to_dict()
+    result["proving_scheme"] = "SIMULATED"
+    result["disclaimer"] = (
+        "Hash-based simulation, NOT a real zero-knowledge proof. Do not use in production."
+    )
+    return result
 
 
 @app.post("/proof/verify-zksnark")
 async def verify_zksnark_proof(request: ZKVerifyRequest):
-    from verification.zksnark_service import ZKProofService, ZKProof, ZKVerificationKey
+    from verification.zksnark_service import ZKProof, ZKProofService, ZKVerificationKey
 
     pdata = request.proof
     vk_data = pdata.get("verification_key", {})
@@ -632,7 +638,7 @@ async def verify_zksnark_proof(request: ZKVerifyRequest):
     )
     svc = ZKProofService(hash_algorithm=vk.hash_function)
     is_valid = svc.verify_proof(proof_obj)
-    return {"is_valid": is_valid, "algorithm": "groth16", "curve": "bn254", "circuit_type": pdata.get("circuit_type", "merkle_inclusion")}
+    return {"is_valid": is_valid, "algorithm": "groth16", "curve": "bn254", "circuit_type": pdata.get("circuit_type", "merkle_inclusion"), "proving_scheme": "SIMULATED", "disclaimer": "Hash-based simulation, NOT a real zero-knowledge proof."}
 
 
 # ──────────────────────────────────────────────────────────────
@@ -1583,6 +1589,7 @@ async def explain_counterfactual(request: dict):
     num_steps = request.get("num_steps", 500)
     mgr = get_explainer_manager()
     cf = get_counterfactual()
+    import torch
 
     shap_explainer = mgr.get_shap()
     sample_arrays = [np.array(s, dtype=np.float32) for s in samples]
@@ -1690,7 +1697,7 @@ _distiller = None
 def get_distiller():
     global _distiller
     if _distiller is None:
-        from training.knowledge_distillation import KnowledgeDistiller, DistillationConfig
+        from training.knowledge_distillation import DistillationConfig, KnowledgeDistiller
         _distiller = KnowledgeDistiller(DistillationConfig())
     return _distiller
 
@@ -1713,14 +1720,13 @@ async def run_distillation(request: dict):
     try:
         import numpy as np
         import torch
-        from torch.utils.data import TensorDataset, DataLoader
+        from torch.utils.data import DataLoader, TensorDataset
 
         input_dim = request.get("input_dim", 20)
         num_classes = request.get("num_classes", 2)
         num_samples = request.get("num_samples", 500)
         teacher_hidden = request.get("teacher_hidden", [512, 256, 128])
         student_hidden = request.get("student_hidden", [128, 64, 32])
-        num_epochs = request.get("num_epochs", 5)
         batch_size = request.get("batch_size", 32)
 
         distiller.setup_models(input_dim, num_classes, teacher_hidden, student_hidden)
@@ -1816,7 +1822,8 @@ async def export_checkpoint(request: dict):
     checkpoint_id = request.get("checkpoint_id", "")
     export_path = request.get("export_path", "./exports")
     try:
-        import os, shutil
+        import os
+        import shutil
         os.makedirs(export_path, exist_ok=True)
         src = os.path.join("./checkpoints", checkpoint_id)
         dst = os.path.join(export_path, checkpoint_id)
@@ -1859,7 +1866,8 @@ async def export_benchmarks(fmt: str):
     runner = get_benchmark_runner()
     results = runner.get_results()
     if fmt == "csv":
-        import io, csv
+        import csv
+        import io
         output = io.StringIO()
         if results:
             writer = csv.DictWriter(output, fieldnames=list(vars(results[0]).keys()))
@@ -1948,8 +1956,8 @@ class ExtractionAttackRequest(BaseModel):
 async def run_model_inversion(request: InversionAttackRequest):
     from security.attacks.model_inversion import ModelInversionAttack
     from training.data import generate_synthetic_data
-    from unlearning.algorithms.sisa import SISAUnlearning
     from unlearning.algorithms.base import UnlearningContext
+    from unlearning.algorithms.sisa import SISAUnlearning
 
     data = generate_synthetic_data(num_samples=200, num_features=request.input_dim, seed=42)
     ctx = UnlearningContext(
@@ -1976,8 +1984,8 @@ async def run_model_inversion(request: InversionAttackRequest):
 async def run_shadow_mia(request: ShadowMIARequest):
     from security.attacks.shadow_mia import ShadowModelMIA
     from training.data import generate_synthetic_data
-    from unlearning.algorithms.sisa import SISAUnlearning
     from unlearning.algorithms.base import UnlearningContext
+    from unlearning.algorithms.sisa import SISAUnlearning
 
     data = generate_synthetic_data(num_samples=400, num_features=20, seed=42)
     ctx = UnlearningContext(
@@ -2006,8 +2014,8 @@ async def run_shadow_mia(request: ShadowMIARequest):
 async def run_model_extraction(request: ExtractionAttackRequest):
     from security.attacks.model_extraction import ModelExtractionAttack
     from training.data import generate_synthetic_data
-    from unlearning.algorithms.sisa import SISAUnlearning
     from unlearning.algorithms.base import UnlearningContext
+    from unlearning.algorithms.sisa import SISAUnlearning
 
     data = generate_synthetic_data(
         num_samples=200, num_features=request.input_dim,
@@ -2075,10 +2083,11 @@ class HPORequest(BaseModel):
 
 @app.post("/hpo/optimize")
 async def run_hpo(request: HPORequest):
-    from training.hpo import HPOptimizer, create_default_param_space
-    from training.data import generate_synthetic_data, accuracy_score
-    from models.single_model import SingleModel
     import torch
+
+    from models.single_model import SingleModel
+    from training.data import accuracy_score, generate_synthetic_data
+    from training.hpo import HPOptimizer, create_default_param_space
 
     param_space = request.param_space or create_default_param_space()
 
@@ -2086,7 +2095,6 @@ async def run_hpo(request: HPORequest):
         lr = params.get("learning_rate", 0.01)
         epochs = params.get("num_epochs", 50)
         hidden_dim = params.get("hidden_dim", 64)
-        batch_size = params.get("batch_size", 32)
 
         data = generate_synthetic_data(num_samples=200, num_features=20, seed=42)
         model = SingleModel(input_dim=20, hidden_dim=hidden_dim, num_classes=2, learning_rate=lr)
@@ -2146,8 +2154,8 @@ class ModelExportRequest(BaseModel):
 @app.post("/model/export")
 async def export_model(request: ModelExportRequest):
     from inference.model_export import ModelExportService
-    from unlearning.algorithms.sisa import SISAUnlearning
     from unlearning.algorithms.base import UnlearningContext
+    from unlearning.algorithms.sisa import SISAUnlearning
 
     ctx = UnlearningContext(
         target_data_ids=["data_000000"],
@@ -2222,3 +2230,25 @@ async def health():
         "algorithms": list(controller.algorithms.keys()),
         "components": new_components,
     }
+
+
+@app.get("/health/live")
+async def health_live():
+    return {"status": "alive"}
+
+
+@app.get("/health/ready")
+async def health_ready():
+    ready = {
+        "controller": controller is not None,
+        "signature_manager": sig_manager is not None,
+        "lora_trainer": _lora_trainer is not None,
+        "model_registry": _model_registry is not None,
+        "inference_service": _inference_service is not None,
+        "e2e_pipeline": _e2e_pipeline is not None,
+    }
+    status_code = 200 if all(ready.values()) else 503
+    return JSONResponse(
+        status_code=status_code,
+        content={"status": "ready" if status_code == 200 else "not_ready", "components": ready},
+    )
