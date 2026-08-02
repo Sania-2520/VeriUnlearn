@@ -13,10 +13,10 @@ def anchor_all_chains(self) -> dict:
     failed = 0
 
     with worker_session() as session:
+        from app.domain.audit.services import AuditService
         from app.infrastructure.database.repositories.audit import (
             SQLAlchemyAuditEventRepository,
         )
-        from app.domain.audit.services import AuditService
 
         repo = SQLAlchemyAuditEventRepository(session=session)
         audit_svc = AuditService(repo=repo)

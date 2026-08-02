@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backend-data-pvc
+  namespace: veriunlearn
+  labels:
+    app.kubernetes.io/name: veriunlearn
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: veriunlearn
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: celery-worker-data-pvc
+  namespace: veriunlearn
+  labels:
+    app.kubernetes.io/name: veriunlearn
+    app.kubernetes.io/component: celery-worker
+    app.kubernetes.io/part-of: veriunlearn
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ml-engine-checkpoints-pvc
+  namespace: veriunlearn
+  labels:
+    app.kubernetes.io/name: veriunlearn
+    app.kubernetes.io/component: ml-engine
+    app.kubernetes.io/part-of: veriunlearn
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ml-engine-models-pvc
+  namespace: veriunlearn
+  labels:
+    app.kubernetes.io/name: veriunlearn
+    app.kubernetes.io/component: ml-engine
+    app.kubernetes.io/part-of: veriunlearn
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi

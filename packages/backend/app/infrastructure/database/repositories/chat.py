@@ -1,12 +1,19 @@
+import logging
 from typing import Optional
 
-from sqlalchemy import func, or_
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql import select, delete
+from sqlalchemy.sql import delete, select
 
 from app.domain.chat.entities import ChatFolder, ChatSession, Message
-from app.domain.chat.interfaces import ChatSessionRepository, MessageRepository, ChatFolderRepository
-from app.infrastructure.database.models import ChatSessionModel, ChatMessageModel, ChatFolderModel
+from app.domain.chat.interfaces import (
+    ChatFolderRepository,
+    ChatSessionRepository,
+    MessageRepository,
+)
+from app.infrastructure.database.models import ChatFolderModel, ChatMessageModel, ChatSessionModel
+
+logger = logging.getLogger(__name__)
 
 
 class SQLAlchemyChatSessionRepository(ChatSessionRepository):
@@ -201,7 +208,7 @@ class SQLAlchemyMessageRepository(MessageRepository):
 
     @staticmethod
     def _model_to_entity(model: ChatMessageModel) -> Message:
-        from app.domain.chat.entities import MessageRole, MessageContentType, FeedbackType
+        from app.domain.chat.entities import FeedbackType, MessageContentType, MessageRole
         feedback = None
         if model.feedback:
             try:
@@ -273,7 +280,6 @@ class SQLAlchemyChatFolderRepository(ChatFolderRepository):
         return folder
 
     async def soft_delete(self, folder_id: str, user_id: str) -> None:
-        from datetime import datetime, timezone
         stmt = select(ChatFolderModel).where(
             ChatFolderModel.id == folder_id,
             ChatFolderModel.user_id == user_id,

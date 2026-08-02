@@ -1,5 +1,5 @@
 import secrets
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 

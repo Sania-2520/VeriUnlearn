@@ -70,7 +70,7 @@ scrape_configs:
     metrics_path: /metrics
     scrape_interval: 30s
     static_configs:
-      - targets: ["ml-engine:8001"]
+      - targets: ["ml-engine:8000"]
         labels:
           service: "training"
           environment: "development"

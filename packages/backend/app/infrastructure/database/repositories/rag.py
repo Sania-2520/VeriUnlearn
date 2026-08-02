@@ -3,12 +3,16 @@ from typing import Optional
 
 from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql import select, delete
+from sqlalchemy.sql import delete, select
 
 from app.domain.rag.entities import Document, DocumentChunk, DocumentStatus, SearchResult
-from app.domain.rag.interfaces import DocumentRepository, DocumentChunkRepository, VectorSearchService
-from app.infrastructure.database.models import RagDocumentModel, RagDocumentChunkModel
-from app.infrastructure.external.ml_engine import ml_engine_client, MLEngineClientError
+from app.domain.rag.interfaces import (
+    DocumentChunkRepository,
+    DocumentRepository,
+    VectorSearchService,
+)
+from app.infrastructure.database.models import RagDocumentChunkModel, RagDocumentModel
+from app.infrastructure.external.ml_engine import MLEngineClientError, ml_engine_client
 
 
 class SQLAlchemyDocumentRepository(DocumentRepository):
@@ -159,7 +163,7 @@ class MLEngineVectorSearchService(VectorSearchService):
         filters: Optional[dict] = None, hybrid: bool = True,
     ) -> list[SearchResult]:
         try:
-            result = await ml_engine_client.search_semantic(
+            result = await ml_engine_client.search_documents(
                 query=query, top_k=top_k, filters=filters or {},
             )
             items = result.get("results", result.get("items", []))

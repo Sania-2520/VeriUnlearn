@@ -1,7 +1,7 @@
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from httpx import AsyncClient
-from unittest.mock import patch, AsyncMock
-
 
 TEST_EMAIL = "unlearning-test@example.com"
 TEST_PASSWORD = "SecureP@ss123!"
@@ -36,16 +36,16 @@ def mock_ml_engine():
 class TestUnlearningServiceDirect:
     async def test_create_request_and_job(self, client: AsyncClient, mock_ml_engine):
         from app.core.database import db
-        from app.domain.unlearning.services import UnlearningService
-        from app.domain.unlearning.entities import TargetType, UnlearningPriority, UnlearningAlgorithm
         from app.domain.audit.services import AuditService
+        from app.domain.unlearning.entities import TargetType, UnlearningPriority
+        from app.domain.unlearning.services import UnlearningService
+        from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
         from app.infrastructure.database.repositories.unlearning import (
-            SQLAlchemyUnlearningRequestRepository,
-            SQLAlchemyUnlearningJobRepository,
             SQLAlchemyDeletionQueueRepository,
             SQLAlchemyModelVersionRepository,
+            SQLAlchemyUnlearningJobRepository,
+            SQLAlchemyUnlearningRequestRepository,
         )
-        from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
 
         async with db.session_factory() as session:
             audit_repo = SQLAlchemyAuditEventRepository(session)
@@ -82,16 +82,16 @@ class TestUnlearningServiceDirect:
 
     async def test_get_request_not_found(self, client: AsyncClient):
         from app.core.database import db
-        from app.domain.unlearning.services import UnlearningService
         from app.core.exceptions import NotFoundError
         from app.domain.audit.services import AuditService
+        from app.domain.unlearning.services import UnlearningService
+        from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
         from app.infrastructure.database.repositories.unlearning import (
-            SQLAlchemyUnlearningRequestRepository,
-            SQLAlchemyUnlearningJobRepository,
             SQLAlchemyDeletionQueueRepository,
             SQLAlchemyModelVersionRepository,
+            SQLAlchemyUnlearningJobRepository,
+            SQLAlchemyUnlearningRequestRepository,
         )
-        from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
 
         async with db.session_factory() as session:
             audit_repo = SQLAlchemyAuditEventRepository(session)
@@ -109,15 +109,15 @@ class TestUnlearningServiceDirect:
 
     async def test_create_model_version(self, client: AsyncClient):
         from app.core.database import db
-        from app.domain.unlearning.services import UnlearningService
         from app.domain.audit.services import AuditService
+        from app.domain.unlearning.services import UnlearningService
+        from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
         from app.infrastructure.database.repositories.unlearning import (
-            SQLAlchemyUnlearningRequestRepository,
-            SQLAlchemyUnlearningJobRepository,
             SQLAlchemyDeletionQueueRepository,
             SQLAlchemyModelVersionRepository,
+            SQLAlchemyUnlearningJobRepository,
+            SQLAlchemyUnlearningRequestRepository,
         )
-        from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
 
         async with db.session_factory() as session:
             audit_repo = SQLAlchemyAuditEventRepository(session)
@@ -208,8 +208,8 @@ class TestUnlearningAPI:
 
     async def test_list_requests_requires_permission(self, client: AsyncClient):
         from app.core.database import db
-        from sqlalchemy import update
         from app.infrastructure.database.models import UserModel
+        from sqlalchemy import update
 
         token = await _register_and_login(client, "viewer-unl@example.com")
         async with db.session_factory() as session:
@@ -246,8 +246,8 @@ class TestVerificationAPI:
 
     async def test_verify_proof_not_found(self, client: AsyncClient):
         from app.core.database import db
-        from sqlalchemy import update
         from app.infrastructure.database.models import UserModel
+        from sqlalchemy import update
 
         token = await _register_and_login(client, "verify-admin@example.com")
         async with db.session_factory() as session:
@@ -271,15 +271,16 @@ class TestVerificationAPI:
 
 class TestVerificationServiceDirect:
     async def test_generate_and_verify_proof(self, client: AsyncClient):
+        from unittest.mock import AsyncMock, patch
+
         from app.core.database import db
-        from app.domain.verification.services import VerificationService
         from app.domain.audit.services import AuditService
+        from app.domain.verification.services import VerificationService
+        from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
         from app.infrastructure.database.repositories.verification import (
             SQLAlchemyDeletionProofRepository,
             SQLAlchemyProofVerificationRepository,
         )
-        from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
-        from unittest.mock import patch, AsyncMock
 
         async with db.session_factory() as session:
             audit_repo = SQLAlchemyAuditEventRepository(session)
@@ -325,15 +326,16 @@ class TestVerificationServiceDirect:
                 assert retrieved.verified
 
     async def test_list_proofs(self, client: AsyncClient):
+        from unittest.mock import AsyncMock, patch
+
         from app.core.database import db
-        from app.domain.verification.services import VerificationService
         from app.domain.audit.services import AuditService
+        from app.domain.verification.services import VerificationService
+        from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
         from app.infrastructure.database.repositories.verification import (
             SQLAlchemyDeletionProofRepository,
             SQLAlchemyProofVerificationRepository,
         )
-        from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
-        from unittest.mock import patch, AsyncMock
 
         async with db.session_factory() as session:
             audit_repo = SQLAlchemyAuditEventRepository(session)

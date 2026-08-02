@@ -93,7 +93,7 @@ async def list_experiments(
     limit: int = Query(50, le=200),
     offset: int = Query(0, ge=0),
 ):
-    from sqlalchemy import select, desc
+    from sqlalchemy import desc, select
 
     query = select(ExperimentModel).where(
         ExperimentModel.tenant_id == current_user["tenant_id"],
@@ -247,7 +247,7 @@ async def create_experiment_run(
     current_user: CurrentUser,
     session: DatabaseSession,
 ):
-    from sqlalchemy import select, func
+    from sqlalchemy import func, select
 
     query = select(ExperimentModel).where(
         ExperimentModel.id == experiment_id,

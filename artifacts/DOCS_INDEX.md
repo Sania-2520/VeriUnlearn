@@ -11,6 +11,7 @@ Index of all files under `docs/` and `artifacts/` with a one-line description.
 | `docs/DEPLOYMENT_CHECKLIST.md` | Pre/post-deploy checklist for Compose + Helm. |
 | `docs/deployment.md` | Detailed deployment guide (Compose, Helm, cloud). |
 | `docs/production-deployment.md` | Production hardening and scaling notes. |
+| `docs/disaster-recovery.md` | Backup/restore procedures, RPO/RTO targets, recovery scenarios. |
 | `docs/DEMO_WALKTHROUGH.md` | Step-by-step product demo script. |
 | `docs/DEMO_VIDEO_OUTLINE.md` | Outline/screenplay for the demo video. |
 | `docs/PRESENTATION_ASSETS.md` | Slide/deck asset list for talks. |

@@ -2,52 +2,52 @@ import hashlib
 import hmac
 from typing import Annotated, Any
 
-from fastapi import Cookie, Depends, Header, HTTPException, Request, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.cache import cache
-from app.core.database import get_db
-from app.core.rate_limiter import default_rate_limiter
 from app.core.config import settings
-from app.core.security import token_manager, TokenError
+from app.core.database import get_db
+from app.core.logging import get_logger
+from app.core.rate_limiter import default_rate_limiter  # noqa: F401 (re-exported for API routers)
 from app.core.rbac import Permission, check_permission
-from app.domain.auth.services import AuthService
-from app.domain.auth.entities import UserRole
+from app.core.security import TokenError, token_manager
+from app.domain.audit.entities import ActorType, EventStatus, EventType
 from app.domain.audit.services import AuditService
-from app.domain.audit.entities import EventType, ActorType, EventStatus
-from app.domain.unlearning.services import UnlearningService
-from app.domain.verification.services import VerificationService
+from app.domain.auth.entities import UserRole
+from app.domain.auth.services import AuthService
 from app.domain.chat.services import ChatService
 from app.domain.compliance.services import TenantService
 from app.domain.memory.services import MemoryService
+from app.domain.unlearning.services import UnlearningService
+from app.domain.verification.services import VerificationService
+from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
 from app.infrastructure.database.repositories.auth import (
-    SQLAlchemyUserRepository,
+    SQLAlchemyApiKeyRepository,
     SQLAlchemySessionRepository,
     SQLAlchemyTenantRepository,
-    SQLAlchemyApiKeyRepository,
+    SQLAlchemyUserRepository,
 )
-from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
-from app.core.logging import get_logger
 from app.infrastructure.database.repositories.chat import (
+    SQLAlchemyChatFolderRepository,
     SQLAlchemyChatSessionRepository,
     SQLAlchemyMessageRepository,
-    SQLAlchemyChatFolderRepository,
+)
+from app.infrastructure.database.repositories.compliance import (
+    SQLAlchemyWebhookEventLogRepository,
+    SQLAlchemyWebhookRepository,
 )
 from app.infrastructure.database.repositories.memory import SQLAlchemyMemoryRepository
 from app.infrastructure.database.repositories.unlearning import (
-    SQLAlchemyUnlearningRequestRepository,
-    SQLAlchemyUnlearningJobRepository,
     SQLAlchemyDeletionQueueRepository,
     SQLAlchemyModelVersionRepository,
+    SQLAlchemyUnlearningJobRepository,
+    SQLAlchemyUnlearningRequestRepository,
 )
 from app.infrastructure.database.repositories.verification import (
     SQLAlchemyDeletionProofRepository,
     SQLAlchemyProofVerificationRepository,
-)
-from app.infrastructure.database.repositories.compliance import (
-    SQLAlchemyWebhookRepository,
-    SQLAlchemyWebhookEventLogRepository,
 )
 
 logger = get_logger(__name__)

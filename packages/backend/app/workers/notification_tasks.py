@@ -1,4 +1,3 @@
-from typing import Any
 
 import httpx
 
@@ -26,11 +25,12 @@ def send_email(self, to: str, subject: str, body: str) -> dict:
 @celery_app.task(bind=True, name="notification.dispatch_webhook")
 def dispatch_webhook(self, webhook_id: str, event_type: str, payload: dict) -> dict:
     logger.info("Dispatching webhook %s for event %s", webhook_id, event_type)
-    from app.infrastructure.database.models import WebhookModel, WebhookEventLogModel
-    from datetime import datetime, timezone
-    import hmac
     import hashlib
+    import hmac
     import json
+    from datetime import datetime, timezone
+
+    from app.infrastructure.database.models import WebhookEventLogModel, WebhookModel
 
     with worker_session() as session:
         webhook = session.query(WebhookModel).filter_by(id=webhook_id).first()
@@ -110,7 +110,6 @@ def dispatch_webhook(self, webhook_id: str, event_type: str, payload: dict) -> d
 def retry_failed_webhooks(self) -> dict:
     logger.info("Checking for failed webhooks to retry")
     from app.infrastructure.database.models import WebhookModel
-    from datetime import datetime, timezone
 
     retried = 0
     with worker_session() as session:

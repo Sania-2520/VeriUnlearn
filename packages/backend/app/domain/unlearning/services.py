@@ -1,33 +1,30 @@
-import hashlib
-import json
 from datetime import datetime, timezone
 from typing import Any, Optional
 
 from app.core.config import settings
-from app.core.exceptions import NotFoundError, ConflictError
+from app.core.exceptions import ConflictError, NotFoundError
 from app.core.logging import get_logger
+from app.domain.audit.entities import ActorType, EventStatus, EventType
+from app.domain.audit.services import AuditService
 from app.domain.unlearning.entities import (
-    UnlearningRequest,
-    UnlearningJob,
-    DeletionQueueItem,
-    ModelVersion,
-    ModelShard,
-    UnlearningStatus,
-    UnlearningPriority,
-    UnlearningAlgorithm,
-    TargetType,
-    DeletionResourceType,
     DeletionOperation,
+    DeletionQueueItem,
+    DeletionResourceType,
+    ModelVersion,
+    TargetType,
+    UnlearningAlgorithm,
+    UnlearningJob,
+    UnlearningPriority,
+    UnlearningRequest,
+    UnlearningStatus,
 )
 from app.domain.unlearning.interfaces import (
-    UnlearningRequestRepository,
-    UnlearningJobRepository,
     DeletionQueueRepository,
     ModelVersionRepository,
+    UnlearningJobRepository,
+    UnlearningRequestRepository,
 )
-from app.domain.audit.entities import EventType, ActorType, EventStatus
-from app.domain.audit.services import AuditService
-from app.infrastructure.external.ml_engine import ml_engine_client, MLEngineClientError
+from app.infrastructure.external.ml_engine import MLEngineClientError, ml_engine_client
 
 logger = get_logger(__name__)
 

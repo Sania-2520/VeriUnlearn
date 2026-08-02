@@ -1,11 +1,12 @@
+from typing import Any, AsyncGenerator
+
 from sqlalchemy.ext.asyncio import (
-    AsyncSession,
     AsyncEngine,
+    AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase
-from typing import AsyncGenerator
 
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -13,8 +14,9 @@ from app.core.logging import get_logger
 logger = get_logger(__name__)
 
 
-from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.dialects.postgresql import INET, UUID
+from sqlalchemy.ext.compiler import compiles
+
 
 @compiles(INET, "sqlite")
 def compile_inet_sqlite(element, compiler, **kw):
@@ -38,7 +40,7 @@ class DatabaseManager:
 
     async def initialize(self) -> None:
         is_sqlite = settings.database_url.startswith("sqlite")
-        kwargs = {
+        kwargs: dict[str, Any] = {
             "echo": settings.database_echo,
             "pool_pre_ping": True,
         }

@@ -1,11 +1,9 @@
 import pyotp
 import pytest
-from httpx import AsyncClient
-from sqlalchemy import update
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.database import db
 from app.infrastructure.database.models import UserModel
+from httpx import AsyncClient
+from sqlalchemy import update
 
 
 async def _register_and_login(client: AsyncClient, email: str, password: str = "SecureP@ss123!") -> str:
@@ -190,8 +188,8 @@ class TestMFAEnforcement:
             json={"email": email, "password": "SecureP@ss123!", "full_name": email.split("@")[0]},
         )
         from app.core.database import db
-        from sqlalchemy import update
         from app.infrastructure.database.models import UserModel
+        from sqlalchemy import update
         async with db.session_factory() as session:
             await session.execute(
                 update(UserModel).where(UserModel.email == email).values(role="admin")

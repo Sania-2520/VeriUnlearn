@@ -62,4 +62,4 @@
 
 ## Troubleshooting
 
-See `docs/troubleshooting-guide.md` for common issues and solutions.
+See `docs/TROUBLESHOOTING_GUIDE.md` for common issues and solutions.

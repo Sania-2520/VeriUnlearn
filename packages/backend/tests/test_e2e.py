@@ -1,13 +1,14 @@
 """End-to-end integration tests covering the full API workflow."""
-import pytest
-from unittest.mock import patch, AsyncMock
-from httpx import AsyncClient, ASGITransport
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from unittest.mock import AsyncMock, patch
 
-from app.main import app
-from app.core.database import db, Base, get_db
+import pytest
 from app.core.cache import cache
+from app.core.database import Base, db
 from app.infrastructure.external.ml_engine import ml_engine_client
+from app.main import app
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from tests.conftest import MockRedis
 
 
@@ -74,9 +75,9 @@ async def _login(client: AsyncClient, email: str, password: str = "Pass1234!") -
 
 
 async def _make_admin(client: AsyncClient, user_id: str) -> None:
-    from app.infrastructure.database.repositories.auth import SQLAlchemyUserRepository
-    from app.domain.auth.entities import UserRole
     from app.core.database import get_db
+    from app.domain.auth.entities import UserRole
+    from app.infrastructure.database.repositories.auth import SQLAlchemyUserRepository
     async for session in get_db():
         repo = SQLAlchemyUserRepository(session)
         user = await repo.get_by_id(user_id)
@@ -89,6 +90,7 @@ async def _make_admin(client: AsyncClient, user_id: str) -> None:
 @pytest.fixture
 async def member_token(client: AsyncClient) -> str:
     data = await _register(client, "member@test.com")
+    _ = data
     login_data = await _login(client, "member@test.com")
     return login_data["access_token"]
 

@@ -1,16 +1,15 @@
 from datetime import datetime, timezone
-from typing import Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import select, desc
+from sqlalchemy import select
 
 from app.api.deps import CurrentUser, DatabaseSession, default_rate_limiter, require_permission
 from app.core.logging import get_logger
 from app.core.rbac import Permission
 from app.infrastructure.database.models import SecurityAssessmentModel
-from app.infrastructure.external.ml_engine import ml_engine_client, MLEngineClientError
+from app.infrastructure.external.ml_engine import MLEngineClientError, ml_engine_client
 
 logger = get_logger(__name__)
 

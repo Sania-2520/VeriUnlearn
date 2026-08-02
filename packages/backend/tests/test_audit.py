@@ -1,10 +1,9 @@
 import pytest
-from httpx import AsyncClient
-
 from app.core.database import db
-from app.domain.audit.entities import EventType, ActorType, EventStatus
+from app.domain.audit.entities import ActorType, EventStatus, EventType
 from app.domain.audit.services import AuditService
 from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
+from httpx import AsyncClient
 
 
 @pytest.fixture
@@ -16,7 +15,6 @@ async def audit_service(client: AsyncClient) -> AuditService:
 
 class TestAuditServiceDirect:
     async def test_record_and_retrieve_event(self, client: AsyncClient):
-        from app.domain.audit.entities import EventType, ActorType, EventStatus
         from app.domain.audit.services import AuditService
         from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
 

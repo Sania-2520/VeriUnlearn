@@ -1,17 +1,19 @@
 from datetime import datetime, timezone
 from typing import Optional
-from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
 from app.api.deps import (
-    CurrentUser, DatabaseSession, ChatServiceDep, default_rate_limiter, require_permission,
+    ChatServiceDep,
+    CurrentUser,
+    default_rate_limiter,
+    require_permission,
 )
 from app.core.logging import get_logger
 from app.core.rbac import Permission
-from app.domain.chat.entities import ChatSession
-from app.infrastructure.external.ml_engine import ml_engine_client, MLEngineClientError
+from app.domain.chat.entities import ChatSession, Message
+from app.infrastructure.external.ml_engine import MLEngineClientError, ml_engine_client
 
 logger = get_logger(__name__)
 
@@ -217,8 +219,9 @@ async def send_message(
         assistant_content = f"Error: ML engine request failed - {str(e)}"
         metadata = {"error": str(e)}
     now = datetime.now(timezone.utc)
-    from app.domain.chat.entities import Message, MessageRole, MessageContentType
     import uuid
+
+    from app.domain.chat.entities import Message, MessageContentType, MessageRole
     assistant_msg_id = str(uuid.uuid4())
     assistant_msg = Message(
         id=assistant_msg_id,

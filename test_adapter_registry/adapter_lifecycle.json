@@ -2,7 +2,7 @@
   "adapters": {
     "health": [
       {
-        "version_id": "c232fb5d-c5db-45bd-960e-c0411c33954c",
+        "version_id": "e96f6a0f-c7fc-488b-a1a9-a38d3c9a7fad",
         "adapter_name": "health",
         "version_number": 1,
         "adapter_path": "/path/hlth",
@@ -13,7 +13,7 @@
         "metrics": {},
         "tags": {},
         "parent_version_id": null,
-        "deployed_at": "2026-07-19T06:47:16.877697+00:00",
+        "deployed_at": "2026-08-01T17:40:59.662591+00:00",
         "last_used_at": null,
         "error_count": 0,
         "total_requests": 0,
@@ -24,12 +24,12 @@
     ]
   },
   "current": {
-    "health": "c232fb5d-c5db-45bd-960e-c0411c33954c"
+    "health": "e96f6a0f-c7fc-488b-a1a9-a38d3c9a7fad"
   },
   "routing": {
     "health": {
       "strategy": "single",
-      "primary_version_id": "c232fb5d-c5db-45bd-960e-c0411c33954c",
+      "primary_version_id": "e96f6a0f-c7fc-488b-a1a9-a38d3c9a7fad",
       "secondary_version_id": null,
       "weights": {}
     }

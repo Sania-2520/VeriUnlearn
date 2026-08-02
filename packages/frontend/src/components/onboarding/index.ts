@@ -1,0 +1,5 @@
+export { OnboardingProvider, useOnboarding } from "./onboarding-provider"
+export { TourOverlay } from "./tour-overlay"
+export { WelcomeDialog } from "./welcome-dialog"
+export type { TourStep } from "./tour-step"
+export { defaultTourSteps } from "./tour-config"

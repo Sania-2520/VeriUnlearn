@@ -1,10 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
 from typing import Any, Optional
 
-from app.api.deps import CurrentUser, DatabaseSession, AuditServiceDep, default_rate_limiter, require_permission
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+
+from app.api.deps import (
+    AuditServiceDep,
+    CurrentUser,
+    DatabaseSession,
+    default_rate_limiter,
+    require_permission,
+)
 from app.core.rbac import Permission
-from app.domain.audit.entities import EventType, ActorType, EventStatus
-from app.domain.audit.services import AuditService
 from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
 
 router = APIRouter(dependencies=[Depends(default_rate_limiter), Depends(require_permission(Permission.AUDIT_READ))])

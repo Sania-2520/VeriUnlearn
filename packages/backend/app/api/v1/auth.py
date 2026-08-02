@@ -5,19 +5,12 @@ from pydantic import BaseModel, EmailStr
 
 from app.api.deps import (
     CurrentUser,
-    DatabaseSession,
-    default_rate_limiter,
     get_auth_service,
-    get_current_user,
     require_mfa,
-    require_permission,
 )
-from app.core.rbac import Permission
-from app.core.rate_limiter import make_rate_limiter, parse_rate_limit
 from app.core.config import settings
+from app.core.rate_limiter import make_rate_limiter, parse_rate_limit
 from app.domain.auth.services import AuthService, MFARequiredError
-from app.domain.auth.entities import UserRole
-from app.core.exceptions import AuthenticationError, ConflictError, NotFoundError
 from app.infrastructure.external.oauth_service import oauth_service
 
 _auth_count, _auth_window = parse_rate_limit(settings.rate_limit_auth)

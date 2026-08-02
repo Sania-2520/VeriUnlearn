@@ -1,20 +1,17 @@
-import os
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
 
-from cryptography.fernet import Fernet
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import select, desc, update as sa_update
+from sqlalchemy import desc, select
 
 from app.api.deps import CurrentUser, DatabaseSession, default_rate_limiter, require_permission
-from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.rbac import Permission
 from app.core.secrets_manager import secrets_manager
 from app.infrastructure.database.models import AIProviderModel
-from app.infrastructure.external.ml_engine import ml_engine_client, MLEngineClientError
+from app.infrastructure.external.ml_engine import MLEngineClientError, ml_engine_client
 
 logger = get_logger(__name__)
 

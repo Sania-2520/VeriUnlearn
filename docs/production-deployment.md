@@ -220,7 +220,17 @@ docker compose exec backend alembic upgrade head
 
 ---
 
-## 12. Troubleshooting
+## 12. Backup and Restore
+
+For automated, whole-stack backups and recovery procedures, see:
+
+- `docs/disaster-recovery.md` — DR plan, RPO/RTO targets, restore scenarios
+- `scripts/backup.sh` — timestamped backup of Postgres/Redis/MinIO/Qdrant/app-data
+- `scripts/restore.sh` — restores a backup produced by `backup.sh`
+
+---
+
+## 13. Troubleshooting
 
 | Symptom | Likely Cause | Fix |
 |---|---|---|

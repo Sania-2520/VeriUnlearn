@@ -40,7 +40,7 @@ service:
     port: 8000
   mlEngine:
     type: ClusterIP
-    port: 8001
+    port: 8000
   frontend:
     type: ClusterIP
     port: 3000
@@ -69,7 +69,7 @@ ingress:
         - path: /ml
           pathType: Prefix
           service: ml-engine
-          port: 8001
+          port: 8000
   tls:
     - secretName: veriunlearn-tls
       hosts:
@@ -150,8 +150,7 @@ config:
   LOG_FORMAT: "json"
   BACKEND_HOST: "0.0.0.0"
   BACKEND_PORT: "8000"
-  ML_ENGINE_HOST: "0.0.0.0"
-  ML_ENGINE_PORT: "8001"
+  ML_ENGINE_URL: "http://ml-engine:8000"
   CELERY_BROKER_URL: "redis://redis-master:6379/0"
   CELERY_RESULT_BACKEND: "redis://redis-master:6379/1"
   DATABASE_HOST: "postgresql-primary"

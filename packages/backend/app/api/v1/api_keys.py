@@ -1,15 +1,21 @@
-import hashlib
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
-from app.api.deps import CurrentUser, DatabaseSession, default_rate_limiter, require_mfa, require_permission, get_auth_service
+from app.api.deps import (
+    CurrentUser,
+    DatabaseSession,
+    default_rate_limiter,
+    get_auth_service,
+    require_mfa,
+    require_permission,
+)
 from app.core.rbac import Permission
-from app.domain.auth.services import AuthService
-from app.domain.auth.entities import ApiKey, UserRole
 from app.core.security import generate_api_key
+from app.domain.auth.entities import ApiKey
+from app.domain.auth.services import AuthService
 from app.infrastructure.database.repositories.auth import SQLAlchemyApiKeyRepository
 
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]

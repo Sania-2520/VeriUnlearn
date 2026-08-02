@@ -1,7 +1,6 @@
-import pytest
-from httpx import AsyncClient
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
 
+from httpx import AsyncClient
 
 TEST_EMAIL = "compliance-test@example.com"
 TEST_PASSWORD = "SecureP@ss123!"
@@ -21,8 +20,8 @@ async def _register_and_login(client: AsyncClient, email: str = TEST_EMAIL) -> s
 
 async def _register_and_upgrade(client: AsyncClient, email: str) -> str:
     from app.core.database import db
-    from sqlalchemy import update
     from app.infrastructure.database.models import UserModel
+    from sqlalchemy import update
 
     await _register_and_login(client, email)
     async with db.session_factory() as session:
@@ -241,14 +240,14 @@ class TestWebhookAPI:
 class TestWebhookServiceDirect:
     async def test_dispatch_event(self, client: AsyncClient):
         from app.core.database import db
-        from app.domain.compliance.services import TenantService
         from app.domain.audit.services import AuditService
-        from app.infrastructure.database.repositories.compliance import (
-            SQLAlchemyWebhookRepository,
-            SQLAlchemyWebhookEventLogRepository,
-        )
-        from app.infrastructure.database.repositories.auth import SQLAlchemyTenantRepository
+        from app.domain.compliance.services import TenantService
         from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
+        from app.infrastructure.database.repositories.auth import SQLAlchemyTenantRepository
+        from app.infrastructure.database.repositories.compliance import (
+            SQLAlchemyWebhookEventLogRepository,
+            SQLAlchemyWebhookRepository,
+        )
 
         async with db.session_factory() as session:
             audit_repo = SQLAlchemyAuditEventRepository(session)
@@ -283,14 +282,14 @@ class TestWebhookServiceDirect:
 
     async def test_dispatch_event_no_matching_webhooks(self, client: AsyncClient):
         from app.core.database import db
-        from app.domain.compliance.services import TenantService
         from app.domain.audit.services import AuditService
-        from app.infrastructure.database.repositories.compliance import (
-            SQLAlchemyWebhookRepository,
-            SQLAlchemyWebhookEventLogRepository,
-        )
-        from app.infrastructure.database.repositories.auth import SQLAlchemyTenantRepository
+        from app.domain.compliance.services import TenantService
         from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
+        from app.infrastructure.database.repositories.auth import SQLAlchemyTenantRepository
+        from app.infrastructure.database.repositories.compliance import (
+            SQLAlchemyWebhookEventLogRepository,
+            SQLAlchemyWebhookRepository,
+        )
 
         async with db.session_factory() as session:
             audit_repo = SQLAlchemyAuditEventRepository(session)
@@ -311,14 +310,14 @@ class TestWebhookServiceDirect:
 
     async def test_dispatch_event_failure(self, client: AsyncClient):
         from app.core.database import db
-        from app.domain.compliance.services import TenantService
         from app.domain.audit.services import AuditService
-        from app.infrastructure.database.repositories.compliance import (
-            SQLAlchemyWebhookRepository,
-            SQLAlchemyWebhookEventLogRepository,
-        )
-        from app.infrastructure.database.repositories.auth import SQLAlchemyTenantRepository
+        from app.domain.compliance.services import TenantService
         from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
+        from app.infrastructure.database.repositories.auth import SQLAlchemyTenantRepository
+        from app.infrastructure.database.repositories.compliance import (
+            SQLAlchemyWebhookEventLogRepository,
+            SQLAlchemyWebhookRepository,
+        )
 
         async with db.session_factory() as session:
             audit_repo = SQLAlchemyAuditEventRepository(session)
@@ -330,7 +329,7 @@ class TestWebhookServiceDirect:
                 audit_service=audit_svc,
             )
 
-            webhook = await svc.create_webhook(
+            await svc.create_webhook(
                 tenant_id="test-tenant-fail",
                 name="Fail Test",
                 url="https://example.com/fail",
@@ -349,18 +348,17 @@ class TestWebhookServiceDirect:
 
     async def test_tenant_settings_persistence(self, client: AsyncClient):
         from app.core.database import db
-        from app.domain.compliance.services import TenantService
         from app.domain.audit.services import AuditService
+        from app.domain.compliance.services import TenantService
+        from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
         from app.infrastructure.database.repositories.auth import SQLAlchemyTenantRepository
         from app.infrastructure.database.repositories.compliance import (
-            SQLAlchemyWebhookRepository,
             SQLAlchemyWebhookEventLogRepository,
+            SQLAlchemyWebhookRepository,
         )
-        from app.infrastructure.database.repositories.audit import SQLAlchemyAuditEventRepository
 
         async with db.session_factory() as session:
             from app.domain.auth.entities import Tenant
-            from app.domain.auth.interfaces import TenantRepository
 
             tenant_repo = SQLAlchemyTenantRepository(session)
             tenant = Tenant(name="Settings Test", slug="settings-test")

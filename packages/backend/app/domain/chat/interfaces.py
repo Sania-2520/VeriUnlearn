@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from app.domain.chat.entities import ChatSession, Message, ChatFolder
+from app.domain.chat.entities import ChatFolder, ChatSession, Message
 
 
 class ChatSessionRepository(ABC):

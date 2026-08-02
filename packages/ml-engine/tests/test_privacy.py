@@ -1,10 +1,10 @@
 import pytest
 import torch
 
-from security.attacks.membership_inference import MembershipInferenceAttack, LossBasedMIA
-from verification.privacy_evaluation import PrivacyEvaluator
-from training.data import generate_synthetic_data
 from models.single_model import SingleModel
+from security.attacks.membership_inference import LossBasedMIA, MembershipInferenceAttack
+from training.data import generate_synthetic_data
+from verification.privacy_evaluation import PrivacyEvaluator
 
 
 @pytest.fixture

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from app.domain.rag.entities import Document, DocumentChunk, OCRResult, SearchResult
+from app.domain.rag.entities import Document, DocumentChunk, SearchResult
 
 
 class DocumentRepository(ABC):

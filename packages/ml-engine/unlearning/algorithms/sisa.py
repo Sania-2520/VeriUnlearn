@@ -6,8 +6,8 @@ logger = logging.getLogger(__name__)
 
 import torch
 
-from training.data import Dataset, accuracy_score, generate_synthetic_data, split_dataset
 from models.sharded_classifier import ShardedModel
+from training.data import Dataset, accuracy_score, generate_synthetic_data, split_dataset
 from unlearning.algorithms.base import UnlearningAlgorithm, UnlearningContext, UnlearningResult
 
 

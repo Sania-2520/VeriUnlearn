@@ -2,19 +2,19 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     Column,
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
-    JSON,
     String,
     Text,
     UniqueConstraint,
-    Index,
 )
-from sqlalchemy.dialects.postgresql import UUID, INET
+from sqlalchemy.dialects.postgresql import INET, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -199,6 +199,8 @@ class UnlearningRequestModel(Base):
     gdpr_article = Column(String(50), nullable=True)
     status = Column(String(20), nullable=False, default="pending")
     priority = Column(String(20), nullable=False, default="normal")
+    compliance_verified = Column(Boolean, nullable=False, default=False)
+    compliance_timestamp = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=datetime.utcnow)
 

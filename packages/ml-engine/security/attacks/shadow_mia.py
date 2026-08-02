@@ -1,13 +1,13 @@
 import logging
 from typing import Optional
 
+import numpy as np
 import torch
 from torch import Tensor
-import numpy as np
 
-from models.single_model import SingleModel
 from models.sharded_classifier import ShardedModel
-from training.data import Dataset, generate_synthetic_data, generate_nonlinear_data
+from models.single_model import SingleModel
+from training.data import Dataset, generate_nonlinear_data, generate_synthetic_data
 
 logger = logging.getLogger(__name__)
 

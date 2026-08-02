@@ -6,11 +6,11 @@ logger = logging.getLogger(__name__)
 
 import torch
 
-from models.single_model import SingleModel
 from models.sharded_classifier import ShardedModel
+from models.single_model import SingleModel
 from security.attacks.membership_inference import LossBasedMIA, MembershipInferenceAttack
-from security.attacks.model_inversion import ModelInversionAttack
 from security.attacks.model_extraction import ModelExtractionAttack
+from security.attacks.model_inversion import ModelInversionAttack
 from training.data import Dataset
 
 

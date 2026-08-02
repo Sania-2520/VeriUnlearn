@@ -2,11 +2,10 @@ import hashlib
 import hmac
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from typing import Any
 
-from jose import JWTError, jwt
-from jose.constants import Algorithms
-from passlib.context import CryptContext
+from jose import JWTError, jwt  # type: ignore[import-untyped]  # no stubs shipped
+from passlib.context import CryptContext  # type: ignore[import-untyped]  # no stubs shipped
 
 from app.core.config import settings
 
@@ -18,11 +17,11 @@ pwd_context = CryptContext(
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return pwd_context.hash(password)  # type: ignore[no-any-return]  # passlib untyped
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    return pwd_context.verify(plain_password, hashed_password)  # type: ignore[no-any-return]  # passlib untyped
 
 
 class TokenManager:
@@ -53,7 +52,7 @@ class TokenManager:
         if extra_claims:
             payload.update(extra_claims)
 
-        return jwt.encode(
+        return jwt.encode(  # type: ignore[no-any-return]  # python-jose untyped
             payload,
             settings.jwt_secret_key,
             algorithm=settings.jwt_algorithm,
@@ -86,7 +85,7 @@ class TokenManager:
         if extra_claims:
             payload.update(extra_claims)
 
-        return jwt.encode(
+        return jwt.encode(  # type: ignore[no-any-return]  # python-jose untyped
             payload,
             settings.jwt_secret_key,
             algorithm=settings.jwt_algorithm,
@@ -101,7 +100,7 @@ class TokenManager:
                 audience=settings.jwt_audience,
                 issuer=settings.jwt_issuer,
             )
-            return payload
+            return payload  # type: ignore[no-any-return]  # python-jose untyped
         except JWTError as e:
             raise TokenError(f"Invalid token: {e}") from e
 

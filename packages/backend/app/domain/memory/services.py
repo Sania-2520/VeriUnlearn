@@ -1,8 +1,8 @@
-from typing import Any, Optional
+from typing import Optional
 
-from app.domain.memory.entities import MemoryEntry, MemoryType, MemoryCategory
-from app.domain.memory.interfaces import MemoryRepository
 from app.core.logging import get_logger
+from app.domain.memory.entities import MemoryEntry, MemoryType
+from app.domain.memory.interfaces import MemoryRepository
 
 logger = get_logger(__name__)
 

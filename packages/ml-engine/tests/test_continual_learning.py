@@ -1,9 +1,9 @@
 import pytest
 
-from training.continual_learning import ContinualLearningManager, ContinualLearningConfig
-from training.replay_buffer import ReplayBuffer, ReplayBufferConfig
-from training.drift_detector import DriftDetector, DriftConfig
+from training.continual_learning import ContinualLearningConfig, ContinualLearningManager
+from training.drift_detector import DriftConfig, DriftDetector
 from training.ewc import ElasticWeightConsolidation
+from training.replay_buffer import ReplayBuffer, ReplayBufferConfig
 
 
 class TestContinualLearningManager:

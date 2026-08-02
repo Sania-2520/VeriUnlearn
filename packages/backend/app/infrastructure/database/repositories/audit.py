@@ -1,12 +1,12 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.audit.entities import AuditEvent, AuditChainHead, EventType, ActorType, EventStatus
+from app.domain.audit.entities import ActorType, AuditChainHead, AuditEvent, EventStatus, EventType
 from app.domain.audit.interfaces import AuditEventRepository
-from app.infrastructure.database.models import AuditEventModel, AuditChainHeadModel
+from app.infrastructure.database.models import AuditChainHeadModel, AuditEventModel
 
 
 class SQLAlchemyAuditEventRepository(AuditEventRepository):

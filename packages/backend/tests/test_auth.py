@@ -1,11 +1,6 @@
-import json
-from datetime import datetime, timezone
-
-import pytest
-from httpx import AsyncClient
 
 from app.core.cache import cache
-from app.domain.auth.entities import UserRole
+from httpx import AsyncClient
 
 
 class TestRegister:
@@ -650,7 +645,7 @@ class TestApiKeyManagement:
         from app.core.database import db
         async with db.session_factory() as session:
             from app.infrastructure.database.models import UserModel
-            from sqlalchemy import select, update
+            from sqlalchemy import select
             result = await session.execute(select(UserModel).where(UserModel.email == email))
             user = result.scalar_one_or_none()
             if user:
@@ -897,7 +892,7 @@ class TestMFA:
             "/api/v1/auth/register",
             json={"email": "mfa-expired@example.com", "password": "SecureP@ss123!", "full_name": "MFA Expired"},
         )
-        headers = await self._get_auth_headers(client, "mfa-expired@example.com")
+        await self._get_auth_headers(client, "mfa-expired@example.com")
 
         response = await client.post(
             "/api/v1/auth/mfa/verify",

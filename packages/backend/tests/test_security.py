@@ -1,5 +1,5 @@
 import pytest
-from app.core.security import hash_password, verify_password, token_manager
+from app.core.security import hash_password, token_manager, verify_password
 
 
 class TestPasswordHashing:
@@ -43,7 +43,6 @@ class TestTokenManager:
             token_manager.verify_token("invalid.token.here")
 
     def test_verify_expired_token(self):
-        import time
         from datetime import timedelta
 
         token = token_manager.create_access_token(

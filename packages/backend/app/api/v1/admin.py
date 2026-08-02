@@ -4,15 +4,16 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 
 from app.api.deps import CurrentUser, DatabaseSession, default_rate_limiter, require_permission
 from app.core.logging import get_logger
 from app.core.rbac import Permission
-from app.domain.compliance.entities import Webhook as WebhookEntity, WebhookStatus
-from app.infrastructure.database.models import UserModel, UnlearningJobModel, WebhookModel
+from app.domain.compliance.entities import Webhook as WebhookEntity
+from app.domain.compliance.entities import WebhookStatus
+from app.infrastructure.database.models import UnlearningJobModel, UserModel
 from app.infrastructure.database.repositories.compliance import SQLAlchemyWebhookRepository
-from app.infrastructure.external.ml_engine import ml_engine_client, MLEngineClientError
+from app.infrastructure.external.ml_engine import MLEngineClientError, ml_engine_client
 
 logger = get_logger(__name__)
 

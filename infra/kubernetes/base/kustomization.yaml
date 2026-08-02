@@ -8,6 +8,8 @@ resources:
   - namespace.yaml
   - configmap.yaml
   - secret.yaml
+  - serviceaccount.yaml
+  - persistentvolumeclaims.yaml
   - backend-deployment.yaml
   - backend-service.yaml
   - ml-engine-deployment.yaml

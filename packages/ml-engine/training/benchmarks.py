@@ -3,7 +3,7 @@ import logging
 import os
 import time
 import uuid
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Optional
@@ -11,9 +11,9 @@ from typing import Any, Optional
 import numpy as np
 import torch
 
-from training.data import generate_synthetic_data, generate_nonlinear_data
-from unlearning.hybrid_controller import HybridAdaptiveController
+from training.data import Dataset, generate_nonlinear_data, generate_synthetic_data
 from unlearning.algorithms.base import UnlearningContext
+from unlearning.hybrid_controller import HybridAdaptiveController
 
 logger = logging.getLogger(__name__)
 

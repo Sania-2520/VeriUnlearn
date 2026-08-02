@@ -4,6 +4,7 @@ import sys
 from typing import Any
 
 from pythonjsonlogger import jsonlogger
+
 from app.core.config import settings
 
 RESERVED_ATTRS = {

@@ -1,17 +1,22 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import select, func, desc, update as sa_update, and_
+from sqlalchemy import and_, desc, func, select
+from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.compliance.entities import (
-    Webhook as WebhookEntity,
-    WebhookEventLog as WebhookEventLogEntity,
-    WebhookStatus,
     DeliveryStatus,
+    WebhookStatus,
 )
-from app.domain.compliance.interfaces import WebhookRepository, WebhookEventLogRepository
-from app.infrastructure.database.models import WebhookModel, WebhookEventLogModel
+from app.domain.compliance.entities import (
+    Webhook as WebhookEntity,
+)
+from app.domain.compliance.entities import (
+    WebhookEventLog as WebhookEventLogEntity,
+)
+from app.domain.compliance.interfaces import WebhookEventLogRepository, WebhookRepository
+from app.infrastructure.database.models import WebhookEventLogModel, WebhookModel
 
 
 class SQLAlchemyWebhookRepository(WebhookRepository):

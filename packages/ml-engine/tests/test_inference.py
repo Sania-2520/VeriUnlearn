@@ -4,12 +4,12 @@ import pytest
 import torch
 
 from inference.service import (
+    AdapterManager,
     InferenceConfig,
     InferenceMetrics,
     InferenceRequest,
     InferenceResponse,
     InferenceService,
-    AdapterManager,
 )
 
 

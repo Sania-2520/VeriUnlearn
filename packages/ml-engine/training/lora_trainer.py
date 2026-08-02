@@ -15,15 +15,17 @@ from typing import Any, Optional
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset as TorchDataset, DataLoader
+from torch.utils.data import DataLoader
+from torch.utils.data import Dataset as TorchDataset
 
 try:
-    from peft import LoraConfig, get_peft_model, TaskType, PeftModel
+    from peft import LoraConfig, PeftModel, TaskType, get_peft_model
     PEFT_AVAILABLE = True
 except ImportError:
     PEFT_AVAILABLE = False
 
-from training.data import Dataset as VDataset, accuracy_score
+from training.data import Dataset as VDataset
+from training.data import accuracy_score
 
 try:
     import mlflow

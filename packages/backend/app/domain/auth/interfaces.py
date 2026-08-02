@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from app.domain.auth.entities import User, Session, Tenant, OAuthAccount, ApiKey
+from app.domain.auth.entities import ApiKey, Session, Tenant, User
 
 
 class UserRepository(ABC):

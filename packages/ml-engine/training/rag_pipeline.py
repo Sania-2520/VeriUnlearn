@@ -14,11 +14,11 @@ try:
     from qdrant_client import QdrantClient
     from qdrant_client.models import (
         Distance,
-        VectorParams,
-        PointStruct,
-        Filter,
         FieldCondition,
+        Filter,
         MatchValue,
+        PointStruct,
+        VectorParams,
     )
 
     QDRANT_AVAILABLE = True
@@ -278,8 +278,8 @@ class DocumentProcessor:
 
     def process_pdf(self, file_path: str) -> str:
         try:
-            from pdf2image import convert_from_path
             import pytesseract
+            from pdf2image import convert_from_path
 
             images = convert_from_path(file_path, dpi=300)
             pages = [
@@ -303,8 +303,8 @@ class DocumentProcessor:
             logger.warning("PyPDF2 fallback failed (%s)", exc)
 
         try:
-            from pdf2image import convert_from_path
             import pytesseract
+            from pdf2image import convert_from_path
 
             images = convert_from_path(file_path, dpi=150)
             text = "\n\n".join(

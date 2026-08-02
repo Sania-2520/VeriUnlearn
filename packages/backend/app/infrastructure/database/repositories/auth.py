@@ -2,30 +2,36 @@ from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import select, delete, update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.auth.entities import (
-    User as UserEntity,
-    Session as SessionEntity,
-    Tenant as TenantEntity,
-    OAuthAccount as OAuthAccountEntity,
     ApiKey as ApiKeyEntity,
-    UserRole,
+)
+from app.domain.auth.entities import (
+    Session as SessionEntity,
+)
+from app.domain.auth.entities import (
+    Tenant as TenantEntity,
+)
+from app.domain.auth.entities import (
     TenantPlan,
+    UserRole,
+)
+from app.domain.auth.entities import (
+    User as UserEntity,
 )
 from app.domain.auth.interfaces import (
-    UserRepository,
+    ApiKeyRepository,
     SessionRepository,
     TenantRepository,
-    ApiKeyRepository,
+    UserRepository,
 )
 from app.infrastructure.database.models import (
-    UserModel,
     SessionModel,
-    TenantModel,
-    OAuthAccountModel,
     TenantApiKeyModel,
+    TenantModel,
+    UserModel,
 )
 
 

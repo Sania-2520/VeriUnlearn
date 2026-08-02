@@ -1,6 +1,7 @@
 import pytest
-from unlearning.hybrid_controller import HybridAdaptiveController
+
 from unlearning.algorithms.base import UnlearningContext
+from unlearning.hybrid_controller import HybridAdaptiveController
 
 
 class TestHybridAdaptiveController:

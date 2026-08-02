@@ -1,10 +1,10 @@
 import pytest
 import torch
 
-from unlearning.algorithms.sisa import SISAUnlearning
-from unlearning.algorithms.influence import InfluenceFunctionUnlearning
-from unlearning.algorithms.certified_removal import CertifiedRemovalUnlearning
 from unlearning.algorithms.base import UnlearningContext
+from unlearning.algorithms.certified_removal import CertifiedRemovalUnlearning
+from unlearning.algorithms.influence import InfluenceFunctionUnlearning
+from unlearning.algorithms.sisa import SISAUnlearning
 
 
 @pytest.mark.asyncio

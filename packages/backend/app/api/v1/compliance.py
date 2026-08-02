@@ -1,10 +1,8 @@
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import (
-    CurrentUser,
-    DatabaseSession,
     TenantID,
     TenantServiceDep,
     default_rate_limiter,

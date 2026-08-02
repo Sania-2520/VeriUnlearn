@@ -1,10 +1,8 @@
-import httpx
-import pytest
-from httpx import AsyncClient
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
 from app.infrastructure.external.ml_engine import MLEngineClientError
-
+from httpx import AsyncClient
 
 TEST_PASSWORD = "SecureP@ss123!"
 
@@ -27,8 +25,8 @@ async def _register_and_login_as_admin(client: AsyncClient, email: str) -> str:
         json={"email": email, "password": TEST_PASSWORD, "full_name": "Admin Test"},
     )
     from app.core.database import db
-    from sqlalchemy import update
     from app.infrastructure.database.models import UserModel
+    from sqlalchemy import update
 
     async with db.session_factory() as session:
         await session.execute(
@@ -52,8 +50,8 @@ async def _login(client: AsyncClient, email: str) -> str:
 
 async def _set_user_role(client: AsyncClient, email: str, role: str):
     from app.core.database import db
-    from sqlalchemy import update
     from app.infrastructure.database.models import UserModel
+    from sqlalchemy import update
 
     async with db.session_factory() as session:
         await session.execute(

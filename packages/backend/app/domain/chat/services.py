@@ -1,10 +1,13 @@
-import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from app.domain.chat.entities import ChatFolder, ChatSession, Message, MessageRole
-from app.domain.chat.interfaces import ChatSessionRepository, MessageRepository, ChatFolderRepository
 from app.core.logging import get_logger
+from app.domain.chat.entities import ChatFolder, ChatSession, Message, MessageRole
+from app.domain.chat.interfaces import (
+    ChatFolderRepository,
+    ChatSessionRepository,
+    MessageRepository,
+)
 
 logger = get_logger(__name__)
 

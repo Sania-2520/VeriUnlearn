@@ -55,7 +55,6 @@ async def register_dataset(
     current_user: CurrentUser = ...,
     session: DatabaseSession = ...,
 ):
-    from sqlalchemy import select, func
 
     now = datetime.now(timezone.utc)
     dataset = DatasetRegistryModel(
@@ -100,7 +99,7 @@ async def list_datasets(
     page_size: int = Query(25, ge=1, le=200),
     _: None = Depends(require_permission(Permission.BENCHMARKS_READ)),
 ):
-    from sqlalchemy import select, desc, func
+    from sqlalchemy import desc, func, select
 
     query = select(DatasetRegistryModel).where(
         DatasetRegistryModel.tenant_id == current_user["tenant_id"],

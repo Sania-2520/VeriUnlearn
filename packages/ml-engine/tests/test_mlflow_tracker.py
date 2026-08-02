@@ -5,8 +5,8 @@ import tempfile
 import pytest
 
 from training.mlflow_tracker import (
-    MLflowConfig,
     GPUTracker,
+    MLflowConfig,
     MLflowExperimentTracker,
 )
 

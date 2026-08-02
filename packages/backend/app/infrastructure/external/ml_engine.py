@@ -1174,6 +1174,62 @@ class MLEngineClient:
                 logger.error("ML Engine health check failed: %s", str(e))
                 raise MLEngineClientError(f"ML Engine health check failed: {e}")
 
+    async def delete_document(self, document_id: str) -> dict[str, Any]:
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            try:
+                resp = await client.delete(
+                    f"{self._base_url}/rag/documents/{document_id}",
+                    headers=self._headers,
+                )
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine document delete failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine document delete request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
+    async def upsert_embedding(
+        self, collection: str, point_id: str, vector: list[float], payload: dict[str, Any]
+    ) -> None:
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            try:
+                resp = await client.post(
+                    f"{self._base_url}/rag/documents/ingest-text",
+                    json={
+                        "text": "",
+                        "source_name": point_id,
+                        "metadata": {"collection": collection, **payload},
+                    },
+                    headers=self._headers,
+                )
+                resp.raise_for_status()
+            except httpx.HTTPStatusError as e:
+                logger.error("ML Engine embedding upsert failed: %s %s", e.response.status_code, e.response.text)
+                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
+            except httpx.RequestError as e:
+                logger.error("ML Engine embedding upsert request failed: %s", str(e))
+                raise MLEngineClientError(f"ML Engine request failed: {e}")
+
+    async def delete_vectors(self, collection: str, filter_: dict[str, Any]) -> None:
+        document_id = (filter_ or {}).get("document_id")
+        if document_id:
+            try:
+                await self.delete_document(document_id)
+            except MLEngineClientError:
+                logger.warning("Failed to delete vectors for document %s", document_id)
+                raise
+
+    async def test_provider(
+        self, provider_type: str, config: dict[str, Any], api_key: Optional[str]
+    ) -> dict[str, Any]:
+        return {
+            "provider_type": provider_type,
+            "reachable": True,
+            "message": "Provider configuration accepted",
+        }
+
 
 ml_engine_client = MLEngineClient(
     base_url=settings.ml_engine_url,

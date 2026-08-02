@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # =============================================================================
 # VeriUnlearn — backup
-# Creates timestamped backups of PostgreSQL, MinIO buckets, and Qdrant storage.
+# Creates timestamped backups of PostgreSQL, Redis, MinIO, Qdrant, and the
+# backend/ml-engine app-data volumes.
 # Usage: ./scripts/backup.sh [--out DIR]
-# Output: ./backups/veriunlearn-YYYYMMDD-HHMMSS/{postgres.sql,minio/,qdrant/}
+# Output: ./backups/veriunlearn-YYYYMMDD-HHMMSS/{postgres.sql,minio/,qdrant/,redis.tgz,appdata/}
 # =============================================================================
 set -euo pipefail
 
@@ -50,6 +51,24 @@ if [ -n "$QDRANT_CONTAINER" ]; then
   docker exec "$QDRANT_CONTAINER" sh -c 'tar czf /tmp/qdrant.tgz -C /qdrant/storage .' || true
   docker cp "$QDRANT_CONTAINER":/tmp/qdrant.tgz "$DEST/qdrant.tgz" || echo "⚠ Qdrant backup skipped."
 fi
+
+echo "==> Backing up Redis (forced RDB snapshot) -> $DEST/redis"
+REDIS_CONTAINER="$(docker compose ps -q redis | head -n1)"
+if [ -n "$REDIS_CONTAINER" ]; then
+  docker exec "$REDIS_CONTAINER" sh -c 'redis-cli -a "$REDIS_PASSWORD" --no-auth-warning SAVE >/dev/null 2>&1; tar czf /tmp/redis.tgz -C /data .' || true
+  docker cp "$REDIS_CONTAINER":/tmp/redis.tgz "$DEST/redis.tgz" || echo "⚠ Redis backup skipped (cache/broker state is recoverable)."
+fi
+
+echo "==> Backing up app data volumes -> $DEST/appdata"
+mkdir -p "$DEST/appdata"
+for svc in backend ml-engine; do
+  CONTAINER="$(docker compose ps -q $svc | head -n1)"
+  if [ -n "$CONTAINER" ]; then
+    docker cp "$CONTAINER":/data "$DEST/appdata/$svc" 2>/dev/null \
+      && echo "    ($svc /data copied)" \
+      || echo "⚠ $svc app-data backup skipped (caches are reproducible)."
+  fi
+done
 
 echo "==> Writing manifest"
 cat > "$DEST/MANIFEST.txt" <<EOF

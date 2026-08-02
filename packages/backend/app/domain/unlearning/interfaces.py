@@ -2,11 +2,10 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from app.domain.unlearning.entities import (
-    UnlearningRequest,
-    UnlearningJob,
     DeletionQueueItem,
     ModelVersion,
-    ModelShard,
+    UnlearningJob,
+    UnlearningRequest,
 )
 
 

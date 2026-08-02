@@ -7,22 +7,19 @@ from typing import Any, Optional
 
 import httpx
 
-from app.core.config import settings
-from app.core.exceptions import NotFoundError, ConflictError
+from app.core.exceptions import NotFoundError
 from app.core.logging import get_logger
-from app.domain.auth.entities import Tenant
+from app.domain.audit.entities import ActorType, EventStatus, EventType
+from app.domain.audit.services import AuditService
 from app.domain.auth.interfaces import TenantRepository
 from app.domain.compliance.entities import (
+    DeliveryStatus,
     TenantSettings,
     Webhook,
     WebhookEventLog,
     WebhookStatus,
-    WebhookEventType,
-    DeliveryStatus,
 )
-from app.domain.compliance.interfaces import WebhookRepository, WebhookEventLogRepository
-from app.domain.audit.entities import EventType, ActorType, EventStatus
-from app.domain.audit.services import AuditService
+from app.domain.compliance.interfaces import WebhookEventLogRepository, WebhookRepository
 
 logger = get_logger(__name__)
 

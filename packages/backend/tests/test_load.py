@@ -89,7 +89,7 @@ async def test_api_response_time(async_client: Any, db_session: Any) -> None:
     times = []
     for _ in range(10):
         start = time.perf_counter()
-        resp = await async_client.get("/health/live")
+        await async_client.get("/health/live")
         elapsed = (time.perf_counter() - start) * 1000
         times.append(elapsed)
     avg = statistics.mean(times)

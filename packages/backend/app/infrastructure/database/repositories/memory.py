@@ -2,13 +2,13 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import func, or_, delete
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import select
 
-from app.domain.memory.entities import MemoryEntry, MemoryType, MemoryCategory
+from app.domain.memory.entities import MemoryEntry, MemoryType
 from app.domain.memory.interfaces import MemoryRepository
-from app.infrastructure.database.models import MemoryEntryModel, MemoryConfigModel
+from app.infrastructure.database.models import MemoryConfigModel, MemoryEntryModel
 
 
 class SQLAlchemyMemoryRepository(MemoryRepository):

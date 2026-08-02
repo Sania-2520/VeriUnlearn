@@ -1,9 +1,9 @@
 import json
 import time
-from typing import Any, Optional
 from datetime import timedelta
+from typing import Any, Optional
 
-import redis.asyncio as aioredis
+import redis.asyncio as aioredis  # type: ignore[import-untyped]  # no stubs shipped
 
 from app.core.config import settings
 
@@ -39,7 +39,6 @@ class InMemoryRedis:
     async def scan(self, cursor=0, match=None, count=None):
         keys = list(self._store.keys())
         if match:
-            import fnmatch
             pattern = match.replace("*", "")
             keys = [k for k in keys if pattern in k]
         return 0, keys
@@ -114,7 +113,7 @@ class CacheManager:
     def redis(self) -> aioredis.Redis:
         if not self._redis:
             raise RuntimeError("Redis not initialized. Call initialize() first.")
-        return self._redis
+        return self._redis  # type: ignore[no-any-return]  # redis untyped
 
     async def get(self, key: str) -> Optional[Any]:
         value = await self.redis.get(key)
@@ -152,13 +151,13 @@ class CacheManager:
                 break
 
     async def exists(self, key: str) -> bool:
-        return await self.redis.exists(key) > 0
+        return await self.redis.exists(key) > 0  # type: ignore[no-any-return]  # redis untyped
 
     async def ttl(self, key: str) -> int:
-        return await self.redis.ttl(key)
+        return await self.redis.ttl(key)  # type: ignore[no-any-return]  # redis untyped
 
     async def incr(self, key: str) -> int:
-        return await self.redis.incr(key)
+        return await self.redis.incr(key)  # type: ignore[no-any-return]  # redis untyped
 
     async def expire(self, key: str, ttl: int) -> None:
         await self.redis.expire(key, ttl)

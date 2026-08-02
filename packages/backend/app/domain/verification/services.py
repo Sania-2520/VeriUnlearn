@@ -1,18 +1,17 @@
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from app.core.config import settings
 from app.core.exceptions import NotFoundError
 from app.core.logging import get_logger
+from app.domain.audit.entities import ActorType, EventStatus, EventType
+from app.domain.audit.services import AuditService
 from app.domain.verification.entities import (
     DeletionProof,
-    ProofVerification,
     ProofType,
+    ProofVerification,
 )
 from app.domain.verification.interfaces import DeletionProofRepository, ProofVerificationRepository
-from app.domain.audit.entities import EventType, ActorType, EventStatus
-from app.domain.audit.services import AuditService
-from app.infrastructure.external.ml_engine import ml_engine_client, MLEngineClientError
+from app.infrastructure.external.ml_engine import MLEngineClientError, ml_engine_client
 
 logger = get_logger(__name__)
 

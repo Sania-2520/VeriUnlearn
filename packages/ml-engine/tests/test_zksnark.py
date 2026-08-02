@@ -1,13 +1,13 @@
 import pytest
 
-from verification.zksnark_service import (
-    ZKProofService,
-    ZKProof,
-    ZKVerificationKey,
-    ZKProvingKey,
-    ZKProofError,
-)
 from verification.merkle_tree import MerkleTree
+from verification.zksnark_service import (
+    ZKProof,
+    ZKProofError,
+    ZKProofService,
+    ZKProvingKey,
+    ZKVerificationKey,
+)
 
 
 class TestZKProvingKey:

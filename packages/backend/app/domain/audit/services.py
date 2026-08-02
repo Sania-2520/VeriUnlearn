@@ -1,17 +1,15 @@
 import hashlib
 import json
-from datetime import datetime, timezone
 from typing import Any, Optional
 
+from app.core.logging import get_logger
 from app.domain.audit.entities import (
-    AuditEvent,
-    AuditChainHead,
-    EventType,
     ActorType,
+    AuditEvent,
     EventStatus,
+    EventType,
 )
 from app.domain.audit.interfaces import AuditEventRepository
-from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 

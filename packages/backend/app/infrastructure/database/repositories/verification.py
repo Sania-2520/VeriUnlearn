@@ -1,13 +1,17 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import select, func, desc, update
+from sqlalchemy import desc, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.verification.entities import (
     DeletionProof as DeletionProofEntity,
-    ProofVerification as ProofVerificationEntity,
+)
+from app.domain.verification.entities import (
     ProofType,
+)
+from app.domain.verification.entities import (
+    ProofVerification as ProofVerificationEntity,
 )
 from app.domain.verification.interfaces import DeletionProofRepository, ProofVerificationRepository
 from app.infrastructure.database.models import DeletionProofModel, ProofVerificationModel

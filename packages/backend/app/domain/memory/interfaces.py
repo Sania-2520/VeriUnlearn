@@ -29,7 +29,7 @@ class MemoryRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_config(self, tenant_id: str) -> dict:
+    async def get_config(self, tenant_id: str) -> Optional[dict]:
         ...
 
     @abstractmethod

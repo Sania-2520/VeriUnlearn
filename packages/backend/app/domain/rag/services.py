@@ -1,8 +1,12 @@
-from typing import Any, Optional
+from typing import Optional
 
-from app.domain.rag.entities import Document, DocumentChunk, DocumentStatus, SearchResult
-from app.domain.rag.interfaces import DocumentRepository, DocumentChunkRepository, VectorSearchService
 from app.core.logging import get_logger
+from app.domain.rag.entities import Document, SearchResult
+from app.domain.rag.interfaces import (
+    DocumentChunkRepository,
+    DocumentRepository,
+    VectorSearchService,
+)
 
 logger = get_logger(__name__)
 

@@ -1,6 +1,6 @@
 import pytest
 
-from training.adapter_lifecycle import AdapterLifecycleManager, LifecycleConfig, AdapterStatus
+from training.adapter_lifecycle import AdapterLifecycleManager, AdapterStatus, LifecycleConfig
 
 
 class TestAdapterLifecycle:

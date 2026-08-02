@@ -1,7 +1,6 @@
 import time
 import uuid
 from dataclasses import dataclass
-from typing import Optional
 
 from fastapi import HTTPException, Request, status
 

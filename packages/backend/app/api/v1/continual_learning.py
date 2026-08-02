@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from app.api.deps import CurrentUser, DatabaseSession, default_rate_limiter, require_permission
 from app.core.logging import get_logger
 from app.core.rbac import Permission
-from app.infrastructure.external.ml_engine import ml_engine_client, MLEngineClientError
+from app.infrastructure.external.ml_engine import MLEngineClientError, ml_engine_client
 
 logger = get_logger(__name__)
 
@@ -58,13 +58,15 @@ async def record_sample(
 ):
     try:
         return await ml_engine_client.record_continual_sample(
-            input_data=request.input_data,
-            target=request.target,
-            task_id=request.task_id,
-            importance=request.importance,
-            confidence=request.confidence,
-            loss=request.loss,
-            metadata=request.metadata,
+            {
+                "input_data": request.input_data,
+                "target": request.target,
+                "task_id": request.task_id,
+                "importance": request.importance,
+                "confidence": request.confidence,
+                "loss": request.loss,
+                "metadata": request.metadata,
+            }
         )
     except MLEngineClientError as e:
         logger.error("Record sample failed: %s", str(e))

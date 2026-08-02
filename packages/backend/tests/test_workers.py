@@ -1,10 +1,19 @@
-import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
 from datetime import datetime, timezone
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.infrastructure.database.models import Base, UnlearningRequestModel, UnlearningJobModel, WebhookModel
+import pytest
+from app.infrastructure.database.models import (
+    Base,
+    UnlearningJobModel,
+    UnlearningRequestModel,
+    WebhookModel,
+)
 from app.workers.session import _sync_engine, _SyncSessionLocal
-from app.workers.unlearning_tasks import execute_unlearning, generate_deletion_proof, cleanup_deletion_queue
+from app.workers.unlearning_tasks import (
+    cleanup_deletion_queue,
+    execute_unlearning,
+    generate_deletion_proof,
+)
 
 
 @pytest.fixture(scope="module", autouse=True)

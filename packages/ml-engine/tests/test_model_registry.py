@@ -5,9 +5,9 @@ import tempfile
 import pytest
 
 from training.model_registry import (
+    ModelRegistry,
     ModelVersion,
     RegistryConfig,
-    ModelRegistry,
 )
 
 

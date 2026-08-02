@@ -1,9 +1,10 @@
 import base64
-import os
 import hashlib
+import os
 from typing import Any, Optional
 
 from cryptography.fernet import Fernet
+
 from app.core.config import settings
 from app.core.logging import get_logger
 
@@ -22,7 +23,7 @@ class SecretsManager:
 
     def _init_vault(self) -> None:
         try:
-            import hvac
+            import hvac  # type: ignore[import-not-found]  # optional Vault dep, guarded by ImportError
             self._vault_client = hvac.Client(
                 url=settings.vault_url,
                 token=settings.vault_token,
@@ -45,7 +46,7 @@ class SecretsManager:
                     mount_point="secret",
                 )
                 data = secret.get("data", {}).get("data", {})
-                return data.get(key, os.getenv(key, default))
+                return data.get(key, os.getenv(key, default))  # type: ignore[no-any-return]  # hvac untyped
             except Exception as e:
                 logger.error("Failed to read secret '%s' from Vault: %s", key, e)
         return os.getenv(key, default)

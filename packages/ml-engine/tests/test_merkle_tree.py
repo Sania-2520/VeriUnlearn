@@ -1,4 +1,5 @@
 import pytest
+
 from verification.merkle_tree import MerkleTree
 
 

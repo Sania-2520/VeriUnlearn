@@ -1,27 +1,27 @@
 from fastapi import APIRouter
 
+from app.api.v1.adapters import router as adapters_router
+from app.api.v1.admin import router as admin_router
+from app.api.v1.api_keys import router as api_keys_router
+from app.api.v1.audit import router as audit_router
 from app.api.v1.auth import router as auth_router
+from app.api.v1.benchmarks import router as benchmarks_router
 from app.api.v1.chat import router as chat_router
-from app.api.v1.users import router as users_router
-from app.api.v1.providers import router as providers_router
-from app.api.v1.rag import router as rag_router
+from app.api.v1.compliance import router as compliance_router
+from app.api.v1.continual_learning import router as continual_learning_router
+from app.api.v1.datasets import router as datasets_router
+from app.api.v1.experiments import router as experiments_router
+from app.api.v1.explainability import router as explainability_router
 from app.api.v1.memory import router as memory_router
 from app.api.v1.models import router as models_router
 from app.api.v1.monitoring import router as monitoring_router
-from app.api.v1.unlearning import router as unlearning_router
-from app.api.v1.verification import router as verification_router
+from app.api.v1.providers import router as providers_router
+from app.api.v1.rag import router as rag_router
 from app.api.v1.security import router as security_router
-from app.api.v1.audit import router as audit_router
-from app.api.v1.compliance import router as compliance_router
-from app.api.v1.admin import router as admin_router
-from app.api.v1.api_keys import router as api_keys_router
-from app.api.v1.explainability import router as explainability_router
-from app.api.v1.adapters import router as adapters_router
 from app.api.v1.training import router as training_router
-from app.api.v1.continual_learning import router as continual_learning_router
-from app.api.v1.benchmarks import router as benchmarks_router
-from app.api.v1.experiments import router as experiments_router
-from app.api.v1.datasets import router as datasets_router
+from app.api.v1.unlearning import router as unlearning_router
+from app.api.v1.users import router as users_router
+from app.api.v1.verification import router as verification_router
 
 router = APIRouter()
 

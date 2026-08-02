@@ -255,7 +255,7 @@ The backend proxies to the ML engine via the `MLEngineClient` (httpx). Direct en
 | Registry | POST/GET | `/registry/versions`, `/registry/versions/{name}/{id}/rollback` |
 | System | GET | `/health`, `/controller/health`, `/mlflow/runs` |
 
-See [api-reference.md](api-reference.md) for the exhaustive table.
+See [api-reference.md](API_REFERENCE.md) for the exhaustive table.
 
 ---
 

@@ -1,4 +1,3 @@
-import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
@@ -11,37 +10,34 @@ def ensure_aware(dt: Optional[datetime]) -> Optional[datetime]:
     return dt
 
 
-from app.domain.auth.entities import (
-    User,
-    Session,
-    Tenant,
-    OAuthAccount,
-    UserRole,
-    TenantPlan,
-)
-from app.domain.auth.interfaces import (
-    UserRepository,
-    SessionRepository,
-    TenantRepository,
-)
-from app.domain.audit.services import AuditService
-from app.domain.audit.entities import EventType, ActorType, EventStatus
-from app.core.security import (
-    hash_password,
-    verify_password,
-    token_manager,
-    generate_secure_token,
-)
+from app.core.cache import cache
 from app.core.config import settings
 from app.core.exceptions import (
     AuthenticationError,
-    NotFoundError,
     ConflictError,
-    AuthorizationError,
+    NotFoundError,
 )
-from app.core.cache import cache
-from app.infrastructure.external.email_service import email_service
 from app.core.logging import get_logger
+from app.core.security import (
+    generate_secure_token,
+    hash_password,
+    token_manager,
+    verify_password,
+)
+from app.domain.audit.entities import ActorType, EventStatus, EventType
+from app.domain.audit.services import AuditService
+from app.domain.auth.entities import (
+    Session,
+    Tenant,
+    User,
+    UserRole,
+)
+from app.domain.auth.interfaces import (
+    SessionRepository,
+    TenantRepository,
+    UserRepository,
+)
+from app.infrastructure.external.email_service import email_service
 
 logger = get_logger(__name__)
 
@@ -308,10 +304,10 @@ class AuthService:
         if not session or session.is_revoked:
             raise AuthenticationError("Invalid or revoked refresh token")
 
-        if ensure_aware(session.expires_at) < datetime.now(timezone.utc):
+        expires_at = ensure_aware(session.expires_at)
+        if expires_at is None or expires_at < datetime.now(timezone.utc):
             await self._session_repo.revoke(session.id)
             raise AuthenticationError("Refresh token expired")
-
         await self._session_repo.revoke(session.id)
 
         user = await self._user_repo.get_by_id(session.user_id)

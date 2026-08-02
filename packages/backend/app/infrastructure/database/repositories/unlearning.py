@@ -1,34 +1,41 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import select, func, desc, update as sa_update
+from sqlalchemy import desc, func, select
+from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.unlearning.entities import (
-    UnlearningRequest as UnlearningRequestEntity,
-    UnlearningJob as UnlearningJobEntity,
-    DeletionQueueItem as DeletionQueueItemEntity,
-    ModelVersion as ModelVersionEntity,
-    ModelShard as ModelShardEntity,
-    UnlearningStatus,
-    TargetType,
-    UnlearningPriority,
-    UnlearningAlgorithm,
-    DeletionResourceType,
     DeletionOperation,
+    DeletionResourceType,
+    TargetType,
+    UnlearningAlgorithm,
+    UnlearningPriority,
+    UnlearningStatus,
+)
+from app.domain.unlearning.entities import (
+    DeletionQueueItem as DeletionQueueItemEntity,
+)
+from app.domain.unlearning.entities import (
+    ModelVersion as ModelVersionEntity,
+)
+from app.domain.unlearning.entities import (
+    UnlearningJob as UnlearningJobEntity,
+)
+from app.domain.unlearning.entities import (
+    UnlearningRequest as UnlearningRequestEntity,
 )
 from app.domain.unlearning.interfaces import (
-    UnlearningRequestRepository,
-    UnlearningJobRepository,
     DeletionQueueRepository,
     ModelVersionRepository,
+    UnlearningJobRepository,
+    UnlearningRequestRepository,
 )
 from app.infrastructure.database.models import (
-    UnlearningRequestModel,
-    UnlearningJobModel,
     DeletionQueueItemModel,
     ModelVersionModel,
-    ModelShardModel,
+    UnlearningJobModel,
+    UnlearningRequestModel,
 )
 
 

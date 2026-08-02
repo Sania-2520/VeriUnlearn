@@ -6,14 +6,14 @@ from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.dialects.postgresql import INET, UUID
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.dialects.postgresql import INET, UUID
 
 
 @compiles(INET, "sqlite")
@@ -46,9 +46,9 @@ os.environ.setdefault("GITHUB_CLIENT_ID", "test-id")
 os.environ.setdefault("GITHUB_CLIENT_SECRET", "test-secret")
 os.environ.setdefault("GITHUB_REDIRECT_URI", "http://localhost:8000/callback")
 
-from app.main import app
-from app.core.database import Base, db, get_db
 from app.core.cache import cache
+from app.core.database import Base, db, get_db
+from app.main import app
 
 
 class MockPipeline:

@@ -5,8 +5,8 @@ import torch
 from torch import Tensor, nn
 from torch.optim import Adam
 
-from models.single_model import SingleModel
 from models.sharded_classifier import ShardedModel
+from models.single_model import SingleModel
 from training.data import Dataset
 
 logger = logging.getLogger(__name__)

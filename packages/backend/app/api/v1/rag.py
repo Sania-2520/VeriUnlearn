@@ -2,15 +2,15 @@ from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from pydantic import BaseModel
-from sqlalchemy import select, func, desc, or_, and_, update as sa_update
+from sqlalchemy import desc, func, select
 
 from app.api.deps import CurrentUser, DatabaseSession, default_rate_limiter, require_permission
 from app.core.logging import get_logger
 from app.core.rbac import Permission
 from app.infrastructure.database.models import RagDocumentModel
-from app.infrastructure.external.ml_engine import ml_engine_client, MLEngineClientError
+from app.infrastructure.external.ml_engine import MLEngineClientError, ml_engine_client
 
 logger = get_logger(__name__)
 
@@ -48,6 +48,7 @@ async def upload_document(
 ):
     import json as _json
     import os
+
     from app.core.config import settings
 
     if file.content_type and file.content_type not in ALLOWED_MIME_TYPES:

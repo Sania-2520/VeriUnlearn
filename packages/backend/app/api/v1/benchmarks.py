@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Optional
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -8,8 +8,7 @@ from pydantic import BaseModel
 from app.api.deps import CurrentUser, DatabaseSession, default_rate_limiter, require_permission
 from app.core.logging import get_logger
 from app.core.rbac import Permission
-from app.core.config import settings
-from app.infrastructure.external.ml_engine import ml_engine_client, MLEngineClientError
+from app.infrastructure.external.ml_engine import MLEngineClientError, ml_engine_client
 
 logger = get_logger(__name__)
 

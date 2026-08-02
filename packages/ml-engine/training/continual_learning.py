@@ -4,9 +4,9 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+from training.drift_detector import DriftAlert, DriftConfig, DriftDetector
 from training.ewc import ElasticWeightConsolidation
 from training.replay_buffer import ReplayBuffer, ReplayBufferConfig
-from training.drift_detector import DriftDetector, DriftConfig, DriftAlert
 
 logger = logging.getLogger(__name__)
 

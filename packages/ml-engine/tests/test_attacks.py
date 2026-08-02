@@ -1,11 +1,11 @@
 import pytest
 import torch
 
-from training.data import generate_synthetic_data, Dataset
 from models.single_model import SingleModel
+from security.attacks.model_extraction import ModelExtractionAttack
 from security.attacks.model_inversion import ModelInversionAttack
 from security.attacks.shadow_mia import ShadowModelMIA
-from security.attacks.model_extraction import ModelExtractionAttack
+from training.data import Dataset, generate_synthetic_data
 
 
 @pytest.fixture

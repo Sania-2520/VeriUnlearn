@@ -274,13 +274,49 @@
   }
 }
 
+  @keyframes vu-tour-pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
+  }
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration: 0.001ms !important;
+    animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
+    transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Keyboard focus indicators */
+:focus-visible {
+  outline: 2px solid var(--color-accent, var(--accent));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Print styles */
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; color: black; }
+  a[href]::after { content: " (" attr(href) ")"; }
+}
+
+/* Responsive breakpoint tokens */
+:root {
+  --bp-sm: 640px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1280px;
+  --bp-2xl: 1536px;
 }

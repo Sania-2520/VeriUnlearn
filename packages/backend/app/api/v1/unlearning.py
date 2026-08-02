@@ -3,19 +3,16 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.deps import (
-    CurrentUser,
-    DatabaseSession,
     TenantID,
     UnlearningServiceDep,
-    default_rate_limiter,
     require_permission,
 )
-from app.core.logging import get_logger
-from app.core.rbac import Permission
-from app.core.rate_limiter import make_rate_limiter, parse_rate_limit
 from app.core.config import settings
-from app.domain.unlearning.entities import TargetType, UnlearningPriority, UnlearningAlgorithm
-from app.infrastructure.external.ml_engine import ml_engine_client, MLEngineClientError
+from app.core.logging import get_logger
+from app.core.rate_limiter import make_rate_limiter, parse_rate_limit
+from app.core.rbac import Permission
+from app.domain.unlearning.entities import TargetType, UnlearningAlgorithm, UnlearningPriority
+from app.infrastructure.external.ml_engine import MLEngineClientError, ml_engine_client
 from app.workers.unlearning_tasks import dispatch_unlearning_workflow
 
 logger = get_logger(__name__)

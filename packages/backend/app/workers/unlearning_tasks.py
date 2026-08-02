@@ -1,15 +1,12 @@
 import uuid
-from typing import Any
-
-from celery import Task, chain
+from datetime import datetime, timezone
 
 from app.core.logging import get_logger
-from app.infrastructure.external.ml_engine import ml_engine_client, MLEngineClientError
-from app.infrastructure.database.models import UnlearningRequestModel, UnlearningJobModel
+from app.infrastructure.database.models import UnlearningJobModel, UnlearningRequestModel
+from app.infrastructure.external.ml_engine import MLEngineClientError, ml_engine_client
 from app.workers.celery_app import celery_app
 from app.workers.session import worker_session
 from app.workers.utils import _run_async
-from datetime import datetime, timezone
 
 logger = get_logger(__name__)
 
@@ -27,7 +24,7 @@ def execute_unlearning(self, request_id: str) -> dict:
             req.status = "processing"
             session.flush()
 
-            result = _run_async(ml_engine_client.execute_unlearning(
+            result: dict = _run_async(ml_engine_client.execute_unlearning(
                 target_data_ids=[req.target_id],
                 model_type=req.target_type or "transformer",
                 data_size=1,
@@ -77,7 +74,7 @@ def generate_deletion_proof(self, prev_result: dict) -> dict:
             target_id = request_id
 
         try:
-            proof = _run_async(ml_engine_client.generate_proof(
+            proof: dict = _run_async(ml_engine_client.generate_proof(
                 deletion_steps=[target_id or job_id or request_id],
                 algorithm="ed25519",
             ))
@@ -101,6 +98,7 @@ def generate_deletion_proof(self, prev_result: dict) -> dict:
 def cleanup_deletion_queue(self) -> dict:
     logger.info("Cleaning up deletion queue")
     with worker_session() as session:
+        from app.core.metrics import deletion_queue_size, unlearning_queue_size
         from app.infrastructure.database.models import DeletionQueueItemModel
 
         stale = (
@@ -108,7 +106,15 @@ def cleanup_deletion_queue(self) -> dict:
             .filter(DeletionQueueItemModel.status == "pending")
             .count()
         )
-        return {"status": "completed", "stale_items": stale}
+        deletion_queue_size.labels(status="pending").set(stale)
+
+        pending_requests = (
+            session.query(UnlearningRequestModel)
+            .filter(UnlearningRequestModel.status == "pending")
+            .count()
+        )
+        unlearning_queue_size.labels(status="pending").set(pending_requests)
+        return {"status": "completed", "stale_items": stale, "pending_requests": pending_requests}
 
 
 @celery_app.task(bind=True, name="unlearning.generate_compliance_report")
@@ -141,7 +147,7 @@ def dispatch_unlearning_workflow(request_id: str) -> dict:
 
     Chain: execute_unlearning → generate_deletion_proof → generate_compliance_report
     """
-    from celery import chain as celery_chain
+    from celery import chain as celery_chain  # type: ignore[import-untyped]  # no stubs shipped
 
     workflow = celery_chain(
         execute_unlearning.s(request_id=request_id),

@@ -4,8 +4,8 @@ from typing import Optional
 import torch
 from torch import Tensor
 
-from models.single_model import SingleModel
 from models.sharded_classifier import ShardedModel
+from models.single_model import SingleModel
 from training.data import Dataset
 
 

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from app.domain.audit.entities import AuditEvent, AuditChainHead
+from app.domain.audit.entities import AuditChainHead, AuditEvent
 
 
 class AuditEventRepository(ABC):

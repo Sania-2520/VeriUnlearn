@@ -1,24 +1,22 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from contextlib import asynccontextmanager
 
 import sqlalchemy
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
-from app.core.config import settings
-from app.core.events import register_lifespan_events
-from app.core.exception_handlers import register_error_handlers
-from app.core.middleware import setup_middleware
 from app.api.v1 import router as api_v1_router
-
+from app.core.config import settings
+from app.core.exception_handlers import register_error_handlers
 from app.core.logging import get_logger
+from app.core.middleware import setup_middleware
 
 logger = get_logger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from app.core.events import startup_event, shutdown_event
+    from app.core.events import shutdown_event, startup_event
     await startup_event(app)
     yield
     await shutdown_event(app)
@@ -66,12 +64,23 @@ setup_middleware(app)
 app.include_router(api_v1_router, prefix="/api/v1")
 
 
+@app.get("/metrics", tags=["Monitoring"], include_in_schema=False)
+async def metrics_endpoint():
+    from fastapi.responses import Response
+    from prometheus_client import CONTENT_TYPE_LATEST
+
+    from app.core.metrics import metrics_body
+
+    return Response(content=metrics_body(), media_type=CONTENT_TYPE_LATEST)
+
+
 @app.get("/health", tags=["Health"])
 async def health_check():
     import time
+    from datetime import datetime, timezone
+
     from app.core.cache import cache
     from app.core.database import db
-    from datetime import datetime, timezone
 
     health_status = {
         "status": "healthy",

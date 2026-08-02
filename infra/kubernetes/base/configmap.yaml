@@ -30,8 +30,7 @@ data:
   # ── Backend Configuration ─────────────────────────────────────────────────
   BACKEND_HOST: "0.0.0.0"
   BACKEND_PORT: "8000"
-  ML_ENGINE_HOST: "ml-engine"
-  ML_ENGINE_PORT: "8001"
+  ML_ENGINE_URL: "http://ml-engine:8000"
   FRONTEND_URL: "https://veriunlearn.example.com"
 
   # ── Celery / Task Queue ──────────────────────────────────────────────────

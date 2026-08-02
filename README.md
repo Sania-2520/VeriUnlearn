@@ -202,18 +202,19 @@ All configuration is environment-driven (see [`.env.example`](.env.example)). Ke
 | [Architecture](docs/architecture.md) | System architecture, services, data flow, phases |
 | [Architecture Diagrams](docs/diagrams.md) | Mermaid: context, sequence, ER, folder structure |
 | [API Reference](docs/api.md) | Full API + Swagger + request/response examples |
-| [API Endpoints](docs/api-reference.md) | Exhaustive endpoint tables (backend + ML engine) |
+| [API Endpoints](docs/API_REFERENCE.md) | Exhaustive endpoint tables (backend + ML engine) |
 | [Developer Guide](docs/developer-guide.md) | Dev setup, code standards, workflows |
 | [Deployment Guide](docs/production-deployment.md) | Production deployment (Docker/K8s/Terraform) |
+| [Disaster Recovery](docs/disaster-recovery.md) | Backup/restore procedures, RPO/RTO, recovery scenarios |
 | [Machine Unlearning Guide](docs/machine-unlearning-guide.md) | Algorithms, pipeline, rollback |
 | [Verification Guide](docs/verification-guide.md) | Merkle, Ed25519, zk-SNARK, trust score |
-| [Benchmark Guide](docs/benchmark-guide.md) | Datasets, metrics, leaderboards |
+| [Benchmark Guide](docs/BENCHMARK_GUIDE.md) | Datasets, metrics, leaderboards |
 | [Governance Guide](docs/governance-guide.md) | Consent, policy, approval, risk, lineage |
 | [Compliance Guide](docs/compliance-guide.md) | GDPR/CCPA/DPDP, webhooks, audit evidence |
-| [Security Guide](docs/security-guide.md) | Threat model and security practices |
+| [Security Guide](docs/SECURITY_GUIDE.md) | Threat model and security practices |
 | [User Manual](docs/user-manual.md) | End-user documentation |
 | [Contributing](docs/contributing.md) | How to contribute |
-| [Troubleshooting](docs/troubleshooting-guide.md) | Common issues and solutions |
+| [Troubleshooting](docs/TROUBLESHOOTING_GUIDE.md) | Common issues and solutions |
 | [Research](docs/research/) | IEEE paper structure and contributions |
 | [Architecture Decision Records](docs/adr/) | 14 ADRs documenting all key decisions |
 | [Future Roadmap](docs/FUTURE_ROADMAP.md) | Phases 7–12 research roadmap |
@@ -233,7 +234,7 @@ All configuration is environment-driven (see [`.env.example`](.env.example)). Ke
 | `POST /api/v1/benchmarks/run` | Run benchmark suite |
 | `POST /api/v1/explain/samples` | Explain model predictions |
 
-Full docs at `/api/docs` (backend running) or [docs/api-reference.md](docs/api-reference.md).
+Full docs at `/api/docs` (backend running) or [docs/API_REFERENCE.md](docs/API_REFERENCE.md).
 
 ---
 

@@ -1,9 +1,9 @@
 from fastapi import FastAPI
+
+from app.core.cache import cache
 from app.core.config import settings
 from app.core.database import db
-from app.core.cache import cache
-from app.core.logging import logger_manager
-from app.core.logging import get_logger
+from app.core.logging import get_logger, logger_manager
 
 logger = get_logger(__name__)
 
@@ -24,7 +24,6 @@ async def startup_event(app: FastAPI) -> None:
 
     if settings.database_url.startswith("sqlite"):
         from app.core.database import Base
-        import app.infrastructure.database.models
         async with db.engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         logger.info("SQLite database tables created/verified")

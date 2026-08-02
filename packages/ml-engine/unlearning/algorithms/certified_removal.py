@@ -4,8 +4,8 @@ from typing import Optional
 
 import torch
 
-from training.data import Dataset, accuracy_score, generate_synthetic_data
 from models.single_model import SingleModel
+from training.data import Dataset, accuracy_score, generate_synthetic_data
 from unlearning.algorithms.base import UnlearningAlgorithm, UnlearningContext, UnlearningResult
 
 

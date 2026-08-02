@@ -38,7 +38,7 @@ spec:
           imagePullPolicy: Always
           ports:
             - name: http
-              containerPort: 8001
+              containerPort: 8000
               protocol: TCP
           envFrom:
             - configMapRef:

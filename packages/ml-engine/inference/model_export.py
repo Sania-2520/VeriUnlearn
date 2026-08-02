@@ -6,8 +6,8 @@ from typing import Any, Optional
 
 import torch
 
-from models.single_model import SingleModel, SimpleNet
 from models.sharded_classifier import ShardedModel, ShardNet
+from models.single_model import SimpleNet, SingleModel
 
 logger = logging.getLogger(__name__)
 

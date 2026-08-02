@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "veriunlearn.fullname" . }}-celery-worker
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "veriunlearn.labels" . | nindent 4 }}
+    app.kubernetes.io/component: celery-worker
+spec:
+  {{- if not .Values.autoscaling.celeryWorker.enabled }}
+  replicas: {{ .Values.replicaCount.celeryWorker }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "veriunlearn.celeryWorker.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "veriunlearn.celeryWorker.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "veriunlearn.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: celery-worker
+          image: {{ include "veriunlearn.image" (dict "global" .Values.image "repository" .Values.image.celeryWorker.repository "tag" .Values.image.celeryWorker.tag) }}
+          imagePullPolicy: {{ .Values.image.celeryWorker.pullPolicy }}
+          command:
+            - celery
+            - -A
+            - app.workers.celery_app
+            - worker
+            - --loglevel=info
+            - --concurrency=4
+            - -Q
+            - default,model_training,verification
+          envFrom:
+            - configMapRef:
+                name: {{ include "veriunlearn.fullname" . }}-config
+            - secretRef:
+                name: {{ include "veriunlearn.fullname" . }}-secret
+          env:
+            - name: CELERY_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            {{- toYaml .Values.resources.celeryWorker | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          volumeMounts:
+            - name: worker-data
+              mountPath: /app/data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: worker-data
+          persistentVolumeClaim:
+            claimName: {{ include "veriunlearn.fullname" . }}-celery-worker-data
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.nodeSelector.celeryWorker }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations.celeryWorker }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              {{- include "veriunlearn.celeryWorker.selectorLabels" . | nindent 14 }}

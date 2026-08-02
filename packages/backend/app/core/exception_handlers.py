@@ -6,7 +6,6 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError as PydanticValidationError
 
-from app.core.config import settings
 from app.core.exceptions import VeriUnlearnError
 from app.core.logging import get_logger
 
@@ -143,8 +142,8 @@ async def not_found_error_handler(
 
 
 def register_error_handlers(app: FastAPI) -> None:
-    app.add_exception_handler(VeriUnlearnError, veriunlearn_error_handler)
-    app.add_exception_handler(RequestValidationError, validation_error_handler)
-    app.add_exception_handler(PydanticValidationError, pydantic_validation_error_handler)
+    app.add_exception_handler(VeriUnlearnError, veriunlearn_error_handler)  # type: ignore[arg-type]  # Starlette handler signature is broader
+    app.add_exception_handler(RequestValidationError, validation_error_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(PydanticValidationError, pydantic_validation_error_handler)  # type: ignore[arg-type]
     app.add_exception_handler(404, not_found_error_handler)
     app.add_exception_handler(Exception, generic_error_handler)

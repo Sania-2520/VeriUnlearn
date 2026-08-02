@@ -1,10 +1,10 @@
-import pytest
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
-from app.domain.audit.entities import AuditEvent, AuditChainHead, EventType, ActorType, EventStatus
+import pytest
+from app.domain.audit.entities import ActorType, AuditEvent, EventStatus, EventType
 from app.domain.audit.services import AuditService
-from app.infrastructure.external.blockchain import SimulatedBlockchain, BlockchainAnchoringService
+from app.infrastructure.external.blockchain import BlockchainAnchoringService, SimulatedBlockchain
 
 
 @pytest.fixture

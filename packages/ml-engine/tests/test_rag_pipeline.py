@@ -1,19 +1,19 @@
 import json
 import os
 import tempfile
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from training.rag_pipeline import (
-    DocumentChunk,
     Document,
-    RAGConfig,
-    TextChunker,
+    DocumentChunk,
     DocumentProcessor,
     EmbeddingService,
-    VectorStore,
+    RAGConfig,
     RAGPipeline,
+    TextChunker,
+    VectorStore,
 )
 
 

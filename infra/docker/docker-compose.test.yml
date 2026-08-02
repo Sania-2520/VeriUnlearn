@@ -36,7 +36,7 @@ services:
       - REDIS_URL=redis://:veriunlearn@test-redis:6379/0
       - CELERY_BROKER_URL=redis://:veriunlearn@test-redis:6379/1
       - CELERY_RESULT_BACKEND=redis://:veriunlearn@test-redis:6379/2
-      - ML_ENGINE_URL=http://test-ml-engine:8001
+      - ML_ENGINE_URL=http://test-ml-engine:8000
       - SECRET_KEY=test-secret-key-for-ci-at-least-32-chars!!
       - APP_SECRET_KEY=test-secret-key-for-ci-at-least-32-chars!!
       - JWT_SECRET_KEY=test-jwt-secret-for-ci-at-least-32-chars!!

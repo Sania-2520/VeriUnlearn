@@ -35,7 +35,7 @@ spec:
           command:
             - celery
             - -A
-            - app.core.celery_app
+            - app.workers.celery_app
             - worker
             - --loglevel=info
             - --concurrency=4

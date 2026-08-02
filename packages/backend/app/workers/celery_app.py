@@ -1,5 +1,5 @@
-from celery import Celery
-from celery.schedules import crontab
+from celery import Celery  # type: ignore[import-untyped]  # no stubs shipped
+from celery.schedules import crontab  # type: ignore[import-untyped]  # no stubs shipped
 
 from app.core.config import settings
 

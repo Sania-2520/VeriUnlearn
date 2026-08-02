@@ -1,5 +1,5 @@
 import pytest
-from app.core.config import Settings, Environment
+from app.core.config import Environment, Settings
 
 _VALID_SECRET = "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
 _VALID_JWT = "jwt-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"

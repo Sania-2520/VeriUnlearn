@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
+import * as React from "react";
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -8,14 +9,15 @@ jest.mock("next/navigation", () => ({
 }));
 
 jest.mock("next/link", () => {
-  const React = require("react");
-  return React.forwardRef(function MockLink({ children, href, ...props }, ref) {
-    return (
-      <a ref={ref} href={href} {...props}>
+  const MockLink = React.forwardRef<HTMLAnchorElement, React.AnchorHTMLAttributes<HTMLAnchorElement>>(
+    ({ children, href, ...props }, ref) => (
+      <a ref={ref} href={href as string} {...props}>
         {children}
       </a>
-    );
-  });
+    )
+  );
+  MockLink.displayName = "MockLink";
+  return MockLink;
 });
 
 jest.mock("@/lib/store/auth-store", () => ({

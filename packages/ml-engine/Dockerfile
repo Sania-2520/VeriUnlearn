@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # ─── Runtime Stage ─────────────────────────────────────────
 # Default is a slim CPU image (BASE_IMAGE ARG set above). Pass --build-arg BASE_IMAGE=nvidia/cuda:... for GPU support.
@@ -22,11 +22,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -r veriunlearn && useradd -r -g veriunlearn -d /app -s /sbin/nologin veriunlearn
 
-COPY --from=builder /root/.local /root/.local
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --chown=veriunlearn:veriunlearn . .
 
-ENV PATH=/root/.local/bin:$PATH \
-    PYTHONPATH=/app \
+ENV PYTHONPATH=/app \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 

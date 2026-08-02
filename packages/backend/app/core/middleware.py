@@ -4,10 +4,9 @@ from typing import Awaitable, Callable
 
 from fastapi import FastAPI, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
 
-from app.core.config import settings
 from app.core.logging import get_logger
+from app.core.metrics import http_request_duration_seconds, http_requests_total
 
 logger = get_logger(__name__)
 
@@ -36,6 +35,17 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         start_time = time.perf_counter()
         response = await call_next(request)
         duration = (time.perf_counter() - start_time) * 1000
+
+        if request.url.path != "/metrics":
+            http_requests_total.labels(
+                method=request.method,
+                path=request.url.path,
+                status=str(response.status_code),
+            ).inc()
+            http_request_duration_seconds.labels(
+                method=request.method,
+                path=request.url.path,
+            ).observe(duration / 1000)
 
         logger.info(
             "Request processed",
@@ -111,12 +121,12 @@ class RateLimitAuditMiddleware(BaseHTTPMiddleware):
     async def _record_rate_limit_event(
         self, request: Request, response: Response
     ) -> None:
-        from app.domain.audit.entities import EventType, ActorType, EventStatus
+        from app.core.database import db
+        from app.domain.audit.entities import ActorType, EventStatus, EventType
         from app.domain.audit.services import AuditService
         from app.infrastructure.database.repositories.audit import (
             SQLAlchemyAuditEventRepository,
         )
-        from app.core.database import db
 
         try:
             async with db.session_factory() as session:

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # =============================================================================
 # VeriUnlearn — restore
-# Restores PostgreSQL / MinIO / Qdrant from a backup produced by backup.sh.
+# Restores PostgreSQL / Redis / MinIO / Qdrant / app-data from a backup
+# produced by backup.sh.
 # Usage: ./scripts/restore.sh <BACKUP_DIR>
 #   e.g. ./scripts/restore.sh ./backups/veriunlearn-20240101-120000
 # =============================================================================
@@ -44,6 +45,26 @@ if [ -f "$SRC/qdrant.tgz" ]; then
     docker cp "$SRC/qdrant.tgz" "$QDRANT_CONTAINER":/tmp/qdrant.tgz
     docker exec "$QDRANT_CONTAINER" sh -c 'rm -rf /qdrant/storage/* && tar xzf /tmp/qdrant.tgz -C /qdrant/storage'
   fi
+fi
+
+if [ -f "$SRC/redis.tgz" ]; then
+  echo "==> Restoring Redis"
+  REDIS_CONTAINER="$(docker compose ps -q redis | head -n1)"
+  if [ -n "$REDIS_CONTAINER" ]; then
+    docker exec "$REDIS_CONTAINER" redis-cli -a "$REDIS_PASSWORD" --no-auth-warning FLUSHALL >/dev/null 2>&1 || true
+    docker cp "$SRC/redis.tgz" "$REDIS_CONTAINER":/tmp/redis.tgz
+    docker exec "$REDIS_CONTAINER" sh -c 'rm -rf /data/* && tar xzf /tmp/redis.tgz -C /data' || true
+  fi
+fi
+
+if [ -d "$SRC/appdata" ]; then
+  echo "==> Restoring app data volumes"
+  for svc in backend ml-engine; do
+    if [ -d "$SRC/appdata/$svc" ]; then
+      CONTAINER="$(docker compose ps -q $svc | head -n1)"
+      [ -n "$CONTAINER" ] && docker cp "$SRC/appdata/$svc/." "$CONTAINER":/data/ || echo "⚠ $svc app-data restore skipped."
+    fi
+  done
 fi
 
 echo "✅ Restore complete. Verify with: ./scripts/healthcheck.sh"

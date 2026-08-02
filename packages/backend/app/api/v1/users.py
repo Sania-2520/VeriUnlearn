@@ -4,7 +4,13 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from app.api.deps import CurrentUser, default_rate_limiter, require_mfa, require_permission, get_auth_service
+from app.api.deps import (
+    CurrentUser,
+    default_rate_limiter,
+    get_auth_service,
+    require_mfa,
+    require_permission,
+)
 from app.core.rbac import Permission
 from app.domain.auth.services import AuthService
 

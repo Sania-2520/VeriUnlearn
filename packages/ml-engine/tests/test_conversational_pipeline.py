@@ -6,13 +6,13 @@ import time
 import pytest
 
 from training.conversational_pipeline import (
-    ConversationTurn,
     Conversation,
-    TrainingDataset,
-    PipelineConfig,
-    ConversationStore,
-    DatasetBuilder,
     ConversationalLearningPipeline,
+    ConversationStore,
+    ConversationTurn,
+    DatasetBuilder,
+    PipelineConfig,
+    TrainingDataset,
 )
 
 

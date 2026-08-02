@@ -1,4 +1,5 @@
 import pytest
+
 from security.input_validator import InputValidator, ValidationError
 
 

@@ -94,8 +94,8 @@ class HPOptimizer:
         objective_fn: Callable[[dict[str, Any]], float],
         study_name: Optional[str] = None,
     ) -> HPOResult:
-        import random
         import math
+        import random
 
         study_name = study_name or f"random_{uuid.uuid4().hex[:8]}"
         best_value = -math.inf if self.direction == "maximize" else math.inf

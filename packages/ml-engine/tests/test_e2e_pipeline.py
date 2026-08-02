@@ -4,8 +4,8 @@ import uuid
 import pytest
 
 from unlearning.e2e_pipeline import (
-    DeletionRequest,
     DeletionCertificate,
+    DeletionRequest,
     E2EUnlearningPipeline,
     PipelineStep,
 )

@@ -4,20 +4,20 @@ import logging
 import time
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 import torch
 
-from unlearning.algorithms.base import UnlearningContext, UnlearningResult
-from unlearning.hybrid_controller import HybridAdaptiveController, ControllerConfig
-from verification.merkle_tree import MerkleTree
-from verification.signatures import SignatureManager
-from verification.privacy_evaluation import PrivacyEvaluator
-from verification.zksnark_service import ZKProofService
+from models.single_model import SingleModel
 from security.attacks.membership_inference import MembershipInferenceAttack
 from training.data import Dataset, accuracy_score, generate_synthetic_data
-from models.single_model import SingleModel
+from unlearning.algorithms.base import UnlearningContext, UnlearningResult
+from unlearning.hybrid_controller import ControllerConfig, HybridAdaptiveController
+from verification.merkle_tree import MerkleTree
+from verification.privacy_evaluation import PrivacyEvaluator
+from verification.signatures import SignatureManager
+from verification.zksnark_service import ZKProofService
 
 logger = logging.getLogger(__name__)
 
