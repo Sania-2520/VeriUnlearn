@@ -21,6 +21,10 @@ The zero-knowledge property holds: verifier learns leaf + root but not leaf inde
 - ✅ Compatible envelope shape for swapping in a real Groth16/PLONK backend later.
 - ❌ **Prototype only**: no real trusted setup; proof math is illustrative, not a
   production soundness proof.
+- ⛔ **Enforced in code**: the simulator refuses to generate proofs when
+  `APP_ENV`/`VERIUNLEARN_ENV` is `production`/`prod` unless
+  `VERIUNLEARN_ALLOW_SIMULATED_ZK=true` is explicitly set (see
+  `packages/ml-engine/verification/zksnark_service.py`).
 - ❌ Not post-quantum; circuit complexity for large models unresolved (open problem).
 
 ## Alternatives considered

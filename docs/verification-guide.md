@@ -61,6 +61,16 @@ POST /api/v1/verify/zksnark/verify
 ```
 (Proxied to ML engine `/proof/generate-zksnark`, `/proof/verify-zksnark`.)
 
+> **Honesty note (SIMULATED).** The zk-SNARK implementation is a **hash-based simulator**, not a
+> real zero-knowledge proof system. It substitutes SHA-3/Keccak hashing and Ed25519 signatures for
+> actual ZK elliptic-curve arithmetic (Groth16/PLONK/circom). It provides Merkle-inclusion and
+> signature integrity guarantees only — **no cryptographic zero-knowledge guarantees**.
+>
+> The service **refuses to generate proofs in production environments** unless the operator
+> explicitly sets `VERIUNLEARN_ALLOW_SIMULATED_ZK=true`. Do this only when you fully accept that
+> the proof is simulated. For real deployments, replace this module with a genuine ZK library
+> (e.g., snarkjs, py_ecc, circom) or an HSM/attestation service.
+
 ---
 
 ## Trust Score
