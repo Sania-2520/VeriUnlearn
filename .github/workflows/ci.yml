@@ -26,10 +26,10 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready -U veriunlearn
+          --health-cmd "pg_isready -U veriunlearn -h localhost"
           --health-interval 5s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
 
     steps:
       - uses: actions/checkout@v4
@@ -150,6 +150,9 @@ jobs:
   security-scan:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      security-events: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -188,7 +191,9 @@ jobs:
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: packages/backend/Dockerfile
+          failure-threshold: error
       - name: Hadolint (frontend)
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: packages/frontend/Dockerfile
+          failure-threshold: error
