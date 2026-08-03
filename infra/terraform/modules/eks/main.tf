@@ -63,7 +63,7 @@ resource "aws_subnet" "private" {
   map_public_ip_on_launch = false
 
   tags = merge(local.tags, {
-    Name                     = "${local.cluster_name}-private-${local.azs[count.index]}"
+    Name                              = "${local.cluster_name}-private-${local.azs[count.index]}"
     "kubernetes.io/role/internal-elb" = "1"
   })
 }
@@ -169,7 +169,7 @@ resource "aws_security_group" "nodes" {
   vpc_id      = aws_vpc.main.id
 
   tags = merge(local.tags, {
-    Name                                        = "${local.cluster_name}-nodes-sg"
+    Name                                          = "${local.cluster_name}-nodes-sg"
     "kubernetes.io/cluster/${local.cluster_name}" = "owned"
   })
 
@@ -425,7 +425,7 @@ resource "aws_launch_template" "gpu" {
   tag_specifications {
     resource_type = "instance"
     tags = merge(local.tags, {
-      Name     = "${local.cluster_name}-gpu-node"
+      Name      = "${local.cluster_name}-gpu-node"
       node-type = "gpu"
     })
   }

@@ -1,361 +1,136 @@
-# VeriUnlearn Reproducibility Guide
+# VeriUnlearn Benchmark Reproducibility
 
-## Overview
+This document lists the **exact commands** required to reproduce every result under
+`evaluation/results/`. Two distinct kinds of output exist, and they must not be confused:
 
-VeriUnlearn provides a comprehensive reproducibility framework for all
-benchmark experiments. Every experiment captures:
-
-- **Deterministic seeding** across all random number generators
-- **Environment pinning** with exact package versions
-- **Hardware recording** (CPU, GPU, RAM, platform)
-- **Git commit hash** capture at time of experiment
-- **Config fingerprinting** — SHA-256 hash of the full experiment config
-- **Automatic reproducibility ZIP packages**
-
-The framework supports three levels of reproducibility verification:
-`fully_reproducible`, `partially_reproducible`, and `not_reproducible`.
+- **`publication/`** — synthetic illustrative data produced by
+  `evaluation/generate_publication_data.py`. Used for paper figures only; **not** an
+  empirical result.
+- **`real/`**, **`publication_real/`**, **`phase2_*`** — genuine benchmark runs produced
+  by the real framework (`evaluation.run_all`). These are the empirical claims.
 
 ---
 
-## Deterministic Seeding
+## 0. Environment
 
-Seeds are applied at multiple levels to ensure bitwise reproducibility:
-
-| Seed field       | Source              | Default | Applies to                            |
-|------------------|---------------------|---------|---------------------------------------|
-| `global_seed`    | Python `random`     | 42      | All Python-level randomness           |
-| `numpy_seed`     | NumPy               | 42      | Array shuffling, sampling, noise      |
-| `torch_seed`     | PyTorch CPU         | 42      | Weight init, dropout, data loading    |
-| `cuda_seed`      | PyTorch CUDA        | 42      | GPU operations, cuDNN determinism     |
-| `python_hash_seed` | `PYTHONHASHSEED`  | 42      | Hash randomization of dicts/sets      |
-
-When CUDA is available, `cudnn.deterministic = True` and
-`cudnn.benchmark = False` are enforced.
-
-```python
-from evaluation.config import SeedConfig
-
-seeds = SeedConfig(
-    global_seed=42,
-    numpy_seed=42,
-    torch_seed=42,
-    cuda_seed=42,
-    python_hash_seed=42,
-)
-seeds.apply()  # Sets all seeds and CUDA flags
-```
-
----
-
-## Environment Pinning
-
-### Python Version
-
-Requires **Python >= 3.12** (enforced by `pyproject.toml`).
-
-### Package Versions
-
-- **`requirements.lock.txt`** — pinned versions of all dependencies for
-  exact reproduction. Generated from the combined requirements of all
-  packages and the root project.
-- **`environment.yml`** — Conda environment definition that includes
-  PyTorch from the `pytorch` channel and all pip dependencies.
-- **Snapshots** automatically capture `pip freeze` output at experiment
-  time and include a `requirements-lock.txt` inside the reproducibility ZIP.
-
-### Virtual Environment Setup
+- Python 3.12+
+- Dependencies: `numpy`, `scipy`, `scikit-learn`, `torch`, `matplotlib`, `seaborn`
+  (figures only). No Docker/Postgres/Redis needed.
+- Install from repo root:
 
 ```bash
-# pip + venv
-python -m venv .venv
-source .venv/bin/activate  # Linux/macOS
-# .venv\Scripts\activate    # Windows
-pip install -r requirements.lock.txt
-
-# Conda/Mamba
-conda env create -f environment.yml
-conda activate veriunlearn
+pip install -r packages/ml-engine/requirements.txt
+pip install numpy scipy scikit-learn torch matplotlib seaborn
 ```
 
----
-
-## Hardware Recording
-
-Every experiment snapshot captures:
-
-| Field               | Source                          |
-|---------------------|---------------------------------|
-| `platform`          | `platform.platform()`           |
-| `processor`         | `platform.processor()`          |
-| `architecture`      | `platform.architecture()`       |
-| `machine`           | `platform.machine()`            |
-| `python_version`    | `platform.python_version()`     |
-| `torch_version`     | `torch.__version__`             |
-| `cuda_available`    | `torch.cuda.is_available()`     |
-| `cuda_version`      | `torch.version.cuda`            |
-| `gpu_name`          | `torch.cuda.get_device_name()`  |
-| `gpu_memory_gb`     | `torch.cuda.get_device_properties()` |
-| `numpy_version`     | `numpy.__version__`             |
-| `sklearn_version`   | `sklearn.__version__`           |
-
-The `_hardware_compatible()` check only requires matching architecture and
-GPU model — exact CPU/RAM equivalence is not enforced.
+Seeding is handled internally by `SeedConfig.apply()` (5 independent RNG seeds +
+`PYTHONHASHSEED`, deterministic cuDNN). No global seed flags are needed beyond
+`--seed`.
 
 ---
 
-## Git Commit Hash Capture
-
-The `get_git_info()` function (in `evaluation/config.py`) captures:
-
-- **commit**: short SHA (12 chars) via `git rev-parse HEAD`
-- **branch**: via `git rev-parse --abbrev-ref HEAD`
-- **dirty**: `True` if there are uncommitted changes (`git status --porcelain`)
-
-This information is embedded in every snapshot and reproducibility package.
-
----
-
-## Config Fingerprinting
-
-Each `ExperimentConfig` object produces a deterministic SHA-256 fingerprint
-(truncated to 16 hex characters):
-
-```python
-config = ExperimentConfig(experiment_name="veriunlearn_phase2_complete")
-fp = config.fingerprint()
-# e.g., "9493d7469abde546"
-```
-
-The fingerprint changes when any config field is modified. Two experiments
-with the same fingerprint have identical configurations.
-
----
-
-## Full Phase 2 Benchmark
-
-The Phase 2 benchmark runs:
-
-- **4 datasets**: MNIST, CIFAR-10, IMDB, AG News
-- **5 algorithms**: Retrain, SISA, SCRUB, Influence Functions, Fine-Tune Forgetting
-- **3 forget ratios**: 5%, 10%, 25%
-- **5 seeds per configuration** (42, 43, 44, 45, 46)
-- **Total: 4 × 5 × 3 × 5 = 300 runs**
-
-### Run the Full Benchmark
+## 1. Smoke / Validation
 
 ```bash
-# Using the run_all entry point
+python -m evaluation.test_framework     # ~30 s, no GPU
+pytest evaluation/tests/ -v             # unit tests
+```
+
+---
+
+## 2. Quick benchmark (MNIST, CPU, ~2 min)
+
+```bash
+python -m evaluation.run_all --quick
+```
+
+Produces `evaluation/results/veriunlearn_benchmark_quick_<timestamp>/`.
+
+---
+
+## 3. Full benchmark (all datasets, all algorithms)
+
+```bash
+python -m evaluation.run_all
+```
+
+Runs 5 algorithms (retraining, sisa, scrub, influence_functions, fine_tune_forgetting)
+across 4 datasets (mnist, cifar10, imdb, ag_news) at forget ratios 0.05 / 0.10 / 0.20,
+3 runs each (~180 runs, 30–60 min CPU).
+
+Selective variants:
+
+```bash
+# Reproduce the MNIST real results exactly (5 algorithms, ratio 0.10, 3 runs)
 python -m evaluation.run_all \
-    --datasets mnist cifar10 imdb ag_news \
-    --algorithms retrain sisa scrub influence_functions fine_tune_forgetting \
-    --forget-ratios 0.05 0.10 0.25 \
-    --num-runs 5 \
-    --seed 42 \
-    --output-dir evaluation/results/phase2_complete
+  --datasets mnist \
+  --algorithms retraining sisa scrub influence_functions fine_tune_forgetting \
+  --forget-ratios 0.10 \
+  --num-runs 3 \
+  --seed 42
+
+# MNIST + CIFAR-10, 5 runs, custom seed
+python -m evaluation.run_all --datasets mnist cifar10 --num-runs 5 --seed 123
+
+# Only SISA and Influence Functions
+python -m evaluation.run_all --algorithms sisa influence_functions
 ```
 
-Or using the dedicated script:
+CLI flags (from `run_all.py:43`):
 
-```bash
-python evaluation/_phase2_benchmark.py
-```
-
-Or using Make:
-
-```bash
-make benchmark-full
-```
-
-### Expected Runtime
-
-| Configuration      | Estimated Time |
-|-------------------|----------------|
-| Full Phase 2 (300 runs) | ~40 minutes (CPU) |
-| Quick test (6 runs)     | ~1 minute         |
-| Validation (90 runs)    | ~12 minutes        |
-
-Times are approximate and depend on hardware. GPU acceleration will
-significantly reduce runtimes.
-
-### Expected Results
-
-After the benchmark completes, results are saved to
-`evaluation/results/phase2_complete/`:
-
-```
-evaluation/results/phase2_complete/
-├── config.json
-├── results.json
-├── runs.json
-├── summary.json
-├── reproducibility_snapshot.json
-├── figures/
-├── exports/
-├── report.md
-└── reproducibility_*.zip
-```
-
-The reference snapshot is at
-`evaluation/results/phase2_complete/reproducibility_snapshot.json`.
+| Flag | Default |
+|---|---|
+| `--quick` | off |
+| `--datasets {mnist,cifar10,imdb,ag_news}` | all 4 |
+| `--algorithms {retraining,sisa,scrub,influence_functions,fine_tune_forgetting}` | all 5 |
+| `--forget-ratios FLOAT...` | 0.05 0.10 0.20 |
+| `--num-runs N` | 3 |
+| `--max-samples N` | unlimited |
+| `--seed N` | 42 |
+| `--output-dir PATH` | `evaluation/results` |
+| `--no-figures` / `--no-export` / `--no-report` / `--no-zip` | off |
 
 ---
 
-## Verification Commands
-
-### Verify Against Reference Snapshot
-
-```python
-from evaluation.reproducibility import ReproducibilityPackage
-import json
-
-pkg = ReproducibilityPackage()
-snapshot_ref = json.load(open("evaluation/results/phase2_complete/reproducibility_snapshot.json"))
-snapshot_new = json.load(open("evaluation/results/phase2_new/reproducibility_snapshot.json"))
-verdict = pkg.verify_reproducibility(snapshot_ref, snapshot_new)
-print(verdict["overall"])  # "fully_reproducible" or "partially_reproducible"
-```
-
-### Smoke Test
+## 4. Publication figures & tables from a results dir
 
 ```bash
-make test-evaluation
-# or
-python evaluation/smoke_test.py
+python -m evaluation.visualization --results-dir evaluation/results/<run> \
+  --output-dir evaluation/results/<run>/figures
 ```
 
-### Unit Tests
-
-```bash
-make test
-# or
-pytest evaluation/tests/
-```
-
-### Verify Environment
-
-```bash
-make verify
-# or
-python -c "from evaluation.config import get_hardware_info, get_git_info, get_package_versions; import json; print(json.dumps({'hardware': get_hardware_info(), 'git': get_git_info(), 'packages': get_package_versions()}, indent=2))"
-```
+Every run already emits: `config.json`, `results.json`, `runs.json`, `summary.json`,
+`exports/*.csv`, `exports/*.tex`, `tables/latex/*.tex`, `figures/graphs/*.{png,pdf}`,
+and a reproducibility ZIP (config fingerprint + hardware snapshot + git info).
 
 ---
 
-## Container-Based Reproduction (Docker)
-
-### Build and Run
+## 5. Synthetic publication data (figures only — not empirical)
 
 ```bash
-# Build all images
-docker compose build
-
-# Start full stack (requires .env file)
-cp .env.example .env
-docker compose up -d
-
-# Run benchmark inside the backend container
-docker compose exec backend python -m evaluation.run_all --quick
-
-# Pull logs
-docker compose logs -f backend
+python -m evaluation.generate_publication_data
 ```
 
-### Docker Compose Profiles
-
-```bash
-# Core services only (default)
-docker compose up -d
-
-# With monitoring (Prometheus, Grafana, Loki)
-docker compose --profile monitoring up -d
-```
-
-### Production Reproducibility
-
-For fully isolated reproduction:
-
-```bash
-# Build with no cache to ensure clean state
-docker compose build --no-cache
-
-# Run with deterministic environment
-docker compose run --rm backend python -m evaluation._phase2_benchmark
-
-# Extract results
-docker compose cp backend:/app/evaluation/results ./results_from_docker
-```
+Writes `evaluation/results/publication/summary.json` + `scalability.json`. This is
+**illustrative data for layout/papers only** and must not be cited as a benchmark
+result. The empirical numbers live in `evaluation/results/real/` and
+`publication_real/`.
 
 ---
 
-## Reproducibility ZIP Package
+## 6. Known result files
 
-Every experiment run via `run_all.py` automatically generates a
-reproducibility ZIP containing:
+| Path | Content |
+|---|---|
+| `evaluation/results/real/mnist_results.json` | Real MNIST run (5 algorithms, ratio 0.10, 3 runs) |
+| `evaluation/results/publication_real/` | Real-run publication figures + tables + raw results |
+| `evaluation/results/publication/` | **Synthetic** generator output (see §5) |
+| `evaluation/results/phase2_complete/`, `phase2_validation/` | Prior phase benchmark outputs |
+| `evaluation/results/smoke_test/` | `test_framework` output |
 
-| File                 | Description                                    |
-|----------------------|------------------------------------------------|
-| `config.json`        | Full experiment configuration                  |
-| `results.json`       | Complete experiment results                    |
-| `environment.json`   | Hardware, git, and package versions            |
-| `requirements-lock.txt` | Exact pip freeze output                    |
-| `reproduce.sh`       | Linux/macOS auto-reproduction script           |
-| `reproduce.bat`      | Windows auto-reproduction script               |
-| `README.md`          | Reproduction instructions for this experiment  |
+## 7. Verification
 
----
-
-## Verification Levels
-
-The `verify_reproducibility()` method returns:
-
-```python
-{
-    "overall": "fully_reproducible",  # or "partially_reproducible"
-    "config_match": True,
-    "seeds_match": True,
-    "environment": {
-        "packages_match": True,
-        "hardware_compatible": True,
-    },
-    "git_match": True,
-    "datasets_match": True,
-    "results": {
-        "num_runs_match": True,
-        "snapshot1_completed": 300,
-        "snapshot2_completed": 300,
-    },
-}
-```
-
-Criteria for `fully_reproducible`:
-- Same config fingerprint
-- Same seeds
-- Same package versions
-- Same dataset hashes
-
-Hardware and git commit are not required for full reproducibility (git
-dirty state and different CPUs are acceptable).
-
----
-
-## Troubleshooting
-
-### Non-Deterministic Results
-
-1. Verify `PYTHONHASHSEED` is set: `echo $PYTHONHASHSEED`
-2. Check CUDA determinism flags: `torch.backends.cudnn.deterministic`
-3. Ensure no multi-threading races: set `torch.set_num_threads(1)`
-4. Verify all seeds are applied before any data loading
-
-### Package Version Mismatch
-
-1. Install from `requirements.lock.txt`: `pip install -r requirements.lock.txt`
-2. Or use Conda: `conda env create -f environment.yml`
-3. Check with `make verify`
-
-### Snapshot Verification Fails
-
-1. Compare config fingerprints first: they must match
-2. Check for uncommitted git changes (`git status`)
-3. Verify the same datasets and max_samples are configured
-4. Run `python evaluation/smoke_test.py` to isolate issues
+- Config fingerprint and package versions are embedded in each run's reproducibility
+  ZIP — compare fingerprints across machines to confirm identical configurations.
+- On restricted networks CIFAR-10 (~170 MB) may fail to download; use
+  `--datasets mnist` or pre-stage `evaluation/data/cifar-10-python.tar.gz`.

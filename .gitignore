@@ -86,3 +86,11 @@ evaluation/results/*/.checkpoint.json
 
 # Logs
 logs/
+
+# Terraform provider binaries, state, and local override files
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+crash.log
