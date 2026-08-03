@@ -88,12 +88,15 @@ jobs:
       - name: Run tests
         run: |
           python -m pytest -v --tb=short -x tests/ > pytest-out.txt 2>&1 || { tail -60 pytest-out.txt > failing-tests.txt; exit 1; }
-      - name: Upload pytest output on failure
+      - name: Report failing tests
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/github-script@v7
         with:
-          name: ml-engine-pytest-output
-          path: packages/ml-engine/failing-tests.txt
+          script: |
+            const fs = require('fs');
+            const p = 'packages/ml-engine/failing-tests.txt';
+            const msg = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : 'pytest produced no output';
+            core.error(msg);
 
   frontend:
     runs-on: ubuntu-latest
