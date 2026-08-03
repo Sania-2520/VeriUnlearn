@@ -85,8 +85,12 @@ typecheck:
 
 test:
 	cd packages/backend && KMP_DUPLICATE_LIB_OK=TRUE pytest -v --cov=app --cov-report=term-missing
+	cd packages/ml-engine && KMP_DUPLICATE_LIB_OK=TRUE pytest -v
 	pytest evaluation/tests/ -v
 	cd packages/frontend && npm test 2>/dev/null || echo "Frontend tests not configured"
+
+test-ml:
+	cd packages/ml-engine && KMP_DUPLICATE_LIB_OK=TRUE pytest -v
 
 test-evaluation:
 	pytest evaluation/tests/ -v

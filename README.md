@@ -241,14 +241,18 @@ Full docs at `/api/docs` (backend running) or [docs/API_REFERENCE.md](docs/API_R
 ## Testing
 
 ```bash
-make test                # All tests
+make test                # All tests (backend + ml-engine + evaluation + frontend)
 cd packages/backend && pytest -v --cov=app
 cd packages/ml-engine && python -m pytest tests/ -v
 pytest -v -m load        # Load/performance tests
 ```
 
-- **Backend**: 178 tests (auth, RBAC, audit, compliance, unlearning, verification, blockchain, security, E2E)
-- **ML Engine**: 306 tests (algorithms, lifecycle, continual learning, explainability, model registry, signatures, zk-SNARKs)
+> **Windows note**: set `KMP_DUPLICATE_LIB_OK=TRUE` before running pytest if NumPy
+> aborts at import (Intel MKL FPE check). CI sets this automatically.
+
+- **Backend**: 237 tests (auth, RBAC, audit, compliance, unlearning, verification, blockchain, security, E2E)
+- **ML Engine**: 434 tests (algorithms, lifecycle, continual learning, explainability, model registry, signatures, zk-SNARKs, RAG)
+- **Frontend**: 9 tests (jest + testing-library)
 - **Coverage**: 88% overall
 
 ---
