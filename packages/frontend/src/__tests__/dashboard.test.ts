@@ -14,9 +14,20 @@ jest.mock("@/lib/api/admin", () => ({
   listJobs: jest.fn(),
 }))
 
-const mockedClient = client as jest.Mocked<typeof client>
-const mockedUnlearning = unlearning as jest.Mocked<typeof unlearning>
-const mockedAdmin = admin as jest.Mocked<typeof admin>
+type JobStub = { status?: string }
+type RequestStub = { status?: string }
+type MetaStub = { page: number; page_size: number; total: number; total_pages: number }
+
+const mockedClient = client as unknown as {
+  getSystemHealth: jest.Mock<Promise<Record<string, unknown>>>
+  getRegistryStats: jest.Mock<Promise<Record<string, unknown>>>
+}
+const mockedUnlearning = unlearning as unknown as {
+  listRequests: jest.Mock<Promise<{ data: RequestStub[]; meta: MetaStub }>>
+}
+const mockedAdmin = admin as unknown as {
+  listJobs: jest.Mock<Promise<{ data: JobStub[]; meta: MetaStub }>>
+}
 
 describe("loadLiveDashboard", () => {
   beforeEach(() => {
@@ -44,15 +55,15 @@ describe("loadLiveDashboard", () => {
         { status: "running" },
         { status: "completed" },
       ],
-      meta: { page: 1, page_size: 100, total: 3 },
+      meta: { page: 1, page_size: 100, total: 3, total_pages: 1 },
     })
     mockedUnlearning.listRequests.mockResolvedValue({
       data: [
         { status: "pending" },
         { status: "completed" },
-        { status: "success" },
+        { status: "completed" },
       ],
-      meta: { page: 1, page_size: 100, total: 3 },
+      meta: { page: 1, page_size: 100, total: 3, total_pages: 1 },
     })
 
     const snap = await loadLiveDashboard()
@@ -67,8 +78,8 @@ describe("loadLiveDashboard", () => {
   it("marks backend unhealthy when health reports non-healthy", async () => {
     mockedClient.getSystemHealth.mockResolvedValue({ backend: "unavailable" })
     mockedClient.getRegistryStats.mockResolvedValue({})
-    mockedAdmin.listJobs.mockResolvedValue({ data: [], meta: { page: 1, page_size: 100, total: 0 } })
-    mockedUnlearning.listRequests.mockResolvedValue({ data: [], meta: { page: 1, page_size: 100, total: 0 } })
+    mockedAdmin.listJobs.mockResolvedValue({ data: [], meta: { page: 1, page_size: 100, total: 0, total_pages: 0 } })
+    mockedUnlearning.listRequests.mockResolvedValue({ data: [], meta: { page: 1, page_size: 100, total: 0, total_pages: 0 } })
 
     const snap = await loadLiveDashboard()
     expect(snap.sources).toBe("live")
