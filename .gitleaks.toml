@@ -1,0 +1,13 @@
+title = "VeriUnlearn gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Example/placeholder values in documentation and test fixtures (not real secrets)"
+paths = [
+  '''docs/API_REFERENCE\.md''',
+  '''docs/api\.md''',
+  '''\.env\.example''',
+  '''packages/backend/tests/test_config\.py''',
+]

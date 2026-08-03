@@ -54,8 +54,8 @@ jobs:
         env:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
-          JWT_SECRET_KEY: test-secret-key-for-ci
-          APP_SECRET_KEY: test-app-secret-for-ci
+          JWT_SECRET_KEY: test-secret-key-for-ci-only-32-characters!!
+          APP_SECRET_KEY: test-app-secret-for-ci-only-32-characters!
 
       - name: Upload coverage
         if: always()
@@ -86,7 +86,14 @@ jobs:
         run: ruff check . --ignore E402,F401
 
       - name: Run tests
-        run: python -m pytest -v --tb=short -x tests/
+        run: |
+          python -m pytest -v --tb=short -x tests/ > pytest-out.txt 2>&1 || { tail -60 pytest-out.txt > failing-tests.txt; exit 1; }
+      - name: Upload pytest output on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ml-engine-pytest-output
+          path: packages/ml-engine/failing-tests.txt
 
   frontend:
     runs-on: ubuntu-latest
