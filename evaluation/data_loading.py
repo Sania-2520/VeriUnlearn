@@ -6,23 +6,23 @@ and DataLoaders ready for benchmarking unlearning algorithms.
 """
 from __future__ import annotations
 
+import importlib
 import logging
 import random
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterator, Sequence
+from typing import Any, Sequence, Sized, cast
 
 import torch
-import importlib
+
 _hf_datasets = importlib.import_module("datasets")
 from torch.utils.data import (
     DataLoader,
     Dataset,
-    IterableDataset,
     Subset,
-    random_split,
 )
+
 from evaluation.config import DatasetConfig, SeedConfig
 
 logger = logging.getLogger(__name__)
@@ -119,6 +119,9 @@ class _WrappedImageDataset(Dataset):
     ) -> None:
         self._base = base
         self._normalize = normalize
+        # Annotated explicitly so the None branch type-checks (torch.Tensor | None).
+        self.registered_mean: torch.Tensor | None
+        self.registered_std: torch.Tensor | None
         if normalize:
             self.registered_mean = torch.tensor(mean).view(len(mean), 1, 1)
             self.registered_std = torch.tensor(std).view(len(std), 1, 1)
@@ -127,7 +130,7 @@ class _WrappedImageDataset(Dataset):
             self.registered_std = None
 
     def __len__(self) -> int:
-        return len(self._base)
+        return len(cast(Sized, self._base))
 
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, int]:
         img, lbl = self._base[idx]
@@ -179,7 +182,9 @@ class _ImageClassificationDataset(Dataset):
 
     @property
     def base(self) -> Dataset:
-        return self._base
+        # torchvision dataset objects are Any-typed in stubs; return the
+        # concrete base dataset as the generic Dataset contract.
+        return cast(Dataset[Any], self._base)
 
 
 def _load_image_dataset(cfg: DatasetConfig, seed_cfg: SeedConfig) -> dict[str, Any]:
@@ -497,7 +502,8 @@ def create_forget_set(
     and ``bundle.train`` is replaced with only the retain portion so that
     downstream training loops see only the retained data.
     """
-    n_total = len(bundle.train)
+    # Concrete torch datasets implement ``__len__``; cast for the stub gap.
+    n_total = len(cast(Sized, bundle.train))
     n_forget = max(1, int(n_total * forget_ratio))
     rng = _seed_generator(seed)
     forget_indices = sorted(rng.sample(range(n_total), n_forget))
@@ -549,7 +555,7 @@ def make_dataloader(
 ) -> DataLoader:
     """Create a :class:`DataLoader` with appropriate collation."""
     # Detect text datasets (they return dicts)
-    sample = dataset[0] if len(dataset) > 0 else None
+    sample = dataset[0] if len(cast(Sized, dataset)) > 0 else None
     collate = _text_collate_fn if isinstance(sample, dict) else None
 
     return DataLoader(
@@ -590,8 +596,8 @@ def report_statistics(bundle: DatasetBundle) -> dict[str, Any]:
         report["total_samples"] += n
 
     if bundle.forget is not None:
-        n_forget = len(bundle.forget)
-        n_retain = len(bundle.retain)
+        n_forget = len(cast(Sized, bundle.forget))
+        n_retain = len(cast(Sized, bundle.retain))
         report["splits"]["forget"] = {
             "n_samples": n_forget,
             "num_classes": len(Counter(bundle.forget_labels)),
@@ -675,7 +681,9 @@ def load_by_name(
     if name not in defaults:
         raise ValueError(f"Unknown dataset {name!r}; choose from {list(defaults)}")
 
-    cfg = DatasetConfig(name=name, max_samples=max_samples, **defaults[name])
+    # ``name`` is validated against the known dataset registry above, so the
+    # runtime-safe cast narrows the str to the DatasetConfig name literal.
+    cfg = DatasetConfig(name=cast(Any, name), max_samples=max_samples, **defaults[name])
     if seed_cfg is None:
         seed_cfg = SeedConfig()
 

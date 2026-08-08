@@ -162,13 +162,13 @@ class HPOptimizer:
             low, high = spec.get("low", 0.0), spec.get("high", 1.0)
             if spec.get("log", False):
                 import math
-                return math.exp(random.uniform(math.log(low), math.log(high)))
-            return random.uniform(low, high)
+                return math.exp(random.uniform(math.log(low), math.log(high)))  # nosec B311 - non-crypto param sampling
+            return random.uniform(low, high)  # nosec B311 - non-crypto param sampling
         elif ptype == "int":
-            return random.randint(spec.get("low", 1), spec.get("high", 100))
+            return random.randint(spec.get("low", 1), spec.get("high", 100))  # nosec B311 - non-crypto param sampling
         elif ptype == "categorical":
             choices = spec.get("choices", [])
-            return random.choice(choices) if choices else None
+            return random.choice(choices) if choices else None  # nosec B311 - non-crypto param sampling
         return spec.get("default")
 
 

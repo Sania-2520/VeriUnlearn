@@ -7,32 +7,21 @@ import {
   Database,
   Search,
   Check,
-  Square,
   FlaskConical,
-  Sliders,
-  FileText,
   Clock,
   DollarSign,
   Shield,
   BarChart3,
   Zap,
-  Sparkles,
   Gauge,
-  Binary,
-  ArrowRight,
-  RefreshCw,
   Info,
 } from "lucide-react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import {
   WorkflowProvider,
   useWorkflow,
   type Step,
-  type WorkflowValidation,
 } from "./workflow-context"
 import { WorkflowStepper } from "./workflow-stepper"
 import { WorkflowStep } from "./workflow-step"
@@ -108,7 +97,7 @@ const steps: Step[] = [
 /* ── Inner Components ────────────────────────────────────────────── */
 
 function SelectDataStep() {
-  const { formData, updateFormData, setStepValidation } = useWorkflow()
+  const { formData, setStepValidation } = useWorkflow()
   const [search, setSearch] = useState("")
   const [selectedDataset, setSelectedDataset] = useState<string | null>(
     (formData.selectedDataset as string) ?? null,
@@ -134,11 +123,6 @@ function SelectDataStep() {
       message: valid ? undefined : "Select a dataset and specify data points to forget",
     })
   }, [selectedDataset, selectedPoints, setStepValidation])
-
-  const handleContinue = () => {
-    if (!selectedDataset) return
-    updateFormData({ selectedDataset, selectedPoints })
-  }
 
   return (
     <WorkflowStep title="Select Data" description="Choose the dataset and specify how many records to forget.">
@@ -231,7 +215,7 @@ function SelectDataStep() {
 }
 
 function ChooseAlgorithmStep() {
-  const { formData, updateFormData, setStepValidation } = useWorkflow()
+  const { formData, setStepValidation } = useWorkflow()
   const [selected, setSelected] = useState<string | null>(
     (formData.selectedAlgorithm as string) ?? null,
   )
@@ -243,11 +227,6 @@ function ChooseAlgorithmStep() {
       message: selected ? undefined : "Select an unlearning algorithm",
     })
   }, [selected, setStepValidation])
-
-  const handleContinue = () => {
-    if (!selected) return
-    updateFormData({ selectedAlgorithm: selected })
-  }
 
   const activeId = hovered ?? selected
   const activeAlgo = algorithms.find((a) => a.id === activeId)
@@ -352,7 +331,7 @@ function MetricBar({
 }
 
 function ConfigureStep() {
-  const { formData, updateFormData, setStepValidation } = useWorkflow()
+  const { formData, setStepValidation } = useWorkflow()
   const [lr, setLr] = useState((formData.learningRate as number) ?? 0.001)
   const [batchSize, setBatchSize] = useState((formData.batchSize as number) ?? 32)
   const [epochs, setEpochs] = useState((formData.epochs as number) ?? 5)
@@ -362,10 +341,6 @@ function ConfigureStep() {
     const valid = lr > 0 && batchSize > 0 && epochs > 0 && forgetRatio > 0 && forgetRatio <= 1
     setStepValidation(2, { isValid: valid })
   }, [lr, batchSize, epochs, forgetRatio, setStepValidation])
-
-  const handleContinue = () => {
-    updateFormData({ learningRate: lr, batchSize, epochs, forgetRatio })
-  }
 
   return (
     <WorkflowStep title="Configure Parameters" description="Fine-tune the unlearning process hyperparameters.">
@@ -570,7 +545,7 @@ export function SubmitDeletionRequest() {
 }
 
 function WorkflowInner({ onCancel, error }: { onCancel: () => void; error: string | null }) {
-  const { formData, isSubmitting, setIsSubmitting, resetWorkflow } = useWorkflow()
+  const { formData, setIsSubmitting } = useWorkflow()
   const router = useRouter()
   const [submitError, setSubmitError] = useState<string | null>(error)
 

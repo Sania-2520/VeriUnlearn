@@ -4,7 +4,8 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from jose import JWTError, jwt  # type: ignore[import-untyped]  # no stubs shipped
+import jwt
+from jwt import InvalidTokenError
 from passlib.context import CryptContext  # type: ignore[import-untyped]  # no stubs shipped
 
 from app.core.config import settings
@@ -25,6 +26,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 class TokenManager:
+    """JWT issuing/validation backed by PyJWT (maintained).
+
+    Migrated from python-jose (3.3.0, unmaintained, multiple unfixed
+    advisories incl. PYSEC-2024-232/233 and PYSEC-2025-185). Signature,
+    audience, issuer, expiry and algorithm-pinning behaviour are identical;
+    tokens issued before the migration remain valid.
+    """
+
     def __init__(self) -> None:
         self._refresh_token_bytes = 64
 
@@ -52,7 +61,7 @@ class TokenManager:
         if extra_claims:
             payload.update(extra_claims)
 
-        return jwt.encode(  # type: ignore[no-any-return]  # python-jose untyped
+        return jwt.encode(
             payload,
             settings.jwt_secret_key,
             algorithm=settings.jwt_algorithm,
@@ -85,7 +94,7 @@ class TokenManager:
         if extra_claims:
             payload.update(extra_claims)
 
-        return jwt.encode(  # type: ignore[no-any-return]  # python-jose untyped
+        return jwt.encode(
             payload,
             settings.jwt_secret_key,
             algorithm=settings.jwt_algorithm,
@@ -99,9 +108,17 @@ class TokenManager:
                 algorithms=[settings.jwt_algorithm],
                 audience=settings.jwt_audience,
                 issuer=settings.jwt_issuer,
+                options={
+                    "verify_signature": True,
+                    "verify_aud": True,
+                    "verify_iss": True,
+                    "verify_exp": True,
+                    "verify_iat": True,
+                    "require": ["exp", "iat"],
+                },
             )
-            return payload  # type: ignore[no-any-return]  # python-jose untyped
-        except JWTError as e:
+            return payload
+        except InvalidTokenError as e:
             raise TokenError(f"Invalid token: {e}") from e
 
     def verify_token(self, token: str, expected_type: str = "access") -> dict[str, Any]:

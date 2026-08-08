@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -65,6 +65,7 @@ export function MFASetupForm({ onComplete, onCancel }: MFASetupFormProps) {
         <CardContent className="space-y-4">
           {provisioningUri && (
             <div className="flex justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element -- remote QR image from qrserver.com, no local optimisation */}
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(provisioningUri)}`}
                 alt="QR Code"

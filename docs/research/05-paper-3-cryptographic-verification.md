@@ -3,6 +3,17 @@
 > **Status**: Draft Outline (v1.0) | **Target Venue**: IEEE S&P 2027 / ACM CCS 2027  
 > **Word Count Target**: 8,000–10,000 (full paper) | **Outline Depth**: ~5,500 words
 
+> ⚠️ **Implementation-status note (SIMULATED).** This research outline describes the
+> *proposed* VDPS design and its projected evaluation. In the shipped VeriUnlearn v1.0
+> platform, Layers 1–2 (Merkle tree + Ed25519) are fully implemented and production-ready,
+> while Layer 3 (zk-SNARK) is a **hash-based SIMULATED prototype** (`ZKProofService` in
+> `packages/ml-engine/verification/zksnark_service.py`): it wraps a Merkle inclusion proof
+> in a Groth16-style envelope but provides **no cryptographic zero-knowledge guarantees**.
+> The figures quoted here for Groth16/PLONK proof generation (2.8–3.2s) are *targets*, not
+> shipped measurements. Production zk-SNARK integration (circom/Groth16 trusted setup)
+> is future work — see `docs/adr/0012-zero-knowledge-proofs.md` and
+> `docs/verification-guide.md` (SIMULATED honesty note).
+
 ---
 
 ## Abstract

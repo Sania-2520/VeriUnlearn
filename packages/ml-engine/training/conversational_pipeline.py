@@ -827,7 +827,7 @@ class ConversationalLearningPipeline:
                 "trained": False,
             }
 
-        batch_ids = []
+        batch_ids: list[str] = []
         while (
             self._training_queue
             and len(batch_ids) < self.config.max_conversations_per_training

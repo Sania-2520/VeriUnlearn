@@ -5,8 +5,10 @@ from training.adapter_lifecycle import AdapterLifecycleManager, AdapterStatus, L
 
 class TestAdapterLifecycle:
     @pytest.fixture
-    def manager(self):
-        mgr = AdapterLifecycleManager(LifecycleConfig(persist_path="./test_adapter_registry"))
+    def manager(self, tmp_path):
+        # Persist to a pytest-managed temp dir so tests never write to tracked
+        # files in the repository (keeps the working tree clean).
+        mgr = AdapterLifecycleManager(LifecycleConfig(persist_path=str(tmp_path)))
         yield mgr
 
     def test_register_adapter(self, manager):

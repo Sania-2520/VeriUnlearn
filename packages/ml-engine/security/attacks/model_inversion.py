@@ -1,6 +1,6 @@
 import logging
 import math
-from typing import Optional
+from typing import Any, Optional
 
 import torch
 from torch import Tensor, nn
@@ -147,7 +147,7 @@ class ModelInversionAttack:
 
             results.append(result_entry)
 
-        attack_result = {
+        attack_result: dict[str, Any] = {
             "attack_name": "model-inversion-gradient",
             "num_target_classes": len(target_classes),
             "reconstructions": results,

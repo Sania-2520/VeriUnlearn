@@ -7,21 +7,17 @@ Integrates with the existing evaluation modules:
 """
 from __future__ import annotations
 
-import copy
 import gc
 import json
 import logging
-import math
 import os
-import platform
 import random
-import subprocess
 import sys
 import time
 import traceback
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Sized, cast
 
 import numpy as np
 import torch
@@ -63,7 +59,6 @@ try:
         DatasetBundle,
         create_forget_set,
         load_dataset,
-        make_dataloader,
     )
 except ImportError:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -71,13 +66,11 @@ except ImportError:
         DatasetBundle,
         create_forget_set,
         load_dataset,
-        make_dataloader,
     )
 
 try:
     from evaluation.algorithms import (
         EvalDataset,
-        UnlearningAlgorithm,
         _ShardedEnsemble,
         get_algorithm,
         list_algorithms,
@@ -86,7 +79,6 @@ except ImportError:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from evaluation.algorithms import (
         EvalDataset,
-        UnlearningAlgorithm,
         _ShardedEnsemble,
         get_algorithm,
         list_algorithms,
@@ -94,8 +86,6 @@ except ImportError:
 
 try:
     from evaluation.metrics import (
-        MetricsComputer,
-        compute_classification_metrics,
         compute_confusion_matrix,
         compute_efficiency_metrics,
         compute_forget_quality,
@@ -109,8 +99,6 @@ try:
 except ImportError:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from evaluation.metrics import (
-        MetricsComputer,
-        compute_classification_metrics,
         compute_confusion_matrix,
         compute_efficiency_metrics,
         compute_forget_quality,
@@ -142,7 +130,10 @@ def _bundle_to_numpy(bundle: DatasetBundle) -> tuple[np.ndarray, np.ndarray]:
     """Extract flat numpy arrays from a torch Dataset inside a DatasetBundle."""
     xs: list[np.ndarray] = []
     ys: list[int] = []
-    for i in range(len(bundle.train)):
+    # torch's ``Dataset`` stub does not expose ``__len__``; cast to Sized for
+    # the length checks (all concrete datasets implement ``__len__``).
+    n_train = len(cast(Sized, bundle.train))
+    for i in range(n_train):
         x, y = _sample_to_xy(bundle.train[i])
         if x is None or y is None:
             continue
@@ -160,7 +151,8 @@ def _bundle_test_to_numpy(bundle: DatasetBundle) -> tuple[np.ndarray, np.ndarray
     """Extract flat numpy arrays from the test split."""
     xs: list[np.ndarray] = []
     ys: list[int] = []
-    for i in range(len(bundle.test)):
+    n_test = len(cast(Sized, bundle.test))
+    for i in range(n_test):
         x, y = _sample_to_xy(bundle.test[i])
         if x is None or y is None:
             continue
@@ -243,7 +235,7 @@ def _bundle_to_eval_dataset(
 def _extract_texts(dataset) -> list[str]:
     """Pull raw text strings from a _TextClassificationDataset."""
     if hasattr(dataset, "_texts"):
-        return dataset._texts
+        return list(dataset._texts)
     if hasattr(dataset, "dataset") and hasattr(dataset.dataset, "_texts"):
         return [dataset.dataset._texts[i] for i in dataset.indices]
     texts: list[str] = []
@@ -270,9 +262,9 @@ def _get_peak_memory_mb() -> float:
     except Exception:
         logger.debug("tracemalloc not available for memory tracking")
     try:
-        import resource
-        usage = resource.getrusage(resource.RUSAGE_SELF)
-        return usage.ru_maxrss / 1024
+        import resource  # type: ignore[import-not-found]  # POSIX-only module
+        usage = resource.getrusage(resource.RUSAGE_SELF)  # type: ignore[attr-defined]
+        return float(usage.ru_maxrss) / 1024
     except Exception:
         return 0.0
 
@@ -481,6 +473,13 @@ class ExperimentResults:
                     timing=timing,
                     success=(getattr(r, "error", None) in (None, "")),
                     error=getattr(r, "error", "") or "",
+                    # Curve/confusion payloads flow through to the visualizer.
+                    roc_curve_before=getattr(r, "roc_curve_before", {}) or {},
+                    roc_curve_after=getattr(r, "roc_curve_after", {}) or {},
+                    pr_curve_before=getattr(r, "pr_curve_before", {}) or {},
+                    pr_curve_after=getattr(r, "pr_curve_after", {}) or {},
+                    confusion_matrix_before=getattr(r, "confusion_matrix_before", []) or [],
+                    confusion_matrix_after=getattr(r, "confusion_matrix_after", []) or [],
                 )
             )
 
@@ -1044,7 +1043,7 @@ def _predict_for_algo(
             return estimator[0].predict(X) if len(estimator) > 0 else np.zeros(len(indices))
         return estimator[0].predict(X) if len(estimator) > 0 else np.zeros(len(eval_ds.y_test))
 
-    return estimator.predict(X)
+    return np.asarray(estimator.predict(X))
 
 
 # ---------------------------------------------------------------------------

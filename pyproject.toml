@@ -40,6 +40,19 @@ indent-style = "space"
 profile = "black"
 line_length = 100
 
+# Bandit static security scan configuration (run with: bandit -r packages).
+# - Test fixtures and generated artifacts are excluded: asserts/hardcoded tmp
+#   paths there are intentional and never reach production.
+# - B101 (assert_used): asserts are used as deliberate precondition checks in
+#   ML-engine code and the suite runs without ``python -O``, so they stay
+#   active. The security-critical input validator does not rely on asserts.
+# - B311 (random): ``random`` is used exclusively for reproducible seeding and
+#   non-cryptographic retry jitter; all secret/token generation uses ``secrets``
+#   (verified). Crypto-adjacent findings are annotated ``# nosec B311`` in code.
+[tool.bandit]
+exclude_dirs = ["tests", "test_adapter_registry", "test_replay_buffer", "htmlcov", ".mypy_cache", "mlflow.db"]
+skips = ["B101", "B311"]
+
 [tool.mypy]
 python_version = "3.12"
 ignore_missing_imports = true
@@ -83,6 +96,7 @@ testpaths = ["packages/backend/tests", "packages/ml-engine/tests"]
 python_files = ["test_*.py"]
 addopts = "-v --cov --cov-report=term-missing --cov-report=html"
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.coverage.run]
 source = ["packages/backend", "packages/ml-engine"]

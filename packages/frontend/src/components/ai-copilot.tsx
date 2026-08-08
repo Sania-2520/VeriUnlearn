@@ -17,9 +17,7 @@ import {
   Shield,
   CheckCircle2,
   TrendingDown,
-  TrendingUp,
   Scale,
-  BookOpen,
   FileSearch,
   Cpu,
   Database,
@@ -564,7 +562,7 @@ function renderGenericResponse(question: string): ReactNode {
         <span className="text-sm font-semibold text-[var(--text-primary)]">AI Assistant</span>
       </div>
       <p className="text-sm text-[var(--text-secondary)]">
-        I understand you're asking about &ldquo;{question}&rdquo;. While I don't have specific data on this topic, I can help you with:
+        I understand you&apos;re asking about &ldquo;{question}&rdquo;. While I don&apos;t have specific data on this topic, I can help you with:
       </p>
       <ul className="space-y-1 text-xs text-[var(--text-secondary)]">
         <li className="flex items-center gap-2">

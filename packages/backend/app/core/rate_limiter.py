@@ -47,12 +47,13 @@ class SlidingWindowRateLimiter:
         window_start_ms = now_ms - (self.window_seconds * 1000)
         window_ms = self.window_seconds * 1000
 
+        member = str(uuid.uuid4())
         try:
             redis = cache.redis
             pipe = redis.pipeline()
             pipe.zremrangebyscore(key, 0, window_start_ms)
             pipe.zcard(key)
-            pipe.zadd(key, {f"{uuid.uuid4()}": now_ms})
+            pipe.zadd(key, {member: now_ms})
             pipe.expire(key, self.window_seconds)
             results = await pipe.execute()
 
@@ -66,8 +67,11 @@ class SlidingWindowRateLimiter:
 
         allowed = current < self.max_requests
         if not allowed:
+            # Denied requests must not consume quota: remove the exact member
+            # that was added above (previously a fresh uuid was removed, which
+            # was a no-op and let rejected attempts keep the window saturated).
             try:
-                await cache.redis.zrem(key, f"{uuid.uuid4()}")
+                await cache.redis.zrem(key, member)
             except Exception as e:
                 logger.error("Redis rate limiter cleanup failed: %s", e)
 

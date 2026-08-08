@@ -14,15 +14,18 @@ import numpy as np
 from scipy import stats as _scipy_stats
 from sklearn.metrics import (
     accuracy_score,
-    confusion_matrix as _sk_confusion_matrix,
+    average_precision_score,
     f1_score,
     precision_score,
     recall_score,
     roc_auc_score,
-    roc_curve as _sk_roc_curve,
-    average_precision_score,
 )
-
+from sklearn.metrics import (
+    confusion_matrix as _sk_confusion_matrix,
+)
+from sklearn.metrics import (
+    roc_curve as _sk_roc_curve,
+)
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 1. Classification metrics

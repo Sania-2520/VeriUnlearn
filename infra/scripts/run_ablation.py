@@ -9,11 +9,9 @@ import argparse
 import asyncio
 import csv
 import json
-import math
 import sys
 import time
-import uuid
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -24,14 +22,12 @@ sys.path.insert(0, str(_MLENGINE))
 
 import numpy as np
 import torch
-
-from training.data import Dataset, accuracy_score, generate_synthetic_data
 from models.single_model import SingleModel
-from unlearning.algorithms.sisa import SISAUnlearning
-from unlearning.algorithms.influence import InfluenceFunctionUnlearning
-from unlearning.algorithms.certified_removal import CertifiedRemovalUnlearning
+from training.data import Dataset, accuracy_score, generate_synthetic_data
 from unlearning.algorithms.base import UnlearningContext
-
+from unlearning.algorithms.certified_removal import CertifiedRemovalUnlearning
+from unlearning.algorithms.influence import InfluenceFunctionUnlearning
+from unlearning.algorithms.sisa import SISAUnlearning
 
 # ---------------------------------------------------------------------------
 # Ablation configurations
@@ -327,7 +323,7 @@ def main() -> None:
         "shard_count", "lora_rank", "epsilon", "dataset_size",
     ]
 
-    print(f"VeriUnlearn Ablation Study Runner")
+    print("VeriUnlearn Ablation Study Runner")
     print(f"  Timestamp : {timestamp}")
     print(f"  Studies   : {studies}")
     print(f"  Dataset   : {args.dataset_size} samples, {args.num_features} features, {args.num_classes} classes")
@@ -402,7 +398,6 @@ def main() -> None:
             ))
             for pt in pts:
                 all_points.append(asdict(pt))
-            algos_done = [pt.get("extra", {}).get("algorithm", "sisa") for pt in [asdict(p) for p in pts]]
             print(f"done ({len(pts)} algorithms)")
 
     # -----------------------------------------------------------------------

@@ -71,7 +71,6 @@ export function OnboardingProvider({
 
     const dismissed = localStorage.getItem(STORAGE_KEYS.DISMISSED) === "true"
     const completed = localStorage.getItem(STORAGE_KEYS.COMPLETED) === "true"
-    const savedStep = parseInt(localStorage.getItem(STORAGE_KEYS.STEP) ?? "0", 10)
 
     if (dismissed || completed) {
       setState((prev) => ({

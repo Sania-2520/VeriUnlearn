@@ -1,4 +1,4 @@
-import type { NavSection } from "@/lib/types/navigation"
+import type { NavSection, UserRole } from "@/lib/types/navigation"
 
 export const navigationConfig: NavSection[] = [
   {
@@ -84,9 +84,9 @@ export function filterNavSections(
   return sections
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => item.roles.includes(role as any)),
+      items: section.items.filter((item) => item.roles.includes(role as UserRole)),
     }))
-    .filter((section) => section.items.length > 0 && section.roles.includes(role as any))
+    .filter((section) => section.items.length > 0 && section.roles.includes(role as UserRole))
 }
 
 export function findActiveItem(

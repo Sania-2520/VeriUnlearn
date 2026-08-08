@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { clsx } from "clsx"
@@ -31,8 +31,8 @@ import {
   User,
   Webhook,
 } from "lucide-react"
-import type { NavSection, NavItem } from "@/lib/types/navigation"
-import { Badge } from "@/components/ui/badge"
+import type { NavSection, NavItem, UserRole } from "@/lib/types/navigation"
+import { Badge, type BadgeProps } from "@/components/ui/badge"
 
 const iconMap: Record<string, LucideIcon> = {
   Activity,
@@ -136,7 +136,7 @@ function NavItemLink({
       )}
       <span className="truncate">{item.label}</span>
       {item.badge && (
-        <Badge tone={item.badge.tone as any} className="ml-auto shrink-0">
+        <Badge tone={item.badge.tone as NonNullable<BadgeProps["tone"]>} className="ml-auto shrink-0">
           {item.badge.label}
         </Badge>
       )}
@@ -204,13 +204,13 @@ function NavSectionGroup({
   )
 }
 
-export function NavSidebar({ sections, role, isCollapsed, onToggleCollapse, onMobileClose }: NavSidebarProps) {
+export function NavSidebar({ sections, role, isCollapsed, onMobileClose }: NavSidebarProps) {
   const filteredSections = useMemo(
     () =>
       sections
         .map((s) => ({
           ...s,
-          items: s.items.filter((item) => item.roles.includes(role as any)),
+          items: s.items.filter((item) => item.roles.includes(role as UserRole)),
         }))
         .filter((s) => s.items.length > 0),
     [sections, role],
@@ -239,9 +239,9 @@ export function getBreadcrumbsFromSections(
   const crumbs: { label: string; href: string }[] = [{ label: "Dashboard", href: "/dashboard" }]
 
   for (const section of sections) {
-    if (!section.roles.includes(role as any)) continue
+    if (!section.roles.includes(role as UserRole)) continue
     for (const item of section.items) {
-      if (!item.roles.includes(role as any)) continue
+      if (!item.roles.includes(role as UserRole)) continue
       if (pathname === item.href) {
         crumbs.push({ label: section.title, href: "" })
         crumbs.push({ label: item.label, href: pathname })

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { clsx } from "clsx"
 import { toast } from "sonner"
 import { Card, CardHeader, CardContent } from "@/components/ui/card"
@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Badge, statusTone } from "@/components/ui/badge"
 import { PageHeader, StatCard } from "@/components/ui/page-header"
 import { Progress } from "@/components/ui/progress"
-import { Input } from "@/components/ui/input"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import {
   LineChart,
@@ -30,27 +29,15 @@ import {
 } from "recharts"
 import {
   FlaskConical,
-  Play,
   CheckCircle2,
   XCircle,
-  Loader2,
   MoreHorizontal,
   Copy,
-  Trash2,
-  GitBranch,
   Download,
   BarChart3,
   Activity,
-  Cpu,
-  Clock,
-  TrendingUp,
-  Target,
-  Shield,
-  Eye,
   X,
   Search,
-  RefreshCw,
-  PieChart,
   Columns3,
 } from "lucide-react"
 import * as Dialog from "@radix-ui/react-dialog"
@@ -188,15 +175,6 @@ function ExperimentDetailModal({
     "Val Loss": Number(c.valLoss.toFixed(4)),
     "Val Accuracy": Number((c.valAccuracy * 100).toFixed(1)),
   }))
-
-  const cmData = experiment.confusionMatrix.labels.map((label, i) => ({
-    label,
-    ...Object.fromEntries(
-      experiment.confusionMatrix.labels.map((l, j) => [l, experiment.confusionMatrix.values[i][j]]),
-    ),
-  }))
-
-  const cmColors = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)"]
 
   const handleDownload = () => toast.success("Results downloaded")
   const handleClone = () => toast.success("Experiment cloned")
@@ -646,9 +624,6 @@ export default function ExperimentsPage() {
   }), [experiments])
 
   const handleNewExperiment = () => toast.success("New experiment creation wizard opened")
-  const handleClone = (id: string) => toast.success(`Experiment ${id} cloned`)
-  const handleDelete = (id: string) => toast.success(`Experiment ${id} deleted`)
-  const handleCompare = (id: string) => toast.success(`Comparing experiment ${id}`)
 
   const toggleCompare = (id: string) => {
     setCompareIds((prev) => {

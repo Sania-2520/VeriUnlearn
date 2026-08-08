@@ -18,6 +18,10 @@ class DeletionProofRepository(ABC):
         ...
 
     @abstractmethod
+    async def get_by_certificate_hash(self, certificate_hash: str) -> Optional[DeletionProof]:
+        ...
+
+    @abstractmethod
     async def list_by_tenant(
         self, tenant_id: str, page: int, page_size: int,
         verified: Optional[bool] = None,

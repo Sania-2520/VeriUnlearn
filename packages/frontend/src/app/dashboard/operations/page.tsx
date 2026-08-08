@@ -8,17 +8,16 @@ import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "sonner"
 import { clsx } from "clsx"
 import {
-  Gauge, Activity, Clock, RefreshCw, Bell, BellOff, ChevronDown, ChevronRight, Search,
-  Filter, CheckCircle2, AlertTriangle, AlertCircle, Info, XCircle, Ban, Eye, EyeOff,
-  Copy, Download, Play, Pause, Server, Cpu, HardDrive, Network, Globe, Database,
-  Layers, Box, Boxes, Workflow, MousePointerClick, Zap, Wifi, Terminal, ScrollText,
-  Shield, ShieldCheck, ShieldAlert, ArrowUp, ArrowDown, MoreHorizontal, Circle,
-  Square, ToggleLeft, ToggleRight, Plus, ExternalLink, Users,
+  Activity, Clock, Bell, BellOff, ChevronDown, ChevronRight, Search,
+  CheckCircle2, AlertTriangle, AlertCircle, Info, XCircle, Copy,
+  Server, Cpu, HardDrive, Globe, Database,
+  Layers, Boxes, Workflow, Zap, Wifi, ScrollText,
+  ShieldCheck, ArrowUp, ArrowDown,
+  ToggleLeft, ToggleRight, Plus, ExternalLink,
 } from "lucide-react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge, statusTone } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Spinner } from "@/components/ui/spinner"
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 
@@ -31,7 +30,6 @@ type RefreshInterval = 10 | 30 | 60 | 300
 type EventSeverity = "success" | "warning" | "error" | "info"
 type LogLevel = "ERROR" | "WARN" | "INFO" | "DEBUG"
 type AlertSeverity = "critical" | "warning" | "info"
-type AlertStatus = "active" | "acknowledged" | "resolved"
 type TabId = "active" | "history" | "configure"
 
 interface MetricPoint {
@@ -315,7 +313,7 @@ function MiniBarChart({ data }: { data: MetricPoint[] }) {
   )
 }
 
-function ServiceDetail({ service, onClose }: { service: ServiceHealth; onClose: () => void }) {
+function ServiceDetail({ service }: { service: ServiceHealth; onClose: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0, height: 0 }}
@@ -377,10 +375,9 @@ export default function OperationsPage() {
   const [rules, setRules] = useState<AlertRule[]>(alertRules)
   const [alerts, setAlerts] = useState<Alert[]>(activeAlerts)
   const [logs] = useState<LogEntry[]>(logEntries)
-  const [simulatedTime, setSimulatedTime] = useState(new Date())
+  const [, setSimulatedTime] = useState(new Date())
   const logEndRef = useRef<HTMLDivElement>(null)
   const [newLogCount, setNewLogCount] = useState(0)
-  const [downForMaintenance, setDownForMaintenance] = useState(false)
 
   const activityFeedRef = useRef<HTMLDivElement>(null)
 

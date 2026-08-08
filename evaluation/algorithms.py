@@ -20,16 +20,13 @@ All public classes inherit from ``UnlearningAlgorithm`` and expose the same
 from __future__ import annotations
 
 import abc
-import copy
 import logging
-import os
 import time
 import tracemalloc
 from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
-from scipy.special import softmax as _scipy_softmax
 from sklearn.base import BaseEstimator, clone
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression, SGDClassifier
@@ -39,7 +36,6 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
 )
-from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 
@@ -402,7 +398,7 @@ class _ShardedEnsemble:
             probas.append(est.predict_proba(X_t))
         if not probas:
             return np.zeros((n, 2))
-        return np.mean(probas, axis=0)
+        return np.asarray(np.mean(probas, axis=0))
 
 
 class SISA(UnlearningAlgorithm):
@@ -553,9 +549,6 @@ class SISA(UnlearningAlgorithm):
         if tracemalloc.is_tracing():
             tracemalloc.stop()
 
-        X_test = self._transform_test_aggregated(dataset)
-        post_preds = self._predict_aggregated(X_test)
-
         return UnlearnResult(
             estimator=_ShardedEnsemble(self),
             vectorizer=None,
@@ -578,7 +571,6 @@ class SISA(UnlearningAlgorithm):
 
     def _transform_test_aggregated(self, dataset: EvalDataset) -> Any:
         """Transform test data through each shard's transformer and stack."""
-        parts: list[Any] = []
         n_test = len(dataset.y_test)
         shard_preds_all: list[np.ndarray] = []
         for s_idx in range(self.num_shards):
@@ -586,10 +578,12 @@ class SISA(UnlearningAlgorithm):
             if est is None:
                 shard_preds_all.append(np.full(n_test, -1, dtype=int))
                 continue
-            if self._shard_vectorizers[s_idx] is not None and dataset.texts_test is not None:
-                X_t = self._shard_vectorizers[s_idx].transform(dataset.texts_test)
-            elif self._shard_scalers[s_idx] is not None:
-                X_t = self._shard_scalers[s_idx].transform(dataset.X_test)
+            vectorizer = self._shard_vectorizers[s_idx]
+            scaler = self._shard_scalers[s_idx]
+            if vectorizer is not None and dataset.texts_test is not None:
+                X_t = vectorizer.transform(dataset.texts_test)
+            elif scaler is not None:
+                X_t = scaler.transform(dataset.X_test)
             else:
                 X_t = dataset.X_test
             shard_preds_all.append(est.predict(X_t))
@@ -708,7 +702,12 @@ class SCRUB(UnlearningAlgorithm):
         _seed_everything(seed)
         teacher = self._teacher
 
-        if dataset.is_text and trained.vectorizer is not None:
+        if (
+            dataset.is_text
+            and trained.vectorizer is not None
+            and dataset.texts is not None
+            and dataset.texts_test is not None
+        ):
             X_forget = trained.vectorizer.transform([dataset.texts[i] for i in forget_indices])
             X_retain = trained.vectorizer.transform([dataset.texts[i] for i in retain_indices])
             X_test_t = trained.vectorizer.transform(dataset.texts_test)
@@ -993,12 +992,11 @@ class InfluenceFunctions(UnlearningAlgorithm):
             else:
                 return weights
 
-            X_forget_dense = X_all[forget_indices].toarray() if hasattr(X_all[forget_indices], "toarray") else np.asarray(X_all[forget_indices])
             X_retain_dense = X_all[retain_indices].toarray() if hasattr(X_all[retain_indices], "toarray") else np.asarray(X_all[retain_indices])
 
             pred_forget = estimator.predict_proba(X_all[forget_indices])
             y_forget_oh = np.zeros_like(pred_forget)
-            for idx, lbl in enumerate(dataset.y_forget if hasattr(self, "_y_forget") else y_all[forget_indices]):
+            for idx, lbl in enumerate(y_all[forget_indices]):
                 y_forget_oh[idx, int(lbl)] = 1.0
             grad_forget = (pred_forget - y_forget_oh).mean(axis=0)
 
@@ -1228,7 +1226,6 @@ class FineTuneForgetting(UnlearningAlgorithm):
 
 def _classification_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
     """Return a standard classification metric dict."""
-    num_classes = int(max(y_true.max(), y_pred.max())) + 1
     acc = float(accuracy_score(y_true, y_pred))
     return {
         "accuracy": acc,

@@ -13,7 +13,6 @@ import { HelpTip } from "@/components/ui/tooltip"
 import {
   FlaskConical,
   Play,
-  Loader2,
   CheckCircle2,
   XCircle,
   BarChart3,
@@ -111,9 +110,6 @@ export default function BenchmarksPage() {
   }
 
   const completed = results.filter((r) => r.status === "completed")
-  const avgUtility = completed.length
-    ? completed.reduce((s, r) => s + (r.metrics.utility_retained ?? 0), 0) / completed.length
-    : 0
 
   // Build grouped bars: one group per algorithm, bar height = avg utility retained.
   const byAlgo = new Map<string, number[]>()

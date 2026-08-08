@@ -1,0 +1,12 @@
+[bandit]
+# Scan policy:
+#   - The Makefile/CI scan the source packages explicitly:
+#     `bandit -r api training inference security verification unlearning
+#     explainability models -q` (exclude patterns are unreliable on
+#     Windows paths, so explicit targets are used instead).
+#   - Tests are intentionally excluded: asserts and hardcoded temp paths in
+#     the suite are expected and are not production risks.
+#   - `skips` below acknowledges the intentional non-cryptographic `random`
+#     dev-fallback embeddings in `training/rag_pipeline.py`, which are also
+#     annotated `# nosec B311` in source.
+skips = B311

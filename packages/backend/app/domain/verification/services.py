@@ -228,4 +228,22 @@ class VerificationService:
     async def get_certificate(
         self, certificate_hash: str
     ) -> Optional[dict[str, Any]]:
-        return None
+        """Return a previously-issued certificate for the given hash, if any.
+
+        Certificates are stored on :class:`DeletionProof` rows when issued
+        (``certificate`` / ``certificate_hash`` columns). When no certificate
+        matches, returns ``None`` so callers can fall back to generating a
+        fresh one via the ML Engine.
+        """
+        proof = await self._proof_repo.get_by_certificate_hash(certificate_hash)
+        if proof is None or not proof.certificate:
+            return None
+        return {
+            "certificate_hash": proof.certificate_hash,
+            "certificate": proof.certificate,
+            "proof_id": proof.id,
+            "request_id": proof.request_id,
+            "merkle_root": proof.merkle_root,
+            "issued_at": proof.created_at.isoformat() if proof.created_at else None,
+            "expires_at": proof.expires_at.isoformat() if proof.expires_at else None,
+        }

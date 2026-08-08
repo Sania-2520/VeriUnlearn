@@ -185,7 +185,7 @@ export function DataTable<T extends { id: string | number }>({
                       key={col.key}
                       className={clsx("px-4 py-3 align-middle", col.hideOnMobile && "hidden md:table-cell")}
                     >
-                      {col.render ? col.render(item) : ((item as any)[col.key] ?? "—")}
+                      {col.render ? col.render(item) : (String((item as Record<string, unknown>)[col.key] ?? "—"))}
                     </td>
                   ))}
                 </tr>

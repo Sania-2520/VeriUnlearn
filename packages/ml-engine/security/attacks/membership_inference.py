@@ -163,6 +163,8 @@ class LossBasedMIA:
         )
 
         threshold = self.threshold
+        if threshold is None:
+            threshold = member_losses.mean().item()
         member_preds = (member_losses < threshold).float()
         nonmember_preds = (nonmember_losses >= threshold).float()
         target_preds = (target_losses < threshold).float()

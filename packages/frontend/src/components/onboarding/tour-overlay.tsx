@@ -81,49 +81,6 @@ function getTooltipStyle(
   return { top: `${top}px`, left: `${left}px` }
 }
 
-function getArrowStyle(
-  rect: DOMRect,
-  placement: TourStep["placement"],
-): React.CSSProperties | null {
-  if (placement === "center") return null
-
-  const gap = ARROW_SIZE + TOOLTIP_GAP
-  let top = 0
-  let left = 0
-  let rotation = 0
-
-  switch (placement) {
-    case "top":
-      top = rect.top - gap + 6
-      left = rect.left + rect.width / 2
-      rotation = 180
-      break
-    case "bottom":
-      top = rect.bottom + gap - 6
-      left = rect.left + rect.width / 2
-      rotation = 0
-      break
-    case "left":
-      top = rect.top + rect.height / 2
-      left = rect.left - gap + 6
-      rotation = 270
-      break
-    case "right":
-      top = rect.top + rect.height / 2
-      left = rect.right + gap - 6
-      rotation = 90
-      break
-  }
-
-  const margin = 16
-  const vw = window.innerWidth
-  const vh = window.innerHeight
-  left = Math.max(margin + ARROW_SIZE, Math.min(left, vw - margin - ARROW_SIZE))
-  top = Math.max(margin + ARROW_SIZE, Math.min(top, vh - margin - ARROW_SIZE))
-
-  return { top: `${top}px`, left: `${left}px`, transform: `translate(-50%,-50%) rotate(${rotation}deg)` }
-}
-
 function CutoutSVG({ rect }: { rect: DOMRect }) {
   const p = 8
   const x = rect.left - p
@@ -411,7 +368,6 @@ export function TourOverlay() {
 
   const isCenter = step.placement === "center"
   const tooltipStyle = getTooltipStyle(isCenter ? null : targetRect, step.placement, tooltipSize.w, tooltipSize.h)
-  const arrowStyle = !isCenter && targetRect ? getArrowStyle(targetRect, step.placement) : null
 
   const tooltipEl = (
     <div ref={tooltipRef}>

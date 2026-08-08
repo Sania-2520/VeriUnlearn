@@ -60,6 +60,15 @@ class SQLAlchemyDeletionProofRepository(DeletionProofRepository):
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
+    async def get_by_certificate_hash(self, certificate_hash: str) -> Optional[DeletionProofEntity]:
+        result = await self._session.execute(
+            select(DeletionProofModel).where(
+                DeletionProofModel.certificate_hash == certificate_hash
+            )
+        )
+        model = result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
+
     async def list_by_tenant(
         self, tenant_id: str, page: int, page_size: int,
         verified: Optional[bool] = None,

@@ -48,8 +48,8 @@ See [docs/architecture.md](docs/architecture.md) for full details.
 ### Cryptographic Proofs
 - SHA-256 Merkle tree of verification data
 - Ed25519 digital signatures for certificate authenticity
-- zk-SNARK proofs for privacy-preserving verification
-- Immutable audit ledger with blockchain anchoring
+- zk-SNARK proofs for privacy-preserving verification *(SIMULATED prototype — see [docs/verification-guide.md](docs/verification-guide.md))*
+- Immutable audit ledger with blockchain anchoring *(simulated by default)*
 
 ### Explainable AI
 - SHAP, LIME, Integrated Gradients feature attribution

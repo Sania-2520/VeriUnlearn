@@ -1,0 +1,9 @@
+[bandit]
+# Scan policy:
+#   - The Makefile/CI run `bandit -r app` (production sources only).
+#   - Tests are intentionally excluded: asserts and test doubles in the
+#     suite are expected and are not production risks.
+#   - `skips` below acknowledges the dev-default secret strings in
+#     `app/core/config.py`, which are rejected at startup in non-dev
+#     environments and annotated `# nosec B105`.
+skips = B105

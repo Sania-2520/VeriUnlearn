@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from app.api.deps import (
     CurrentUser,
@@ -25,7 +25,16 @@ router = APIRouter(dependencies=[Depends(default_rate_limiter), Depends(require_
 
 class CreateApiKeyRequest(BaseModel):
     name: str
-    scopes: list[str] = []
+    scopes: list[str]
+
+    @field_validator("scopes")
+    @classmethod
+    def validate_scopes(cls, v: list[str]) -> list[str]:
+        # Fail-closed: a key must declare its permission surface explicitly.
+        # Use ["*"] for full access; an empty list would grant nothing.
+        if not v:
+            raise ValueError('At least one scope is required — use ["*"] for full access')
+        return v
 
 
 class ApiKeyResponse(BaseModel):

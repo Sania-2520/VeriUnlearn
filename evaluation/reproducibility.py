@@ -3,18 +3,21 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import platform
 import subprocess
 import sys
-import time
 import zipfile
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from evaluation.config import ExperimentConfig, get_hardware_info, get_git_info, get_package_versions
+from evaluation.config import (
+    ExperimentConfig,
+    get_git_info,
+    get_hardware_info,
+    get_package_versions,
+)
 from evaluation.export import ExperimentResults
 
 
@@ -198,8 +201,13 @@ class ReproducibilityPackage:
     def _config_from_dict(data: dict[str, Any]) -> ExperimentConfig:
         """Build an ExperimentConfig from a plain dict, converting nested dicts to dataclasses."""
         from evaluation.config import (
-            SeedConfig, DatasetConfig, ModelConfig, TrainingConfig,
-            UnlearningConfig, PrivacyConfig, OutputConfig,
+            DatasetConfig,
+            ModelConfig,
+            OutputConfig,
+            PrivacyConfig,
+            SeedConfig,
+            TrainingConfig,
+            UnlearningConfig,
         )
 
         data = dict(data)
@@ -237,7 +245,7 @@ class ReproducibilityPackage:
         lines = [
             "#!/usr/bin/env bash",
             "set -euo pipefail",
-            f"# VeriUnlearn Reproducibility Script",
+            "# VeriUnlearn Reproducibility Script",
             f"# Config fingerprint: {fp}",
             f"# Generated: {datetime.now(timezone.utc).isoformat()}",
             "",
@@ -285,7 +293,7 @@ class ReproducibilityPackage:
         lines = [
             "@echo off",
             "setlocal enabledelayedexpansion",
-            f"REM VeriUnlearn Reproducibility Script",
+            "REM VeriUnlearn Reproducibility Script",
             f"REM Config fingerprint: {fp}",
             f"REM Generated: {datetime.now(timezone.utc).isoformat()}",
             "",
@@ -311,7 +319,7 @@ class ReproducibilityPackage:
             "    pip install -r requirements.txt >nul 2>&1",
             ")",
             "",
-            f"REM Step 3: Set deterministic seeds",
+            "REM Step 3: Set deterministic seeds",
             f"set PYTHONHASHSEED={config.seeds.python_hash_seed}",
             "",
             "REM Step 4: Run experiment",
@@ -454,5 +462,5 @@ def _hardware_compatible(hw1: dict, hw2: dict) -> bool:
     gpu1 = hw1.get("gpu_name", "")
     gpu2 = hw2.get("gpu_name", "")
     if gpu1 and gpu2:
-        return gpu1 == gpu2
+        return bool(gpu1 == gpu2)
     return True

@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import {
   listModelVersions,
-  getModelVersion,
   rollbackVersion,
   verifyVersion,
 } from "@/lib/api/client"
@@ -12,8 +11,6 @@ import {
   GitBranch,
   ShieldCheck,
   RotateCcw,
-  CheckCircle,
-  Archive,
   Clock,
   AlertCircle,
   ChevronDown,

@@ -56,7 +56,7 @@ class GPUTracker:
         else:
             device = torch.cuda.current_device()
             mem_used = torch.cuda.memory_allocated(device) / (1024**2)
-            mem_total = torch.cuda.get_device_properties(device).total_mem / (1024**2)
+            mem_total = torch.cuda.get_device_properties(device).total_memory / (1024**2)
             util = 0
             gpu_temp_c = 0
             try:
@@ -546,7 +546,7 @@ class MLflowExperimentTracker:
             return {
                 "available": True,
                 "name": device.name,
-                "total_memory_mb": round(device.total_mem / (1024**2), 2),
+                "total_memory_mb": round(device.total_memory / (1024**2), 2),
                 "compute_capability": f"{device.major}.{device.minor}",
                 "cuda_version": torch.version.cuda,
                 "device_count": torch.cuda.device_count(),

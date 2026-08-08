@@ -83,6 +83,9 @@ export const FocusTrap = forwardRef<FocusTrapHandle, FocusTrapProps>(
       if (!active) return
 
       previousActiveElement.current = document.activeElement
+      // Capture the restore target once at effect setup so the cleanup runs
+      // against the same element even if the ref is reassigned later.
+      const restoreTarget = restoreFocusRef?.current
 
       requestAnimationFrame(() => {
         focusInitial()
@@ -90,7 +93,7 @@ export const FocusTrap = forwardRef<FocusTrapHandle, FocusTrapProps>(
 
       return () => {
         if (restoreFocus) {
-          const target = restoreFocusRef?.current ?? previousActiveElement.current
+          const target = restoreTarget ?? previousActiveElement.current
           if (target instanceof HTMLElement) {
             target.focus({ preventScroll: true })
           }

@@ -11,8 +11,7 @@ import { SkeletonRows } from "@/components/ui/skeleton"
 import { EmptyState, ErrorState } from "@/components/ui/empty-state"
 import { HelpTip } from "@/components/ui/tooltip"
 import { PageHeader } from "@/components/ui/page-header"
-import { clsx } from "clsx"
-import { Search, Trash2, Plus, AlertCircle, ShieldCheck } from "lucide-react"
+import { Search, Trash2, Plus, AlertCircle } from "lucide-react"
 import * as unlearningApi from "@/lib/api/unlearning"
 import type { UnlearningRequest } from "@/lib/types/unlearning"
 import { formatDate } from "@/lib/utils"
@@ -30,7 +29,7 @@ export default function UnlearningPage() {
   const [error, setError] = useState("")
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [total, setTotal] = useState(0)
+  const [, setTotal] = useState(0)
   const [statusFilter, setStatusFilter] = useState("")
   const [query, setQuery] = useState("")
 

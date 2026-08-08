@@ -7,7 +7,7 @@ import { useAuthStore } from "@/lib/store/auth-store"
 import { clsx } from "clsx"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { NavSidebar, getBreadcrumbsFromSections } from "@/components/nav-sidebar"
-import { navigationConfig, filterNavSections } from "@/lib/config/navigation"
+import { navigationConfig } from "@/lib/config/navigation"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import type { UserRole } from "@/lib/types/navigation"
 import { CopilotProvider, useCopilot } from "@/hooks/use-copilot"
@@ -22,12 +22,9 @@ import {
   User,
   Key,
   ShieldAlert,
-  Sparkles,
   Database,
   Cpu,
   Menu,
-  X,
-  ChevronLeft,
 } from "lucide-react"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -41,8 +38,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const profileRef = useRef<HTMLDivElement>(null)
 
   const userRole: UserRole = (user?.role as UserRole) ?? "admin"
-
-  const filteredSections = filterNavSections(navigationConfig, userRole)
 
   const breadcrumbs = getBreadcrumbsFromSections(navigationConfig, pathname, userRole)
 

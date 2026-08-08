@@ -2,7 +2,6 @@
 
 import { useKnowledgeStore } from "@/lib/store/knowledge-store"
 import { KNOWLEDGE_TYPE_COLORS, KNOWLEDGE_TYPE_LABELS } from "@/lib/types/knowledge"
-import type { KnowledgeGraphNode, KnowledgeGraphEdge } from "@/lib/types/knowledge"
 
 export default function KnowledgeGraph() {
   const { graphNodes, graphEdges, selectedItemId, selectItem } = useKnowledgeStore()

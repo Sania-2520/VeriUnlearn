@@ -65,8 +65,11 @@ class DocumentChunk:
             "end_char": self.end_char,
             "token_count": self.token_count,
         }
+        # Stable point ID derived from the chunk ID so re-upserts (e.g. after
+        # embedding regeneration) overwrite the same point instead of
+        # accumulating duplicates in Qdrant.
         return PointStruct(
-            id=str(uuid.uuid4()),
+            id=f"chunk:{self.chunk_id}",
             vector=self.embedding or [],
             payload=payload,
         )
@@ -113,7 +116,12 @@ class Document:
 @dataclass
 class RAGConfig:
     embedding_model: str = "BAAI/bge-large-en-v1.5"
-    qdrant_url: str = "http://localhost:6333"
+    # ``default_factory`` (not a plain default) so env vars are read at
+    # instantiation time, not at import time — this is what lets the Docker
+    # deployment override ``QDRANT_URL`` / ``RAG_STORAGE_PATH`` per container.
+    qdrant_url: str = field(
+        default_factory=lambda: os.getenv("QDRANT_URL", "http://localhost:6333")
+    )
     qdrant_collection: str = "documents"
     vector_size: int = 1024
     chunk_size: int = 512
@@ -122,7 +130,12 @@ class RAGConfig:
     max_results: int = 10
     min_score: float = 0.3
     use_hybrid_search: bool = True
-    storage_path: str = "./rag_storage"
+    # ``RAG_STORAGE_PATH`` lets the Docker deployment point the pipeline's
+    # local metadata store at a volume shared with the backend/worker
+    # (``/data/rag``), so document metadata survives restarts in one place.
+    storage_path: str = field(
+        default_factory=lambda: os.getenv("RAG_STORAGE_PATH", "./rag_storage")
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -183,9 +196,8 @@ class TextChunker:
                         break
                     overlap_sentences.insert(0, prev)
                     overlap_tokens += self._estimate_tokens(prev)
-                char_offset = end_char - len(" ".join(overlap_sentences).strip()) + len(
-                    " ".join(overlap_sentences).strip()
-                )
+                # Next chunk starts at the end of this chunk (char offsets are
+                # sequential, not overlap-relative).
                 char_offset = end_char
                 current_sentences = overlap_sentences
                 current_tokens = overlap_tokens
@@ -265,13 +277,34 @@ class TextChunker:
 
 class DocumentProcessor:
     def __init__(self) -> None:
+        # Keyed by both MIME type and file extension so callers can pass either
+        # (the backend RAG Celery tasks pass extensions such as "pdf"/"docx").
         self._type_map: dict[str, Any] = {
             "application/pdf": self.process_pdf,
+            "pdf": self.process_pdf,
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document": self.process_docx,
+            "docx": self.process_docx,
             "text/plain": self.process_txt,
+            "txt": self.process_txt,
             "text/markdown": self.process_markdown,
+            "md": self.process_markdown,
+            "markdown": self.process_markdown,
             "text/csv": self.process_csv,
             "text/x-csv": self.process_csv,
+            "csv": self.process_csv,
+            # Scanned-image OCR (the backend upload endpoint routes image
+            # uploads to the ``ocr_process`` Celery task, which lands here).
+            "image/png": self.process_image,
+            "png": self.process_image,
+            "image/jpeg": self.process_image,
+            "jpg": self.process_image,
+            "jpeg": self.process_image,
+            "image/webp": self.process_image,
+            "webp": self.process_image,
+            "image/tiff": self.process_image,
+            "tiff": self.process_image,
+            "image/bmp": self.process_image,
+            "bmp": self.process_image,
         }
 
     # ------------------------------------------------------------------ #
@@ -313,6 +346,37 @@ class DocumentProcessor:
             return text
         except Exception as exc:
             raise RuntimeError(f"Failed to extract text from PDF: {exc}") from exc
+
+    # ------------------------------------------------------------------ #
+
+    def process_image(self, file_path: str) -> str:
+        """OCR a scanned image (PNG/JPEG/WebP/TIFF/BMP) into text.
+
+        Uses pytesseract + Pillow. Raises RuntimeError if neither is
+        installed or the image contains no extractable text.
+        """
+        try:
+            import pytesseract
+            from PIL import Image  # type: ignore
+        except ImportError as exc:
+            raise RuntimeError(
+                "Image OCR requires Pillow and pytesseract — install "
+                "ml-engine OCR extras (pytesseract, pdf2image, Pillow)"
+            ) from exc
+
+        try:
+            with Image.open(file_path) as img:
+                text = pytesseract.image_to_string(img)
+            if text.strip():
+                return text
+            raise RuntimeError("OCR returned no text for image")
+        except Exception as exc:
+            if isinstance(exc, RuntimeError):
+                raise
+            logger.warning("Image OCR failed (%s), falling back to raw text", exc)
+            # Last resort: some "image" files are actually text-based
+            # (e.g. mislabeled .txt files); let the txt handler decide.
+            return self.process_txt(file_path)
 
     # ------------------------------------------------------------------ #
 
@@ -402,7 +466,13 @@ class EmbeddingService:
             return
         logger.info("Loading embedding model %s", self.model_name)
         self._model = SentenceTransformer(self.model_name)
-        self._dimension = self._model.get_sentence_embedding_dimension()
+        # get_embedding_dimension is the current API; fall back to the
+        # deprecated alias for older sentence-transformers releases.
+        get_dim = getattr(self._model, "get_embedding_dimension", None)
+        if get_dim is not None:
+            self._dimension = get_dim()
+        else:
+            self._dimension = self._model.get_sentence_embedding_dimension()
         logger.info("Model loaded – dimension %d", self._dimension)
 
     # ------------------------------------------------------------------ #
@@ -415,7 +485,7 @@ class EmbeddingService:
             import random
 
             return [
-                [random.random() for _ in range(self._dimension)] for _ in texts
+                [random.random() for _ in range(self._dimension)] for _ in texts  # nosec B311 - non-crypto dev fallback embeddings
             ]
 
         all_embeddings: list[list[float]] = []
@@ -434,7 +504,7 @@ class EmbeddingService:
         if self._model is None:
             import random
 
-            return [random.random() for _ in range(self._dimension)]
+            return [random.random() for _ in range(self._dimension)]  # nosec B311 - non-crypto dev fallback embeddings
 
         prefix = "Represent this sentence for searching relevant passages: "
         emb = self._model.encode(
@@ -482,7 +552,9 @@ class VectorStore:
             return
         if QDRANT_AVAILABLE:
             try:
-                self._client = QdrantClient(url=self.config.qdrant_url, timeout=10)
+                self._client = QdrantClient(
+                    url=self.config.qdrant_url, timeout=10, check_version=False
+                )
                 logger.info("Connected to Qdrant at %s", self.config.qdrant_url)
                 return
             except Exception as exc:
@@ -776,6 +848,109 @@ class VectorStore:
                 logger.warning("Qdrant collection count failed")
                 return 0
         return len(self._mem_store)
+
+    # ------------------------------------------------------------------ #
+
+    def upsert_vector(
+        self,
+        collection: str,
+        point_id: str,
+        vector: list[float],
+        payload: Optional[dict] = None,
+    ) -> None:
+        """Upsert a raw vector into an arbitrary collection.
+
+        Used by the memory pipeline for semantic memory vectors that are not
+        tied to a RAG document. Falls back to an in-memory store when Qdrant
+        is unavailable.
+        """
+        self._ensure_collection()
+        payload = dict(payload or {})
+        payload["point_id"] = point_id
+        if self._client is not None and QDRANT_AVAILABLE:
+            try:
+                collections = self._client.get_collections().collections
+                names = [c.name for c in collections]
+                if collection not in names:
+                    self._client.create_collection(
+                        collection_name=collection,
+                        vectors_config=VectorParams(
+                            size=len(vector) or self.config.vector_size,
+                            distance=Distance.COSINE,
+                        ),
+                    )
+                self._client.upsert(
+                    collection_name=collection,
+                    points=[
+                        PointStruct(id=point_id, vector=vector, payload=payload)
+                    ],
+                )
+                return
+            except Exception as exc:
+                logger.warning(
+                    "Qdrant vector upsert failed (%s) – falling back to in-memory", exc
+                )
+        self._mem_store[f"{collection}:{point_id}"] = {
+            "collection": collection,
+            "point_id": point_id,
+            "embedding": vector,
+            **payload,
+        }
+
+    # ------------------------------------------------------------------ #
+
+    def delete_by_filter(self, collection: str, filter_: Optional[dict] = None) -> int:
+        """Delete vectors matching an exact-match payload filter.
+
+        Safety: an empty filter is a no-op (refuses to wipe a whole collection).
+        In-memory matching covers both raw vectors (stored under
+        ``{collection}:{point_id}`` keys) and document chunks (stored under
+        bare ``chunk_id`` keys), so document cleanup by ``document_id`` works
+        regardless of which store is active.
+        """
+        self._ensure_collection()
+        filter_ = filter_ or {}
+        if not filter_:
+            logger.warning("delete_by_filter called with an empty filter — refusing to delete")
+            return 0
+
+        if self._client is not None and QDRANT_AVAILABLE:
+            try:
+                results, _ = self._client.scroll(
+                    collection_name=collection,
+                    scroll_filter=Filter(
+                        must=[
+                            FieldCondition(key=k, match=MatchValue(value=v))
+                            for k, v in filter_.items()
+                        ]
+                    ),
+                    limit=10000,
+                )
+                if results:
+                    self._client.delete(
+                        collection_name=collection,
+                        points_selector=[p.id for p in results],
+                    )
+                return len(results)
+            except Exception as exc:
+                logger.error("Qdrant delete_by_filter failed: %s", exc)
+                return 0
+
+        prefix = f"{collection}:"
+        to_delete = []
+        for key, entry in self._mem_store.items():
+            # Raw vectors are keyed ``{collection}:{point_id}``; document
+            # chunks are keyed by bare ``chunk_id`` (match those too when the
+            # caller filters by a payload field such as ``document_id``).
+            is_raw_vector = key.startswith(prefix)
+            is_chunk = "chunk_id" in entry and entry.get("chunk_id")
+            if not (is_raw_vector or is_chunk):
+                continue
+            if all(entry.get(k) == v for k, v in filter_.items()):
+                to_delete.append(key)
+        for key in to_delete:
+            del self._mem_store[key]
+        return len(to_delete)
 
     # ------------------------------------------------------------------ #
 
@@ -1115,6 +1290,182 @@ class RAGPipeline:
                 "use_hybrid_search": self.config.use_hybrid_search,
             },
         }
+
+    # ------------------------------------------------------------------ #
+
+    def process_document(
+        self,
+        document_id: str,
+        filename: str,
+        file_type: str,
+        storage_path: str = "",
+        text: str = "",
+        metadata: Optional[dict] = None,
+    ) -> Document:
+        """Ingest a document from a storage path (or inline text) under a
+        caller-supplied ``document_id`` (Celery task path).
+
+        The document is parsed with the configured :class:`DocumentProcessor`
+        (OCR for PDFs, DOCX/CSV/TXT/MD extraction), chunked, embedded and
+        indexed into the vector store — the same pipeline used by the
+        synchronous upload path.
+        """
+        metadata = dict(metadata or {})
+        metadata["document_id"] = document_id
+        metadata["filename"] = filename
+
+        # Re-ingest under a fixed id so the caller (backend DB row) stays in
+        # sync with the index: drop any prior record with the same id first.
+        prior = self._documents.get(document_id)
+        if prior is not None:
+            self.delete_document(document_id)
+
+        file_size = 0
+        file_hash = ""
+        if text:
+            file_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
+            file_size = len(text.encode("utf-8"))
+        elif storage_path and os.path.exists(storage_path):
+            file_size = os.path.getsize(storage_path)
+            file_hash = self._hash_file(storage_path)
+        else:
+            raise FileNotFoundError(
+                f"storage_path '{storage_path}' does not exist and no inline text provided"
+            )
+
+        doc = Document(
+            document_id=document_id,
+            filename=filename,
+            content_type=file_type,
+            file_size=file_size,
+            status="processing",
+            metadata=metadata,
+            file_hash=file_hash,
+        )
+        self._documents[document_id] = doc
+        self._save_document_metadata(doc)
+
+        try:
+            if text:
+                extracted = text
+            else:
+                extracted = self.processor.process(storage_path, file_type)
+            if not extracted.strip():
+                raise RuntimeError("Extracted text is empty")
+
+            # For PDFs the OCR/PDF extraction path joins pages with blank lines;
+            # record an honest page count for the caller (Celery worker stores
+            # it in the DB row's page_count column).
+            if file_type in ("pdf", "application/pdf"):
+                page_count = max(1, len([p for p in extracted.split("\n\n") if p.strip()]))
+            else:
+                page_count = 1
+            metadata["page_count"] = page_count
+
+            doc_meta = dict(metadata)
+            is_markdown = (
+                file_type == "text/markdown"
+                or filename.lower().endswith(".md")
+            )
+            if is_markdown:
+                chunks = self.chunker.chunk_markdown(extracted, doc_meta)
+            else:
+                chunks = self.chunker.chunk_text(extracted, doc_meta)
+            if not chunks:
+                raise RuntimeError("No chunks produced from document")
+
+            embeddings = self.embedding_service.embed_texts(
+                [c.content for c in chunks], batch_size=self.config.batch_size
+            )
+            for chunk, embedding in zip(chunks, embeddings):
+                chunk.embedding = embedding
+
+            self.vector_store.upsert_chunks(chunks)
+
+            doc.status = "indexed"
+            doc.chunk_count = len(chunks)
+            doc.total_tokens = sum(c.token_count for c in chunks)
+            doc.indexed_at = datetime.now(timezone.utc).isoformat()
+            self._save_document_metadata(doc)
+            logger.info(
+                "Processed document %s → %d chunks (%d tokens)",
+                filename, len(chunks), doc.total_tokens,
+            )
+            return doc
+        except Exception as exc:
+            doc.status = "failed"
+            doc.error_message = str(exc)
+            self._save_document_metadata(doc)
+            logger.error("Failed to process %s: %s", filename, exc)
+            raise
+
+    # ------------------------------------------------------------------ #
+
+    def regenerate_embeddings(self, document_id: str) -> int:
+        """Re-embed every chunk of an indexed document and refresh the store.
+
+        Returns the number of chunks successfully re-embedded.
+        """
+        doc = self._documents.get(document_id)
+        if doc is None:
+            return 0
+        chunks = self.vector_store.get_document_chunks(document_id)
+        if not chunks:
+            return 0
+
+        texts = [c.content for c in chunks]
+        embeddings = self.embedding_service.embed_texts(
+            texts, batch_size=self.config.batch_size
+        )
+        refreshed: list[DocumentChunk] = []
+        for chunk, embedding in zip(chunks, embeddings):
+            chunk.embedding = embedding
+            refreshed.append(chunk)
+        self.vector_store.upsert_chunks(refreshed)
+        logger.info("Regenerated embeddings for %s (%d chunks)", document_id, len(refreshed))
+        return len(refreshed)
+
+    # ------------------------------------------------------------------ #
+
+    def ocr_process(
+        self,
+        document_id: str,
+        storage_path: str = "",
+        file_type: str = "pdf",
+        metadata: Optional[dict] = None,
+    ) -> Document:
+        """Extract text from a scanned/PDF document via OCR and index it.
+
+        Uses the OCR-first extraction path of :class:`DocumentProcessor`
+        (pytesseract + pdf2image with a PyPDF2 fallback).
+        """
+        if not storage_path or not os.path.exists(storage_path):
+            raise FileNotFoundError(
+                f"OCR storage_path '{storage_path}' does not exist"
+            )
+        return self.process_document(
+            document_id=document_id,
+            filename=os.path.basename(storage_path),
+            file_type=file_type,
+            storage_path=storage_path,
+            metadata=metadata,
+        )
+
+    # ------------------------------------------------------------------ #
+
+    def upsert_vector(
+        self,
+        collection: str,
+        point_id: str,
+        vector: list[float],
+        payload: Optional[dict] = None,
+    ) -> None:
+        """Upsert a raw vector (memory pipeline) into the vector store."""
+        self.vector_store.upsert_vector(collection, point_id, vector, payload)
+
+    def delete_vectors(self, collection: str, filter_: Optional[dict] = None) -> int:
+        """Delete vectors matching a payload filter (memory pipeline)."""
+        return self.vector_store.delete_by_filter(collection, filter_)
 
     # ------------------------------------------------------------------ #
 

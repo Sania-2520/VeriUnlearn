@@ -37,6 +37,12 @@ CUDA_AVAILABLE = torch.cuda.is_available()
 @dataclass
 class InferenceConfig:
     base_model_name: str = "Qwen/Qwen2.5-0.5B-Instruct"
+    # SECURITY: remote code execution from Hugging Face Hub is disabled by
+    # default. Only enable ``trust_remote_code`` for vetted model repositories.
+    # Pin ``hub_revision`` to an immutable commit SHA for reproducible,
+    # tamper-resistant model downloads in production.
+    trust_remote_code: bool = False
+    hub_revision: str = ""
     device: str = "auto"
     dtype: str = "auto"
     max_new_tokens: int = 1024
@@ -101,11 +107,17 @@ class InferenceResponse:
 # ---------------------------------------------------------------------------
 
 class AdapterManager:
-    def __init__(self, base_model_name: str, device: str) -> None:
+    def __init__(
+        self,
+        base_model_name: str,
+        device: str,
+        config: Optional["InferenceConfig"] = None,
+    ) -> None:
         if not TRANSFORMERS_AVAILABLE:
             raise ImportError("transformers is required for AdapterManager")
         self._base_model_name = base_model_name
         self._device_str = device
+        self._config = config
         self._loaded_adapters: dict[str, Any] = {}
         self._base_model: Any = None
         self._tokenizer: Any = None
@@ -128,7 +140,12 @@ class AdapterManager:
 
             tokenizer = AutoTokenizer.from_pretrained(
                 self._base_model_name,
-                trust_remote_code=True,
+                trust_remote_code=self._config.trust_remote_code
+                if self._config is not None
+                else False,
+                revision=self._config.hub_revision or None
+                if self._config is not None
+                else None,
             )
             if tokenizer.pad_token_id is None:
                 tokenizer.pad_token_id = tokenizer.eos_token_id
@@ -136,7 +153,6 @@ class AdapterManager:
             dtype = self._resolve_dtype()
 
             model_kwargs: dict[str, Any] = {
-                "trust_remote_code": True,
                 "torch_dtype": dtype,
             }
 
@@ -145,8 +161,18 @@ class AdapterManager:
             else:
                 model_kwargs["device_map"] = None
 
+            # SECURITY (B615): revision/trust_remote_code are passed as explicit
+            # keywords so the supply-chain posture is auditable: remote code is
+            # disabled by default and the revision (when set) pins an immutable
+            # commit SHA.
             model = AutoModelForCausalLM.from_pretrained(
                 self._base_model_name,
+                trust_remote_code=self._config.trust_remote_code
+                if self._config is not None
+                else False,
+                revision=self._config.hub_revision or None
+                if self._config is not None
+                else None,
                 **model_kwargs,
             )
 
@@ -183,6 +209,8 @@ class AdapterManager:
             self.load_base_model()
 
             logger.info("Loading adapter '%s' from %s", adapter_name, adapter_path)
+            # adapter_path is a local directory (never a Hub repo), so no
+            # remote download/revision concerns apply.
             adapter_model = PeftModel.from_pretrained(
                 self._base_model,
                 adapter_path,
@@ -327,8 +355,8 @@ class InferenceService:
         self.adapter_manager = AdapterManager(
             self.config.base_model_name,
             self.config.device,
+            config=self.config,
         )
-        self.adapter_manager._config = self.config
         self.metrics = InferenceMetrics()
         self._request_history: deque[float] = deque(maxlen=1000)
         self._start_time = time.monotonic()

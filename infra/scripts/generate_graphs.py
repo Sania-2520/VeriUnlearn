@@ -6,11 +6,8 @@ PNG (300 DPI) + PDF figures suitable for academic papers.
 """
 import argparse
 import json
-import math
-import os
 import sys
 from pathlib import Path
-from typing import Any
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 
@@ -44,7 +41,7 @@ except ImportError:
     print("matplotlib not available, skipping graph generation")
 
 try:
-    from sklearn.metrics import confusion_matrix, roc_curve, auc
+    from sklearn.metrics import auc, roc_curve
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False

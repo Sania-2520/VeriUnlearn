@@ -159,7 +159,6 @@ def build_deletion_requests() -> list[dict]:
 def build_certificates() -> list[dict]:
     certs = []
     for i, algo in enumerate(ALGORITHMS):
-        rng = random.Random(100 + i)
         proof_steps = [
             {"step": s, "description": desc, "hash": _sha64(f"{algo}-cifar10-step-{s}")[:32]}
             for s, desc in enumerate(PROOF_STEP_DESCRIPTIONS)
@@ -185,7 +184,6 @@ def build_certificates() -> list[dict]:
 
 
 def build_benchmark_report() -> dict:
-    rng = random.Random(2026)
     results = []
     for ds in DATASETS:
         for algo in ALGORITHMS:

@@ -4,12 +4,11 @@ from __future__ import annotations
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
 from evaluation.config import (
     ExperimentConfig,
-    get_hardware_info,
     get_git_info,
+    get_hardware_info,
     get_package_versions,
 )
 from evaluation.export import ExperimentResults, ResultsExporter
@@ -19,7 +18,12 @@ class PublicationReport:
     """Generate IEEE-paper-quality benchmark reports."""
 
     def __init__(self, config: ExperimentConfig | None = None) -> None:
-        self.config = config
+        # ``config`` is stored as non-optional: callers that do not pass one get
+        # a default. If the caller passed none but ``results.config`` carries a
+        # real configuration (loaded from a saved run), ``generate_report``
+        # rebuilds it from the results so the report reflects the experiment.
+        self._config_passed = config is not None
+        self.config = config if config is not None else ExperimentConfig()
 
     def generate_report(
         self,
@@ -31,14 +35,11 @@ class PublicationReport:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        if self.config is None and results.config:
+        if not self._config_passed and results.config:
             try:
                 self.config = ExperimentConfig(**results.config)
             except Exception:
                 self.config = ExperimentConfig()
-
-        if self.config is None:
-            self.config = ExperimentConfig()
 
         sections: list[str] = []
         sections.append(self._generate_title(results))
@@ -72,7 +73,7 @@ class PublicationReport:
         lines = [
             f"# {self.config.experiment_name.replace('_', ' ').title()}",
             "",
-            f"**VeriUnlearn Benchmark Report**",
+            "**VeriUnlearn Benchmark Report**",
             "",
             f"> Algorithms: {algos}  ",
             f"> Datasets: {datasets_str}  ",
@@ -303,7 +304,6 @@ class PublicationReport:
             "",
         ]
 
-        flat = results.summary_flat()
         algos = results.algorithm_names
         metrics = results.metric_names
 
@@ -319,7 +319,6 @@ class PublicationReport:
             return sections
 
         try:
-            import numpy as np
             from scipy import stats as sp_stats
 
             p_values: dict[tuple[str, str], dict[str, float]] = {}
@@ -438,8 +437,6 @@ class PublicationReport:
 
     def _generate_discussion(self, results: ExperimentResults) -> str:
         flat = results.summary_flat()
-        algos = results.algorithm_names
-        metrics = results.metric_names
 
         best_accuracy = self._find_best_algorithm(flat, "accuracy") if flat else "N/A"
         best_f1 = self._find_best_algorithm(flat, "f1_macro") if flat else "N/A"
@@ -447,10 +444,6 @@ class PublicationReport:
 
         forget_ratios = sorted({r.forget_ratio for r in results.runs})
         fr_range = f"{forget_ratios[0]:.0%} to {forget_ratios[-1]:.0%}" if forget_ratios else "N/A"
-
-        completed = sum(1 for r in results.runs if r.success)
-        total = results.num_runs
-        success_rate = completed / total if total > 0 else 0.0
 
         lines = [
             "## 5. Discussion",
@@ -566,7 +559,7 @@ class PublicationReport:
             "source .venv/bin/activate",
             "pip install -r requirements.txt",
             f"export PYTHONHASHSEED={cfg.seeds.python_hash_seed}",
-            f"python -m evaluation.run_all --config evaluation/results/config.json",
+            "python -m evaluation.run_all --config evaluation/results/config.json",
             "```",
             "",
         ])
@@ -618,7 +611,7 @@ class PublicationReport:
                     f"| {'Yes' if run.success else 'No'} |"
                 )
             if len(results.runs) > 100:
-                lines.append(f"| ... | ... | ... | ... | ... | ... |")
+                lines.append("| ... | ... | ... | ... | ... | ... |")
                 lines.append(f"*{len(results.runs) - 100} additional runs omitted.*")
 
         return "\n".join(lines)

@@ -4,7 +4,10 @@
 Runs: 4 datasets x 5 algorithms x 3 forget ratios x 5 seeds = 300 runs
 """
 
-import sys, os, logging
+import logging
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 os.chdir(os.path.join(os.path.dirname(__file__), '..'))
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
@@ -13,8 +16,14 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger("phase2")
 
 from evaluation.config import (
-    ExperimentConfig, SeedConfig, DatasetConfig, ModelConfig,
-    TrainingConfig, UnlearningConfig, PrivacyConfig, OutputConfig,
+    DatasetConfig,
+    ExperimentConfig,
+    ModelConfig,
+    OutputConfig,
+    PrivacyConfig,
+    SeedConfig,
+    TrainingConfig,
+    UnlearningConfig,
 )
 from evaluation.runner import ExperimentRunner
 

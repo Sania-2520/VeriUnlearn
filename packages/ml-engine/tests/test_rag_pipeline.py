@@ -82,6 +82,18 @@ class TestRAGConfig:
         assert config.chunk_size == 256
         assert config.min_score == 0.5
 
+    def test_storage_path_from_env(self, monkeypatch):
+        monkeypatch.setenv("RAG_STORAGE_PATH", "/data/rag")
+        config = RAGConfig()
+        assert config.storage_path == "/data/rag"
+        monkeypatch.delenv("RAG_STORAGE_PATH")
+        assert RAGConfig().storage_path == "./rag_storage"
+
+    def test_qdrant_url_from_env(self, monkeypatch):
+        monkeypatch.setenv("QDRANT_URL", "http://qdrant:6333")
+        assert RAGConfig().qdrant_url == "http://qdrant:6333"
+        monkeypatch.delenv("QDRANT_URL")
+
 
 class TestTextChunker:
     def test_chunk_text(self):
@@ -164,6 +176,49 @@ class TestDocumentProcessor:
         assert "text/plain" in types
         assert "text/csv" in types
         assert "application/pdf" in types
+
+    def test_image_types_registered_for_ocr(self):
+        processor = DocumentProcessor()
+        for t in ("image/png", "png", "image/jpeg", "jpg", "image/webp", "image/tiff"):
+            assert t in processor._type_map
+        assert processor._type_map["image/png"] == processor.process_image
+        assert processor._type_map["jpg"] == processor.process_image
+
+    def test_process_image_without_ocr_deps_raises(self, tmp_path):
+        f = tmp_path / "scan.png"
+        f.write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00" * 32)
+        processor = DocumentProcessor()
+        with patch("training.rag_pipeline.pytesseract", None, create=True), \
+             patch("builtins.__import__", side_effect=ImportError("no OCR libs")):
+            with pytest.raises(RuntimeError) as exc_info:
+                processor.process(str(f), "image/png")
+            assert "pytesseract" in str(exc_info.value)
+
+    def test_process_image_text_fallback(self, tmp_path, monkeypatch):
+        # A text file mislabeled as an image should still be readable via the
+        # txt fallback when OCR fails at runtime (image open / OCR error).
+        import sys
+
+        f = tmp_path / "notes.png"
+        f.write_text("plain text inside a fake image")
+        processor = DocumentProcessor()
+
+        # Simulate an OCR runtime failure (not an import failure) so the
+        # fallback path is exercised.
+        class _FakeImage:
+            @classmethod
+            def open(cls, *args, **kwargs):
+                raise Exception("not a real image")
+
+        class _FakeTesseract:
+            @staticmethod
+            def image_to_string(*args, **kwargs):
+                return ""
+
+        monkeypatch.setitem(sys.modules, "pytesseract", _FakeTesseract)
+        monkeypatch.setitem(sys.modules, "PIL", type("PIL", (), {"Image": _FakeImage}))
+        text = processor.process(str(f), "image/png")
+        assert "plain text" in text
 
 
 class TestEmbeddingService:
@@ -402,3 +457,96 @@ class TestRAGPipeline:
         d1 = pipeline.ingest_document(str(f), "dup.txt", "text/plain")
         d2 = pipeline.ingest_document(str(f), "dup_copy.txt", "text/plain")
         assert d1.document_id == d2.document_id
+
+    def test_process_document_text(self, pipeline):
+        doc = pipeline.process_document(
+            document_id="celery-doc-1",
+            filename="inline.txt",
+            file_type="txt",
+            text="Asynchronous document processing with real chunking and embedding work",
+        )
+        assert doc.document_id == "celery-doc-1"
+        assert doc.status == "indexed"
+        assert doc.chunk_count >= 1
+        assert pipeline.get_document("celery-doc-1") is not None
+
+    def test_process_document_file(self, tmp_path, pipeline):
+        f = tmp_path / "celery.txt"
+        f.write_text("File-based document processing test content")
+        doc = pipeline.process_document(
+            document_id="celery-doc-2",
+            filename="celery.txt",
+            file_type="txt",
+            storage_path=str(f),
+        )
+        assert doc.status == "indexed"
+        assert doc.chunk_count >= 1
+
+    def test_process_document_missing_path_raises(self, pipeline):
+        with pytest.raises(FileNotFoundError):
+            pipeline.process_document(
+                document_id="celery-doc-3",
+                filename="missing.pdf",
+                file_type="pdf",
+                storage_path="/nonexistent/file.pdf",
+            )
+
+    def test_process_document_replaces_prior(self, pipeline):
+        d1 = pipeline.process_document(
+            document_id="celery-doc-4",
+            filename="v1.txt",
+            file_type="txt",
+            text="First version content here",
+        )
+        assert d1.status == "indexed"
+        d2 = pipeline.process_document(
+            document_id="celery-doc-4",
+            filename="v2.txt",
+            file_type="txt",
+            text="Second version content here",
+        )
+        assert d2.document_id == "celery-doc-4"
+        assert d2.status == "indexed"
+
+    def test_regenerate_embeddings(self, pipeline):
+        doc = pipeline.ingest_text("Regenerate my embeddings please", "regen")
+        count = pipeline.regenerate_embeddings(doc.document_id)
+        assert count == doc.chunk_count
+        assert count >= 1
+
+    def test_regenerate_embeddings_unknown_doc(self, pipeline):
+        assert pipeline.regenerate_embeddings("nope-id") == 0
+
+    def test_ocr_process(self, tmp_path, pipeline):
+        f = tmp_path / "scanned.txt"
+        f.write_text("OCR extracted content")
+        doc = pipeline.ocr_process(
+            document_id="ocr-doc-1",
+            storage_path=str(f),
+            file_type="txt",
+        )
+        assert doc.status == "indexed"
+        assert doc.chunk_count >= 1
+
+    def test_ocr_process_missing_file_raises(self, pipeline):
+        with pytest.raises(FileNotFoundError):
+            pipeline.ocr_process(
+                document_id="ocr-doc-2",
+                storage_path="/nonexistent/scanned.pdf",
+                file_type="pdf",
+            )
+
+    def test_upsert_vector_and_delete(self, pipeline):
+        pipeline.upsert_vector(
+            collection="memory",
+            point_id="mem-1",
+            vector=[0.1, 0.2, 0.3],
+            payload={"user_id": "u1"},
+        )
+        deleted = pipeline.delete_vectors("memory", {"user_id": "u1"})
+        assert deleted == 1
+
+    def test_upsert_vector_no_match_delete(self, pipeline):
+        pipeline.upsert_vector("memory", "mem-2", [0.5, 0.5], {})
+        deleted = pipeline.delete_vectors("memory", {"user_id": "nobody"})
+        assert deleted == 0

@@ -40,14 +40,14 @@ class ReservoirSampler:
         self._capacity = capacity
         self._buffer: list[ReplaySample] = []
         self._counter = 0
-        self._rng = rng or random.Random(42)
+        self._rng = rng or random.Random(42)  # nosec B311 - seeded reservoir sampling, non-crypto
 
     def add(self, sample: ReplaySample) -> Optional[ReplaySample]:
         self._counter += 1
         if len(self._buffer) < self._capacity:
             self._buffer.append(sample)
             return None
-        j = self._rng.randint(0, self._counter - 1)
+        j = self._rng.randint(0, self._counter - 1)  # nosec B311 - reservoir sampling, non-crypto
         if j < self._capacity:
             evicted = self._buffer[j]
             self._buffer[j] = sample
@@ -56,7 +56,7 @@ class ReservoirSampler:
 
     def sample(self, n: int) -> list[ReplaySample]:
         k = min(n, len(self._buffer))
-        return self._rng.sample(self._buffer, k)
+        return self._rng.sample(self._buffer, k)  # nosec B311 - reservoir sampling, non-crypto
 
     def __len__(self) -> int:
         return len(self._buffer)
@@ -69,7 +69,7 @@ class ImportanceSampler:
     def __init__(self, capacity: int, rng: Optional[random.Random] = None) -> None:
         self._capacity = capacity
         self._buffer: list[ReplaySample] = []
-        self._rng = rng or random.Random(42)
+        self._rng = rng or random.Random(42)  # nosec B311 - seeded importance sampling, non-crypto
 
     def add(self, sample: ReplaySample) -> Optional[ReplaySample]:
         if len(self._buffer) < self._capacity:
@@ -143,7 +143,7 @@ class ReplayBuffer:
             if task_id:
                 filtered = [s for s in self._sampler.get_all() if s.task_id == task_id]
                 k = min(n, len(filtered))
-                return random.sample(filtered, k) if filtered else []
+                return random.sample(filtered, k) if filtered else []  # nosec B311 - replay sampling, non-crypto
             return self._sampler.sample(n)
 
     def get_stats(self) -> dict[str, Any]:

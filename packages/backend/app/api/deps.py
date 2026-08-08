@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+from datetime import datetime, timezone
 from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, Request, status
@@ -71,6 +72,8 @@ async def get_current_user(
     if token:
         try:
             payload = token_manager.verify_token(token, expected_type="access")
+            if not payload.get("sub"):
+                raise TokenError("Token is missing the 'sub' claim")
             jti = payload.get("jti")
             if jti and await cache.exists(f"jti:blacklist:{jti}"):
                 raise HTTPException(
@@ -96,6 +99,12 @@ async def get_current_user(
         key_hash = hmac.new(settings.secret_key.encode(), api_key.encode(), hashlib.sha384).hexdigest()
         key_record = await api_key_repo.get_by_key_hash(key_hash)
         if key_record and key_record.is_active:
+            if key_record.expires_at and key_record.expires_at <= datetime.now(timezone.utc):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="API key has expired",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
             await api_key_repo.update_last_used(key_record.id)
             creator_role = UserRole.MEMBER.value
             if key_record.created_by:
@@ -103,6 +112,12 @@ async def get_current_user(
                 creator = await user_repo.get_by_id(key_record.created_by)
                 if creator:
                     creator_role = creator.role.value
+            # Fail-closed scope enforcement: only an explicit "*" grants
+            # unrestricted access. Any other list (including an empty one,
+            # e.g. legacy rows) is enforced strictly — empty grants nothing.
+            effective_permissions = set(key_record.scopes or [])
+            if "*" in effective_permissions:
+                effective_permissions = None
             return {
                 "user_id": key_record.created_by,
                 "tenant_id": key_record.tenant_id,
@@ -113,6 +128,7 @@ async def get_current_user(
                 "api_key_id": key_record.id,
                 "api_key_name": key_record.name,
                 "scopes": key_record.scopes,
+                "effective_permissions": effective_permissions,
             }
 
     raise HTTPException(
@@ -199,6 +215,23 @@ def require_permission(permission: Permission):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Missing required permission: {permission.value}",
+            )
+        effective_permissions = current_user.get("effective_permissions")
+        if effective_permissions is not None and permission.value not in effective_permissions:
+            audit_repo = SQLAlchemyAuditEventRepository(session)
+            audit_svc = AuditService(repo=audit_repo)
+            await audit_svc.record(
+                tenant_id=current_user.get("tenant_id", ""),
+                event_type=EventType.SECURITY_ASSESSMENT,
+                actor_id=current_user.get("user_id"),
+                actor_type=ActorType.USER,
+                action="rbac.api_key_scope_denied",
+                status=EventStatus.FAILURE,
+                metadata={"permission": permission.value, "role": role, "auth_type": current_user.get("auth_type")},
+            )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"API key scope does not grant permission: {permission.value}",
             )
         return current_user
     return permission_checker

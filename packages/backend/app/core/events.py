@@ -35,6 +35,13 @@ async def startup_event(app: FastAPI) -> None:
 async def shutdown_event(app: FastAPI) -> None:
     logger.info("Shutting down VeriUnlearn")
 
+    try:
+        from app.infrastructure.external.ml_engine import ml_engine_client
+        await ml_engine_client.aclose()
+        logger.info("ML Engine HTTP clients closed")
+    except Exception:
+        logger.warning("Failed to close ML Engine HTTP clients", exc_info=True)
+
     await cache.close()
     await db.close()
     logger.info("Connections closed")

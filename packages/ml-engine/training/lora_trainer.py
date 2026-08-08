@@ -68,6 +68,12 @@ def _load_rng_state(state: dict[str, Any]) -> None:
 @dataclass
 class TrainingConfig:
     base_model_name: str = "Qwen/Qwen2.5-0.5B-Instruct"
+    # SECURITY: remote code execution from Hugging Face Hub is disabled by
+    # default. Only enable ``trust_remote_code`` for vetted model repositories.
+    # Pin ``hub_revision`` to an immutable commit SHA for reproducible,
+    # tamper-resistant model downloads in production.
+    trust_remote_code: bool = False
+    hub_revision: str = ""
     lora_r: int = 16
     lora_alpha: int = 32
     lora_dropout: float = 0.05
@@ -235,7 +241,8 @@ class LoRATrainer:
 
         tokenizer = AutoTokenizer.from_pretrained(
             self.config.base_model_name,
-            trust_remote_code=True,
+            trust_remote_code=self.config.trust_remote_code,
+            revision=self.config.hub_revision or None,
         )
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token_id = tokenizer.eos_token_id
@@ -250,7 +257,6 @@ class LoRATrainer:
             )
 
         model_kwargs: dict[str, Any] = {
-            "trust_remote_code": True,
             "torch_dtype": torch.float16 if self.config.fp16 else torch.float32,
         }
         if quantization_config is not None:
@@ -259,8 +265,14 @@ class LoRATrainer:
         else:
             model_kwargs["device_map"] = None
 
+        # SECURITY (B615): revision/trust_remote_code are passed as explicit
+        # keywords so the supply-chain posture is auditable: remote code is
+        # disabled by default and the revision (when set) pins an immutable
+        # commit SHA.
         model = AutoModelForCausalLM.from_pretrained(
             self.config.base_model_name,
+            trust_remote_code=self.config.trust_remote_code,
+            revision=self.config.hub_revision or None,
             **model_kwargs,
         )
 
@@ -318,9 +330,9 @@ class LoRATrainer:
             )
 
         split_idx = max(1, int(len(filtered) * 0.9))
-        rng = random.Random(self.config.seed)
+        rng = random.Random(self.config.seed)  # nosec B311 - deterministic seeded data split
         shuffled = filtered[:]
-        rng.shuffle(shuffled)
+        rng.shuffle(shuffled)  # nosec B311 - deterministic seeded data split
         train_convs = shuffled[:split_idx]
         eval_convs = shuffled[split_idx:]
 
@@ -707,6 +719,8 @@ class LoRATrainer:
             state_path = os.path.join(checkpoint_path, "state", "training_state.json")
 
         if self._peft_mode and PEFT_AVAILABLE and self.model is not None:
+            # adapter_dir is a local checkpoint directory (never a Hub repo), so
+            # no remote download/revision concerns apply.
             self.peft_model = PeftModel.from_pretrained(
                 self.model, adapter_dir, is_trainable=True
             )
@@ -714,8 +728,15 @@ class LoRATrainer:
         else:
             model_path = os.path.join(adapter_dir, "model.pt")
             if os.path.exists(model_path) and self.peft_model is not None:
+                # weights_only=True blocks pickle-based RCE from tampered
+                # checkpoint files (B614). State dicts are plain tensors, so
+                # this is fully compatible with checkpoints this code saves.
                 self.peft_model.load_state_dict(
-                    torch.load(model_path, map_location=self._device)
+                    torch.load(
+                        model_path,
+                        map_location=self._device,
+                        weights_only=True,
+                    )
                 )
                 logger.info("Full model state loaded from %s", model_path)
 

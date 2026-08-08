@@ -1,40 +1,27 @@
 "use client"
 
-import { useState, useMemo, useCallback, useEffect, useRef } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { clsx } from "clsx"
 import { useDropzone } from "react-dropzone"
 import {
   Upload,
-  FileText,
-  Table,
-  Hash,
-  Type,
   Check,
   X,
   AlertTriangle,
   Shield,
   Eye,
   EyeOff,
-  Tags,
-  User,
   FileSpreadsheet,
   Database,
-  ArrowLeft,
-  ArrowRight,
-  HelpCircle,
-  GripVertical,
   Trash2,
-  RefreshCw,
   Plus,
-  List,
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input, Textarea } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import {
   WorkflowProvider,
@@ -149,10 +136,6 @@ function BasicInfoStep() {
     updateFormData({ datasetTags: next })
   }
 
-  const handleContinue = () => {
-    updateFormData({ datasetName: name, datasetDescription: description, datasetLicense: license })
-  }
-
   return (
     <WorkflowStep title="Basic Information" description="Provide the name and metadata for your dataset.">
       <div className="max-w-lg space-y-5">
@@ -216,7 +199,7 @@ function BasicInfoStep() {
 }
 
 function UploadDataStep() {
-  const { formData, updateFormData, setStepValidation } = useWorkflow()
+  const { formData, setStepValidation } = useWorkflow()
   const [file, setFile] = useState<File | null>((formData.datasetFile as File) ?? null)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploading, setUploading] = useState(false)
@@ -259,10 +242,6 @@ function UploadDataStep() {
   const formatSize = (bytes: number) => {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  }
-
-  const handleContinue = () => {
-    if (file) updateFormData({ datasetFile: file })
   }
 
   return (
@@ -328,7 +307,7 @@ function UploadDataStep() {
 }
 
 function SchemaMappingStep() {
-  const { formData, updateFormData, setStepValidation } = useWorkflow()
+  const { formData, setStepValidation } = useWorkflow()
   const [columns, setColumns] = useState<ColumnInfo[]>(
     (formData.schemaColumns as ColumnInfo[]) ?? mockColumns,
   )
@@ -343,10 +322,6 @@ function SchemaMappingStep() {
 
   const setColumnType = (index: number, type: ColumnType) => {
     setColumns((prev) => prev.map((c, i) => (i === index ? { ...c, type } : c)))
-  }
-
-  const handleContinue = () => {
-    updateFormData({ schemaColumns: columns })
   }
 
   return (
@@ -429,7 +404,7 @@ function SchemaMappingStep() {
 }
 
 function PrivacyReviewStep() {
-  const { formData, updateFormData, setStepValidation } = useWorkflow()
+  const { formData, setStepValidation } = useWorkflow()
   const [anonymize, setAnonymize] = useState<Record<string, boolean>>(
     (formData.privacyAnonymize as Record<string, boolean>) ?? { email: true, name: true },
   )
@@ -444,10 +419,6 @@ function PrivacyReviewStep() {
 
   const toggleAnonymize = (col: string) => {
     setAnonymize((prev) => ({ ...prev, [col]: !prev[col] }))
-  }
-
-  const handleContinue = () => {
-    updateFormData({ privacyAnonymize: anonymize, privacyConsent: consent })
   }
 
   return (
@@ -621,7 +592,7 @@ export function UploadDataset() {
 }
 
 function UploadDatasetInner({ onCancel }: { onCancel: () => void }) {
-  const { formData, isSubmitting, setIsSubmitting } = useWorkflow()
+  const { formData, setIsSubmitting } = useWorkflow()
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
 

@@ -27,11 +27,11 @@ _PLACEHOLDER_SUBSTRINGS = ["change-me", "changeme", "change_me", "placeholder", 
 # These ship in docker-compose.yml / .env.example as thin `${VAR:-default}` fallbacks
 # and must be rejected at startup in non-development environments.
 DEV_DEFAULT_CREDENTIALS = {
-    "DB_PASSWORD": "veriunlearn_secret",
-    "REDIS_PASSWORD": "veriunlearn_secret",
-    "MINIO_SECRET": "veriunlearn_secret",
-    "JWT_SECRET": "dev-jwt-secret-key-at-least-32-chars-long!!",
-    "APP_SECRET": "dev-app-secret-key-at-least-32-chars-long!!!",
+    "DB_PASSWORD": "veriunlearn_secret",  # nosec B105 - rejected at startup in non-dev envs
+    "REDIS_PASSWORD": "veriunlearn_secret",  # nosec B105 - rejected at startup in non-dev envs
+    "MINIO_SECRET": "veriunlearn_secret",  # nosec B105 - rejected at startup in non-dev envs
+    "JWT_SECRET": "dev-jwt-secret-key-at-least-32-chars-long!!",  # nosec B105 - rejected at startup in non-dev envs
+    "APP_SECRET": "dev-app-secret-key-at-least-32-chars-long!!!",  # nosec B105 - rejected at startup in non-dev envs
 }
 
 
@@ -219,6 +219,13 @@ class Settings(BaseSettings):
     rate_limit_streaming: str = "30/minute"
     rate_limit_unlearning: str = "10/minute"
 
+    # ─── RAG ────────────────────────────────────────────────
+    # Local directory where uploaded RAG documents are persisted before the
+    # Celery worker hands them to the ML Engine for OCR/parsing/chunking.
+    # In Docker deployments this must be a volume shared with the ml-engine
+    # service (see docker-compose.yml).
+    rag_storage_dir: str = "./storage/rag_uploads"
+
     # ─── File Upload ────────────────────────────────────────
     max_upload_size_mb: int = 100
     allowed_upload_types: str = (
@@ -280,6 +287,18 @@ class Settings(BaseSettings):
         if not any(dialect in v for dialect in ("postgresql", "sqlite")):
             raise ValueError("DATABASE_URL must be a PostgreSQL or SQLite connection string")
         return v
+
+    @model_validator(mode="after")
+    def validate_cors_config(self) -> "Settings":
+        origins = self.cors_origins_list
+        if not origins:
+            raise ValueError("CORS_ORIGINS must list at least one allowed origin")
+        if self.cors_allow_credentials and any(o.strip() == "*" for o in origins):
+            raise ValueError(
+                "CORS_ORIGINS must not use the '*' wildcard when CORS_ALLOW_CREDENTIALS is true "
+                "(credentials + wildcard origin is not allowed by browsers)"
+            )
+        return self
 
     @model_validator(mode="after")
     def reject_dev_default_credentials_outside_development(self) -> "Settings":

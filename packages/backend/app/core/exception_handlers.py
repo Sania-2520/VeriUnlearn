@@ -74,6 +74,17 @@ async def validation_error_handler(
             }
         )
 
+    logger.info(
+        "Request validation failed",
+        extra={
+            "path": request.url.path,
+            "method": request.method,
+            "request_id": getattr(request.state, "request_id", None),
+            "error_count": len(errors),
+            "error_fields": [e["location"] for e in errors],
+        },
+    )
+
     return create_error_response(
         code="VALIDATION_ERROR",
         message="Request validation failed",
@@ -96,6 +107,16 @@ async def pydantic_validation_error_handler(
                 "type": error.get("type", "unknown"),
             }
         )
+
+    logger.info(
+        "Data validation failed",
+        extra={
+            "path": request.url.path,
+            "method": request.method,
+            "request_id": getattr(request.state, "request_id", None),
+            "error_count": len(errors),
+        },
+    )
 
     return create_error_response(
         code="VALIDATION_ERROR",
@@ -133,6 +154,14 @@ async def not_found_error_handler(
     request: Request,
     exc: Exception,
 ) -> JSONResponse:
+    logger.debug(
+        "Resource not found",
+        extra={
+            "path": request.url.path,
+            "method": request.method,
+            "request_id": getattr(request.state, "request_id", None),
+        },
+    )
     return create_error_response(
         code="NOT_FOUND",
         message="The requested resource was not found",

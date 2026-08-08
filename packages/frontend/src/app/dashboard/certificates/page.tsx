@@ -4,49 +4,31 @@ import { useState, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { clsx } from "clsx"
 import { toast } from "sonner"
-import { Card, CardHeader, CardContent } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge, statusTone } from "@/components/ui/badge"
 import { PageHeader, StatCard } from "@/components/ui/page-header"
 import { DataTable, type Column } from "@/components/ui/data-table"
 import { Progress } from "@/components/ui/progress"
-import { Input } from "@/components/ui/input"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { HelpTip, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { EmptyState } from "@/components/ui/empty-state"
 import {
   ShieldCheck,
   Download,
   Search,
-  Filter,
   Copy,
   CheckCheck,
   Eye,
-  FileDown,
   Share2,
   X,
-  RotateCcw,
   Ban,
-  ChevronDown,
   MoreHorizontal,
-  ArrowUpDown,
   Shield,
-  AlertTriangle,
   Clock,
-  ExternalLink,
   FileJson,
   FileText,
-  QrCode,
 } from "lucide-react"
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-} from "recharts"
 
 interface MerkleNode {
   hash: string
@@ -297,7 +279,7 @@ export default function CertificatesPage() {
   const [algoFilter, setAlgoFilter] = useState<string>("")
   const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set())
   const [detailCert, setDetailCert] = useState<Certificate | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading] = useState(false)
 
   const filtered = useMemo(() => {
     return certificates.filter((c) => {

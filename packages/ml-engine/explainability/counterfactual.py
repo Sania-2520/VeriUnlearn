@@ -129,7 +129,7 @@ class CounterfactualExplainer:
         cf = np.array(cf_result["counterfactual"])
         min_dist = float("inf")
         for ref in reference_samples:
-            dist = np.linalg.norm(cf - ref)
+            dist = float(np.linalg.norm(cf - ref))
             min_dist = min(min_dist, dist)
         return float(min_dist)
 

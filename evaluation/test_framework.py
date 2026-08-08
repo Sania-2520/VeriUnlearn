@@ -6,7 +6,6 @@ Run: python -m evaluation.test_framework
 """
 from __future__ import annotations
 
-import json
 import os
 import sys
 import tempfile
@@ -18,8 +17,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 def test_config():
     from evaluation.config import (
-        ExperimentConfig, SeedConfig, DatasetConfig,
-        get_hardware_info, get_git_info, get_package_versions,
+        DatasetConfig,
+        ExperimentConfig,
+        SeedConfig,
+        get_git_info,
+        get_hardware_info,
+        get_package_versions,
     )
     config = ExperimentConfig(
         experiment_name="test",
@@ -46,7 +49,7 @@ def test_config():
 
 
 def test_datasets():
-from evaluation.data_loading import load_by_name
+    from evaluation.data_loading import load_by_name
 
     for name in ["mnist", "cifar10", "imdb", "ag_news"]:
         try:
@@ -67,8 +70,8 @@ from evaluation.data_loading import load_by_name
 
 def test_algorithms():
     from evaluation.algorithms import get_algorithm, list_algorithms
-    from evaluation.data_loading import load_by_name, create_forget_set
     from evaluation.config import SeedConfig
+    from evaluation.data_loading import create_forget_set, load_by_name
     from evaluation.runner import _bundle_to_eval_dataset
 
     available = list_algorithms()
@@ -107,14 +110,21 @@ def test_algorithms():
 
 
 def test_metrics():
-    from evaluation.metrics import (
-        compute_classification_metrics, compute_forget_quality,
-        compute_utility_metrics, compute_privacy_metrics, compute_efficiency_metrics,
-        compute_trust_score, compute_confusion_matrix,
-        compute_roc_curve, compute_pr_curve,
-        aggregate_results, compute_statistical_significance,
-    )
     import numpy as np
+
+    from evaluation.metrics import (
+        aggregate_results,
+        compute_classification_metrics,
+        compute_confusion_matrix,
+        compute_efficiency_metrics,
+        compute_forget_quality,
+        compute_pr_curve,
+        compute_privacy_metrics,
+        compute_roc_curve,
+        compute_statistical_significance,
+        compute_trust_score,
+        compute_utility_metrics,
+    )
 
     y_true = np.array([0, 1, 1, 0, 1, 0, 1, 1, 0, 0])
     y_pred = np.array([0, 1, 0, 0, 1, 1, 1, 0, 0, 0])
@@ -187,9 +197,14 @@ def test_metrics():
 
 def test_runner_quick():
     from evaluation.config import (
-        ExperimentConfig, SeedConfig, DatasetConfig,
-        ModelConfig, TrainingConfig, UnlearningConfig,
-        PrivacyConfig, OutputConfig,
+        DatasetConfig,
+        ExperimentConfig,
+        ModelConfig,
+        OutputConfig,
+        PrivacyConfig,
+        SeedConfig,
+        TrainingConfig,
+        UnlearningConfig,
     )
     from evaluation.runner import ExperimentRunner
 
@@ -223,10 +238,11 @@ def test_runner_quick():
 
 
 def test_visualization():
-    from evaluation.config import ExperimentConfig, SeedConfig, DatasetConfig, OutputConfig
-    from evaluation.runner import RunResult, ExperimentResults
-    from evaluation.visualization import PublicationVisualizer
     import numpy as np
+
+    from evaluation.config import ExperimentConfig, OutputConfig
+    from evaluation.runner import ExperimentResults, RunResult
+    from evaluation.visualization import PublicationVisualizer
 
     config = ExperimentConfig(
         experiment_name="viz_test",
@@ -274,8 +290,9 @@ def test_visualization():
 
 
 def test_export():
-    from evaluation.export import ResultsExporter, ExperimentResults, RunResult
-    import tempfile, os
+    import tempfile
+
+    from evaluation.export import ExperimentResults, ResultsExporter, RunResult
 
     runs = [RunResult(
         run_id=0, algorithm="retrain", dataset="mnist", forget_ratio=0.10, seed=42,

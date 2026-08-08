@@ -8,10 +8,8 @@ import type {
   InfluenceNode,
   UnlearningImpact,
   UnlearningPipelineStep,
-  PostUnlearningComparison,
   TimelineEvent,
   VerificationRecord,
-  StorageLocation,
   KnowledgeType,
 } from "@/lib/types/knowledge"
 

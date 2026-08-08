@@ -1,3 +1,19 @@
+"""Async HTTP client for the VeriUnlearn ML Engine.
+
+Refactored so that all HTTP plumbing (connection pooling, error handling,
+header injection) lives in a single ``_request`` helper backed by a shared,
+per-event-loop ``httpx.AsyncClient``. Public method signatures, request paths,
+payloads, and error types are identical to the previous implementation.
+
+Connection pooling: an ``httpx.AsyncClient`` is created lazily and keyed by the
+running event loop, so requests issued from the same loop (e.g. all FastAPI
+handlers) reuse TCP/TLS connections and keep-alive sockets. Celery tasks run
+coroutines on fresh loops, so each task gets its own client (avoids
+cross-loop reuse of pooled connections). ``aclose()`` releases all resources.
+"""
+
+import asyncio
+import random
 from typing import Any, AsyncGenerator, Optional
 
 import httpx
@@ -7,18 +23,144 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+_HTTPX_LIMITS = httpx.Limits(max_connections=100, max_keepalive_connections=20)
+
+
+def _backoff_with_jitter(base: float, exponent: int, jitter_max: float = 0.25) -> float:
+    """Exponential backoff with random jitter.
+
+    Jitter is non-cryptographic (B311 is acceptable here); it only needs to
+    de-synchronise concurrent retry storms, not provide unpredictability.
+    """
+    return base * (2 ** exponent) + random.uniform(0, jitter_max)  # nosec B311
+
 
 class MLEngineClientError(Exception):
-    pass
+    """Raised when the ML Engine cannot fulfil a request.
+
+    ``status_code`` is the HTTP status of the engine's response when the
+    failure is an HTTP error, or ``None`` when the failure is a transport/
+    connection-level error. Callers (e.g. Celery tasks) use it to decide
+    whether a retry is worthwhile: ``None``, 429 and 5xx are transient;
+    4xx (other than 429) are permanent.
+    """
+
+    def __init__(self, message: str, status_code: Optional[int] = None) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
+    @property
+    def is_transient(self) -> bool:
+        if self.status_code is None:
+            return True
+        return self.status_code in (408, 425, 429) or self.status_code >= 500
 
 
 class MLEngineClient:
     def __init__(self, base_url: str, api_key: Optional[str] = None, timeout: int = 300) -> None:
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
+        self._retries = 2
+        self._retry_backoff = 0.5
         self._headers: dict[str, str] = {"Content-Type": "application/json"}
         if api_key:
             self._headers["X-API-Key"] = api_key
+        self._clients: dict[int, httpx.AsyncClient] = {}
+
+    def _build_client(self) -> httpx.AsyncClient:
+        return httpx.AsyncClient(
+            timeout=self._timeout,
+            limits=_HTTPX_LIMITS,
+            headers=self._headers,
+        )
+
+    def _get_client(self) -> httpx.AsyncClient:
+        """Return a pooled client bound to the current event loop."""
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop is not None:
+            client = self._clients.get(id(loop))
+            if client is not None and not client.is_closed:
+                return client
+            client = self._build_client()
+            self._clients[id(loop)] = client
+            return client
+        client = self._build_client()
+        self._clients[-1] = client
+        return client
+
+    async def aclose(self) -> None:
+        """Close every pooled client (call on application shutdown)."""
+        for client in self._clients.values():
+            if not client.is_closed:
+                await client.aclose()
+        self._clients.clear()
+
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        json: Optional[dict[str, Any]] = None,
+        params: Optional[dict[str, Any]] = None,
+        timeout: Optional[float] = None,
+        error_label: str = "ML Engine",
+        include_headers: bool = True,
+    ) -> Any:
+        client = self._get_client()
+        request_headers = self._headers if include_headers else None
+
+        retryable_statuses = {429, 502, 503, 504}
+        last_error: Optional[Exception] = None
+        for attempt in range(self._retries + 1):
+            try:
+                resp = await client.request(
+                    method,
+                    f"{self._base_url}{path}",
+                    json=json,
+                    params=params,
+                    headers=request_headers,
+                    timeout=timeout,
+                )
+                if resp.status_code in retryable_statuses and attempt < self._retries:
+                    backoff = _backoff_with_jitter(self._retry_backoff, attempt)
+                    logger.info(
+                        "%s returned %s (attempt %d/%d); retrying in %.2fs",
+                        error_label, resp.status_code, attempt + 1, self._retries + 1, backoff,
+                    )
+                    await asyncio.sleep(backoff)
+                    continue
+                resp.raise_for_status()
+                return resp.json()
+            except httpx.HTTPStatusError as e:
+                status = e.response.status_code
+                if status in retryable_statuses and attempt < self._retries:
+                    backoff = _backoff_with_jitter(self._retry_backoff, attempt)
+                    await asyncio.sleep(backoff)
+                    continue
+                logger.error(
+                    "%s failed: %s %s", error_label, status, e.response.text
+                )
+                raise MLEngineClientError(
+                    f"ML Engine returned {status}: {e.response.text}",
+                    status_code=status,
+                ) from e
+            except httpx.RequestError as e:
+                last_error = e
+                if attempt >= self._retries:
+                    break
+                backoff = _backoff_with_jitter(self._retry_backoff, attempt)
+                logger.info(
+                    "%s request failed (attempt %d/%d): %s; retrying in %.2fs",
+                    error_label, attempt + 1, self._retries + 1, str(e), backoff,
+                )
+                await asyncio.sleep(backoff)
+
+        raise MLEngineClientError(
+            f"ML Engine request failed: {last_error}", status_code=None
+        ) from last_error
 
     async def execute_unlearning(
         self,
@@ -41,21 +183,7 @@ class MLEngineClient:
             "regulatory": regulatory,
             "config": config or {},
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/unlearn",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine unlearning failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/unlearn", json=payload, error_label="ML Engine unlearning")
 
     async def generate_proof(
         self,
@@ -66,21 +194,7 @@ class MLEngineClient:
             "deletion_steps": deletion_steps,
             "algorithm": algorithm,
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/proof/generate",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine proof generation failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine proof request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/proof/generate", json=payload, error_label="ML Engine proof generation")
 
     async def verify_proof(
         self,
@@ -93,21 +207,7 @@ class MLEngineClient:
             "signature_hex": signature_hex,
             "public_key_pem": public_key_pem,
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/proof/verify",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine proof verification failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine verify request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/proof/verify", json=payload, error_label="ML Engine proof verification")
 
     async def generate_certificate(
         self,
@@ -124,21 +224,7 @@ class MLEngineClient:
             "regulatory": regulatory,
             "config": config or {},
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/certificate",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine certificate generation failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine certificate request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/certificate", json=payload, error_label="ML Engine certificate generation")
 
     async def evaluate_privacy(
         self,
@@ -153,21 +239,7 @@ class MLEngineClient:
             "data_size": data_size,
             "config": config or {},
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/evaluate/privacy",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine privacy evaluation failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine privacy request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/evaluate/privacy", json=payload, error_label="ML Engine privacy evaluation")
 
     async def evaluate_mia(
         self,
@@ -182,21 +254,7 @@ class MLEngineClient:
             "data_size": data_size,
             "config": config or {},
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/evaluate/mia",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine MIA evaluation failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine MIA request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/evaluate/mia", json=payload, error_label="ML Engine MIA evaluation")
 
     async def generate_zksnark_proof(
         self,
@@ -209,42 +267,14 @@ class MLEngineClient:
             "all_leaves": all_leaves,
             "hash_algorithm": hash_algorithm,
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/proof/generate-zksnark",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine zk-SNARK proof gen failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine zk-SNARK request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/proof/generate-zksnark", json=payload, error_label="ML Engine zk-SNARK proof gen")
 
     async def verify_zksnark_proof(
         self,
         proof_dict: dict[str, Any],
     ) -> dict[str, Any]:
         payload = {"proof": proof_dict}
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/proof/verify-zksnark",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine zk-SNARK verify failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine zk-SNARK verify request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/proof/verify-zksnark", json=payload, error_label="ML Engine zk-SNARK verify")
 
     async def generate_text(
         self,
@@ -265,21 +295,7 @@ class MLEngineClient:
             payload["adapter_name"] = adapter_name
         if system_prompt:
             payload["system_prompt"] = system_prompt
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/inference/generate",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine text generation failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine generation request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/inference/generate", json=payload, error_label="ML Engine text generation")
 
     async def generate_text_stream(
         self,
@@ -299,27 +315,30 @@ class MLEngineClient:
             payload["adapter_name"] = adapter_name
         if system_prompt:
             payload["system_prompt"] = system_prompt
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                async with client.stream(
-                    "POST",
-                    f"{self._base_url}/inference/generate/stream",
-                    json=payload,
-                    headers=self._headers,
-                ) as resp:
-                    resp.raise_for_status()
-                    async for line in resp.aiter_lines():
-                        if line.startswith("data: "):
-                            data = line[6:]
-                            if data.strip() == "[DONE]":
-                                break
-                            yield data
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine streaming failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine stream request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        client = self._get_client()
+        try:
+            async with client.stream(
+                "POST",
+                f"{self._base_url}/inference/generate/stream",
+                json=payload,
+                headers=self._headers,
+            ) as resp:
+                resp.raise_for_status()
+                async for line in resp.aiter_lines():
+                    if line.startswith("data: "):
+                        data = line[6:]
+                        if data.strip() == "[DONE]":
+                            break
+                        yield data
+        except httpx.HTTPStatusError as e:
+            logger.error("ML Engine streaming failed: %s %s", e.response.status_code, e.response.text)
+            raise MLEngineClientError(
+                f"ML Engine returned {e.response.status_code}: {e.response.text}",
+                status_code=e.response.status_code,
+            ) from e
+        except httpx.RequestError as e:
+            logger.error("ML Engine stream request failed: %s", str(e))
+            raise MLEngineClientError(f"ML Engine request failed: {e}", status_code=None) from e
 
     async def ingest_document(
         self,
@@ -332,21 +351,7 @@ class MLEngineClient:
             "source_name": source_name,
             "metadata": metadata or {},
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/rag/documents/ingest-text",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine document ingestion failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine ingestion request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/rag/documents/ingest-text", json=payload, error_label="ML Engine document ingestion")
 
     async def search_documents(
         self,
@@ -359,21 +364,7 @@ class MLEngineClient:
             "top_k": top_k,
             "filters": filters or {},
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/rag/search",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine RAG search failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine RAG search request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/rag/search", json=payload, error_label="ML Engine RAG search")
 
     async def process_document(
         self,
@@ -388,21 +379,7 @@ class MLEngineClient:
             "file_type": file_type,
             "storage_path": storage_path,
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/rag/documents/process",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine document processing failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine document processing request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/rag/documents/process", json=payload, error_label="ML Engine document processing")
 
     async def generate_embeddings(
         self,
@@ -413,21 +390,7 @@ class MLEngineClient:
             "document_id": document_id,
             "chunk_count": chunk_count,
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/rag/embeddings/generate",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine embedding generation failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine embedding generation request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/rag/embeddings/generate", json=payload, error_label="ML Engine embedding generation")
 
     async def ocr_process(
         self,
@@ -440,21 +403,7 @@ class MLEngineClient:
             "storage_path": storage_path,
             "file_type": file_type,
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/rag/documents/ocr",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine OCR processing failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine OCR processing request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/rag/documents/ocr", json=payload, error_label="ML Engine OCR processing")
 
     async def record_conversation(
         self,
@@ -470,21 +419,7 @@ class MLEngineClient:
         }
         if feedback:
             payload["feedback"] = feedback
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/conversations/record",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine conversation record failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine conversation record request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/conversations/record", json=payload, error_label="ML Engine conversation record")
 
     async def execute_e2e_unlearning(
         self,
@@ -505,21 +440,7 @@ class MLEngineClient:
             "regulatory": regulatory,
             "priority": priority,
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/unlearn/e2e",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine E2E unlearning failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine E2E unlearning request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/unlearn/e2e", json=payload, error_label="ML Engine E2E unlearning")
 
     async def train_lora(
         self,
@@ -542,21 +463,7 @@ class MLEngineClient:
             "learning_rate": learning_rate,
             "remove_data_ids": remove_data_ids or [],
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/train/lora",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine LoRA training failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine LoRA training request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/train/lora", json=payload, error_label="ML Engine LoRA training")
 
     async def explain_samples(
         self,
@@ -570,21 +477,7 @@ class MLEngineClient:
         }
         if feature_names:
             payload["feature_names"] = feature_names
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/explain/samples",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine explain samples failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine explain samples request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/explain/samples", json=payload, error_label="ML Engine explain samples")
 
     async def explain_features(
         self,
@@ -598,21 +491,7 @@ class MLEngineClient:
         }
         if feature_names:
             payload["feature_names"] = feature_names
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/explain/features",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine explain features failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine explain features request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/explain/features", json=payload, error_label="ML Engine explain features")
 
     async def compare_explanations(
         self,
@@ -628,21 +507,7 @@ class MLEngineClient:
         }
         if feature_names:
             payload["feature_names"] = feature_names
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/explain/compare",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine compare explanations failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine compare explanations request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/explain/compare", json=payload, error_label="ML Engine compare explanations")
 
     async def privacy_heatmap(
         self,
@@ -656,21 +521,7 @@ class MLEngineClient:
         }
         if feature_names:
             payload["feature_names"] = feature_names
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/explain/privacy-heatmap",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine privacy heatmap failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine privacy heatmap request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/explain/privacy-heatmap", json=payload, error_label="ML Engine privacy heatmap")
 
     async def model_drift(
         self,
@@ -685,37 +536,10 @@ class MLEngineClient:
             "pre_importances": pre_importances,
             "post_importances": post_importances,
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/explain/drift",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine model drift failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine model drift request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/explain/drift", json=payload, error_label="ML Engine model drift")
 
     async def list_explain_methods(self) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=10) as client:
-            try:
-                resp = await client.get(
-                    f"{self._base_url}/explain/methods",
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine explain methods failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine explain methods request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("GET", "/explain/methods", timeout=10, error_label="ML Engine explain methods")
 
     async def register_adapter(
         self,
@@ -732,90 +556,32 @@ class MLEngineClient:
             "config": config or {},
             "tags": tags or {},
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(f"{self._base_url}/adapters/register", json=payload, headers=self._headers)
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine adapter register failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine adapter register request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/adapters/register", json=payload, error_label="ML Engine adapter register")
 
     async def list_adapters(self) -> list[dict[str, Any]]:
-        async with httpx.AsyncClient(timeout=10) as client:
-            try:
-                resp = await client.get(f"{self._base_url}/adapters", headers=self._headers)
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine list adapters failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine list adapters request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("GET", "/adapters", timeout=10, error_label="ML Engine list adapters")
 
     async def activate_adapter(self, adapter_name: str, version_id: str) -> dict[str, Any]:
         payload = {"adapter_name": adapter_name, "version_id": version_id}
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(f"{self._base_url}/adapters/activate", json=payload, headers=self._headers)
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine adapter activate failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine adapter activate request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/adapters/activate", json=payload, error_label="ML Engine adapter activate")
 
     async def rollback_adapter(self, adapter_name: str, version_id: Optional[str] = None) -> dict[str, Any]:
         params = {}
         if version_id:
             params["version_id"] = version_id
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/adapters/{adapter_name}/rollback",
-                    params=params,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine adapter rollback failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine adapter rollback request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request(
+            "POST", f"/adapters/{adapter_name}/rollback", params=params, error_label="ML Engine adapter rollback"
+        )
 
     async def get_adapter_versions(self, adapter_name: str) -> list[dict[str, Any]]:
-        async with httpx.AsyncClient(timeout=10) as client:
-            try:
-                resp = await client.get(f"{self._base_url}/adapters/{adapter_name}/versions", headers=self._headers)
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine adapter versions failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine adapter versions request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request(
+            "GET", f"/adapters/{adapter_name}/versions", timeout=10, error_label="ML Engine adapter versions"
+        )
 
     async def get_adapter_health(self, adapter_name: str) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=10) as client:
-            try:
-                resp = await client.get(f"{self._base_url}/adapters/{adapter_name}/health", headers=self._headers)
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine adapter health failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine adapter health request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request(
+            "GET", f"/adapters/{adapter_name}/health", timeout=10, error_label="ML Engine adapter health"
+        )
 
     async def setup_canary(
         self,
@@ -831,152 +597,50 @@ class MLEngineClient:
         }
         if canary_traffic_pct is not None:
             payload["canary_traffic_pct"] = canary_traffic_pct
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(f"{self._base_url}/adapters/canary/setup", json=payload, headers=self._headers)
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine canary setup failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine canary setup request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/adapters/canary/setup", json=payload, error_label="ML Engine canary setup")
 
     async def deactivate_adapter(self, adapter_name: str, version_id: str) -> dict[str, Any]:
         payload = {"adapter_name": adapter_name, "version_id": version_id}
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(f"{self._base_url}/adapters/deactivate", json=payload, headers=self._headers)
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine adapter deactivate failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine adapter deactivate request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/adapters/deactivate", json=payload, error_label="ML Engine adapter deactivate")
 
     async def get_active_adapter(self, adapter_name: str) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=10) as client:
-            try:
-                resp = await client.get(f"{self._base_url}/adapters/{adapter_name}/active", headers=self._headers)
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine active adapter failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine active adapter request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request(
+            "GET", f"/adapters/{adapter_name}/active", timeout=10, error_label="ML Engine active adapter"
+        )
 
     async def record_adapter_metrics(
         self, adapter_name: str, version_id: str, latency_ms: float, success: bool = True
     ) -> dict[str, Any]:
         payload = {"adapter_name": adapter_name, "version_id": version_id, "latency_ms": latency_ms, "success": success}
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(f"{self._base_url}/adapters/metrics", json=payload, headers=self._headers)
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine adapter metrics failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine adapter metrics request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/adapters/metrics", json=payload, error_label="ML Engine adapter metrics")
 
     async def get_adapter_latency_stats(self, adapter_name: str) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=10) as client:
-            try:
-                resp = await client.get(f"{self._base_url}/adapters/{adapter_name}/latency", headers=self._headers)
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine adapter latency failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine adapter latency request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request(
+            "GET", f"/adapters/{adapter_name}/latency", timeout=10, error_label="ML Engine adapter latency"
+        )
 
     async def run_benchmarks(self, config: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         payload = config or {}
-        async with httpx.AsyncClient(timeout=600) as client:
-            try:
-                resp = await client.post(f"{self._base_url}/benchmarks/run", json=payload, headers=self._headers)
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine benchmarks run failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine benchmarks request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/benchmarks/run", json=payload, timeout=600, error_label="ML Engine benchmarks run")
 
     async def get_benchmark_summary(self) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=30) as client:
-            try:
-                resp = await client.get(f"{self._base_url}/benchmarks/summary", headers=self._headers)
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine benchmark summary failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine benchmark summary request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("GET", "/benchmarks/summary", timeout=30, error_label="ML Engine benchmark summary")
 
     async def get_continual_stats(self) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=10) as client:
-            try:
-                resp = await client.get(f"{self._base_url}/continual/stats", headers=self._headers)
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine continual stats failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine continual stats request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("GET", "/continual/stats", timeout=10, error_label="ML Engine continual stats")
 
     async def record_continual_sample(self, sample: dict[str, Any]) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(f"{self._base_url}/continual/samples", json=sample, headers=self._headers)
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine continual sample failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine continual sample request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/continual/samples", json=sample, error_label="ML Engine continual sample")
 
     async def get_continual_drift_alerts(self, n: int = 10) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=10) as client:
-            try:
-                resp = await client.get(f"{self._base_url}/continual/drift/alerts?n={n}", headers=self._headers)
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine drift alerts failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine drift alerts request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request(
+            "GET", f"/continual/drift/alerts?n={n}", timeout=10, error_label="ML Engine drift alerts"
+        )
 
     async def promote_canary(self, adapter_name: str) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(f"{self._base_url}/adapters/{adapter_name}/canary/promote", headers=self._headers)
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine canary promote failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine canary promote request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request(
+            "POST", f"/adapters/{adapter_name}/canary/promote", error_label="ML Engine canary promote"
+        )
 
     async def run_model_inversion(
         self,
@@ -993,21 +657,7 @@ class MLEngineClient:
             "iterations": iterations,
             "learning_rate": learning_rate,
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/attacks/model-inversion",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine model inversion failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine model inversion request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/attacks/model-inversion", json=payload, error_label="ML Engine model inversion")
 
     async def run_shadow_mia(
         self,
@@ -1020,21 +670,7 @@ class MLEngineClient:
             "shadow_data_size": shadow_data_size,
             "shadow_epochs": shadow_epochs,
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/attacks/shadow-mia",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine shadow MIA failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine shadow MIA request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/attacks/shadow-mia", json=payload, error_label="ML Engine shadow MIA")
 
     async def run_model_extraction(
         self,
@@ -1049,37 +685,10 @@ class MLEngineClient:
             "num_queries": num_queries,
             "extraction_epochs": extraction_epochs,
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/attacks/model-extraction",
-                    json=payload,
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine model extraction failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine model extraction request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/attacks/model-extraction", json=payload, error_label="ML Engine model extraction")
 
     async def get_attack_methods(self) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=10) as client:
-            try:
-                resp = await client.get(
-                    f"{self._base_url}/attacks/methods",
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine attack methods failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine attack methods request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("GET", "/attacks/methods", timeout=10, error_label="ML Engine attack methods")
 
     async def run_hpo(
         self,
@@ -1093,17 +702,7 @@ class MLEngineClient:
             payload["param_space"] = param_space
         if study_name:
             payload["study_name"] = study_name
-        async with httpx.AsyncClient(timeout=600) as client:
-            try:
-                resp = await client.post(f"{self._base_url}/hpo/optimize", json=payload, headers=self._headers)
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine HPO failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine HPO request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/hpo/optimize", json=payload, timeout=600, error_label="ML Engine HPO")
 
     async def export_model(
         self,
@@ -1120,115 +719,179 @@ class MLEngineClient:
             "num_classes": num_classes,
             "fp16": fp16,
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(f"{self._base_url}/model/export", json=payload, headers=self._headers)
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine model export failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine model export request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("POST", "/model/export", json=payload, error_label="ML Engine model export")
 
     async def get_controller_health(self) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=10) as client:
-            try:
-                resp = await client.get(
-                    f"{self._base_url}/controller/health",
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine controller health failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine controller health request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("GET", "/controller/health", timeout=10, error_label="ML Engine controller health")
 
     async def get_registry_stats(self) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=10) as client:
-            try:
-                resp = await client.get(
-                    f"{self._base_url}/registry/stats",
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine registry stats failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine registry stats request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request("GET", "/registry/stats", timeout=10, error_label="ML Engine registry stats")
 
     async def health(self) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=10) as client:
-            try:
-                resp = await client.get(f"{self._base_url}/health")
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPError as e:
-                logger.error("ML Engine health check failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine health check failed: {e}")
+        client = self._get_client()
+        try:
+            resp = await client.get(f"{self._base_url}/health", timeout=10)
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPError as e:
+            logger.error("ML Engine health check failed: %s", str(e))
+            status_code = getattr(getattr(e, "response", None), "status_code", None)
+            raise MLEngineClientError(
+                f"ML Engine health check failed: {e}", status_code=status_code
+            ) from e
 
     async def delete_document(self, document_id: str) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.delete(
-                    f"{self._base_url}/rag/documents/{document_id}",
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-                return resp.json()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine document delete failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine document delete request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        return await self._request(
+            "DELETE", f"/rag/documents/{document_id}", error_label="ML Engine document delete"
+        )
 
     async def upsert_embedding(
         self, collection: str, point_id: str, vector: list[float], payload: dict[str, Any]
     ) -> None:
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                resp = await client.post(
-                    f"{self._base_url}/rag/documents/ingest-text",
-                    json={
-                        "text": "",
-                        "source_name": point_id,
-                        "metadata": {"collection": collection, **payload},
-                    },
-                    headers=self._headers,
-                )
-                resp.raise_for_status()
-            except httpx.HTTPStatusError as e:
-                logger.error("ML Engine embedding upsert failed: %s %s", e.response.status_code, e.response.text)
-                raise MLEngineClientError(f"ML Engine returned {e.response.status_code}: {e.response.text}")
-            except httpx.RequestError as e:
-                logger.error("ML Engine embedding upsert request failed: %s", str(e))
-                raise MLEngineClientError(f"ML Engine request failed: {e}")
+        await self._request(
+            "POST",
+            "/rag/vectors/upsert",
+            json={
+                "collection": collection,
+                "point_id": point_id,
+                "vector": vector,
+                "payload": payload or {},
+            },
+            error_label="ML Engine embedding upsert",
+        )
 
     async def delete_vectors(self, collection: str, filter_: dict[str, Any]) -> None:
-        document_id = (filter_ or {}).get("document_id")
-        if document_id:
-            try:
-                await self.delete_document(document_id)
-            except MLEngineClientError:
-                logger.warning("Failed to delete vectors for document %s", document_id)
-                raise
+        await self._request(
+            "POST",
+            "/rag/vectors/delete",
+            json={"collection": collection, "filter": filter_ or {}},
+            error_label="ML Engine vector delete",
+        )
+
+    # Provider hostnames that are safe to send credentials to. Probes against
+    # any other host run without an API key, and private/link-local targets are
+    # rejected outright (SSRF guard). Azure endpoints are per-resource and must
+    # be configured explicitly via base_url.
+    _PROVIDER_ALLOWLIST_HOSTS = {
+        "api.openai.com",
+        "api.anthropic.com",
+        "generativelanguage.googleapis.com",
+    }
 
     async def test_provider(
         self, provider_type: str, config: dict[str, Any], api_key: Optional[str]
     ) -> dict[str, Any]:
-        return {
-            "provider_type": provider_type,
-            "reachable": True,
-            "message": "Provider configuration accepted",
+        """Probe a provider endpoint for reachability with a short, bounded request.
+
+        Security (SSRF guard):
+        * The probe target is restricted to HTTP(S) URLs.
+        * Hosts resolving to private / loopback / link-local / reserved IPs are
+          rejected so an authenticated caller cannot make the backend scan
+          internal networks or reach cloud metadata endpoints.
+        * The API key is only attached for allowlisted provider hostnames;
+          probes against any other host run without credentials.
+        * Any connection error, timeout, or non-2xx response is reported as
+          unreachable (fails closed).
+        """
+        from urllib.parse import urlparse
+
+        base_url = (config or {}).get("base_url", "")
+        default_urls = {
+            "openai": "https://api.openai.com/v1",
+            "anthropic": "https://api.anthropic.com/v1",
+            "google": "https://generativelanguage.googleapis.com/v1beta",
         }
+        base_url = base_url or default_urls.get(provider_type, "")
+
+        if not base_url:
+            return {
+                "provider_type": provider_type,
+                "reachable": False,
+                "message": (
+                    "Provider has no base_url configured and no default exists; "
+                    "set one in the provider config to test connectivity"
+                ),
+            }
+
+        parsed = urlparse(base_url)
+        if parsed.scheme not in ("http", "https"):
+            return {
+                "provider_type": provider_type,
+                "reachable": False,
+                "message": "Provider base_url must be http(s) — refusing to probe other schemes",
+            }
+        host = parsed.hostname or ""
+
+        # SSRF guard: reject targets that resolve to non-public address space.
+        if not self._host_is_public(host):
+            return {
+                "provider_type": provider_type,
+                "reachable": False,
+                "message": f"Provider host '{host}' resolves to a non-public address — probe blocked",
+            }
+
+        probe_url = base_url.rstrip("/")
+        headers: dict[str, str] = {"Content-Type": "application/json"}
+        allow_credentials = host in self._PROVIDER_ALLOWLIST_HOSTS
+        if api_key and allow_credentials:
+            if provider_type == "anthropic":
+                headers["x-api-key"] = api_key
+                headers["anthropic-version"] = "2023-06-01"
+            else:
+                headers["Authorization"] = f"Bearer {api_key}"
+
+        try:
+            client = self._get_client()
+            resp = await client.get(probe_url, headers=headers, timeout=10)
+            reachable = resp.status_code < 500
+            return {
+                "provider_type": provider_type,
+                "reachable": reachable,
+                "status_code": resp.status_code,
+                "credentials_sent": allow_credentials and bool(api_key),
+                "message": (
+                    f"Provider responded with HTTP {resp.status_code}"
+                    if reachable
+                    else f"Provider returned HTTP {resp.status_code} (server-side error)"
+                ),
+            }
+        except httpx.RequestError as e:
+            logger.warning("Provider reachability check failed for %s: %s", provider_type, str(e))
+            return {
+                "provider_type": provider_type,
+                "reachable": False,
+                "message": f"Provider unreachable: {e.__class__.__name__}",
+            }
+
+    @staticmethod
+    def _host_is_public(host: str) -> bool:
+        """True only if every resolved address of ``host`` is globally routable."""
+        import ipaddress
+        import socket
+
+        if not host:
+            return False
+        try:
+            infos = socket.getaddrinfo(host, None)
+        except socket.gaierror:
+            return False
+        if not infos:
+            return False
+        for info in infos:
+            try:
+                ip = ipaddress.ip_address(info[4][0])
+            except ValueError:
+                continue
+            if (
+                ip.is_private
+                or ip.is_loopback
+                or ip.is_link_local
+                or ip.is_reserved
+                or ip.is_multicast
+                or ip.is_unspecified
+            ):
+                return False
+        return True
 
 
 ml_engine_client = MLEngineClient(

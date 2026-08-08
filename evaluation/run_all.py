@@ -26,7 +26,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import logging
 import sys
 import time
@@ -104,9 +103,14 @@ def parse_args() -> argparse.Namespace:
 def build_config(args: argparse.Namespace):
     """Build experiment config from CLI arguments."""
     from evaluation.config import (
-        ExperimentConfig, SeedConfig, DatasetConfig,
-        ModelConfig, TrainingConfig, UnlearningConfig,
-        PrivacyConfig, OutputConfig,
+        DatasetConfig,
+        ExperimentConfig,
+        ModelConfig,
+        OutputConfig,
+        PrivacyConfig,
+        SeedConfig,
+        TrainingConfig,
+        UnlearningConfig,
     )
 
     seeds = SeedConfig(
@@ -117,6 +121,7 @@ def build_config(args: argparse.Namespace):
         python_hash_seed=args.seed,
     )
 
+    datasets: tuple[DatasetConfig, ...]
     if args.quick:
         datasets = (
             DatasetConfig(name="mnist", num_classes=10, input_shape=(1, 28, 28),
@@ -265,14 +270,16 @@ def main() -> int:
 
         if config.output.export_json:
             exporter.export_results_json(str(exports_dir / "results.json"))
-            exporter.export_config_json(str(exports_dir / "config.json"))
+            exporter.export_config_json(config, str(exports_dir / "config.json"))
             exporter.export_summary_json(str(exports_dir / "summary.json"))
             logger.info("JSON exports complete")
 
         if config.output.export_latex:
             exporter.export_benchmark_table_latex(str(exports_dir / "benchmark_table.tex"))
             exporter.export_metrics_table_latex(str(exports_dir / "metrics_table.tex"))
-            exporter.export_significance_table_latex(str(exports_dir / "significance_table.tex"))
+            exporter.export_significance_table_latex(
+                path=str(exports_dir / "significance_table.tex")
+            )
             logger.info("LaTeX exports complete")
 
     # ── Phase 4: Report ──
@@ -300,7 +307,7 @@ def main() -> int:
     logger.info("=" * 70)
     logger.info(f"Results directory: {experiment_dir}")
     logger.info(f"Total time: {time.time() - t0:.1f}s")
-    logger.info(f"Files generated:")
+    logger.info("Files generated:")
     for p in sorted(experiment_dir.rglob("*")):
         if p.is_file():
             rel = p.relative_to(experiment_dir)

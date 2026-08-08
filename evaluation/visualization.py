@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 
@@ -14,9 +13,6 @@ try:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    import matplotlib.ticker as ticker
-    from matplotlib.gridspec import GridSpec
-    from matplotlib.patches import FancyBboxPatch
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
@@ -29,10 +25,12 @@ except ImportError:
     HAS_SEABORN = False
 
 try:
-    from evaluation.runner import ExperimentResults, RunResult
+    from evaluation.config import ExperimentConfig
+    from evaluation.export import ExperimentResults, RunResult
 except ImportError:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    from evaluation.runner import ExperimentResults, RunResult
+    from evaluation.config import ExperimentConfig
+    from evaluation.export import ExperimentResults, RunResult
 
 
 # ---------------------------------------------------------------------------
@@ -101,7 +99,7 @@ def _save_figure(fig: plt.Figure, output_path: str) -> str:
 def _get_algorithms(results: ExperimentResults) -> list[str]:
     seen: dict[str, None] = {}
     for r in results.runs:
-        if r.error is None and r.algorithm not in seen:
+        if not r.error and r.algorithm not in seen:
             seen[r.algorithm] = None
     return list(seen)
 
@@ -109,7 +107,7 @@ def _get_algorithms(results: ExperimentResults) -> list[str]:
 def _get_datasets(results: ExperimentResults) -> list[str]:
     seen: dict[str, None] = {}
     for r in results.runs:
-        if r.error is None and r.dataset not in seen:
+        if not r.error and r.dataset not in seen:
             seen[r.dataset] = None
     return list(seen)
 
@@ -117,7 +115,7 @@ def _get_datasets(results: ExperimentResults) -> list[str]:
 def _get_forget_ratios(results: ExperimentResults) -> list[float]:
     seen: dict[float, None] = {}
     for r in results.runs:
-        if r.error is None and r.forget_ratio not in seen:
+        if not r.error and r.forget_ratio not in seen:
             seen[r.forget_ratio] = None
     return sorted(seen)
 
@@ -127,7 +125,7 @@ def _group_by(
 ) -> dict[tuple, list[RunResult]]:
     groups: dict[tuple, list[RunResult]] = {}
     for r in runs:
-        if r.error is not None:
+        if r.error:
             continue
         k = tuple(getattr(r, key) for key in keys)
         groups.setdefault(k, []).append(r)
@@ -137,7 +135,14 @@ def _group_by(
 def _mean_std(
     runs: list[RunResult], metric: str
 ) -> tuple[float, float]:
-    vals = [getattr(r, metric) for r in runs if r.error is None]
+    # Metric values live in the export model's ``metrics`` dict.
+    vals: list[float] = []
+    for r in runs:
+        if r.error:
+            continue
+        m = r.metrics.get(metric)
+        if isinstance(m, (int, float)):
+            vals.append(float(m))
     if not vals:
         return 0.0, 0.0
     return float(np.mean(vals)), float(np.std(vals))
@@ -262,7 +267,7 @@ class PublicationVisualizer:
             axes = axes.reshape(-1, 1)
         for di, ds in enumerate(datasets):
             for ai, algo in enumerate(algorithms):
-                runs = [r for r in results.runs if r.dataset == ds and r.algorithm == algo and r.error is None]
+                runs = [r for r in results.runs if r.dataset == ds and r.algorithm == algo and not r.error]
                 if not runs:
                     for col in (ai * 2, ai * 2 + 1):
                         axes[di, col].set_visible(False)
@@ -303,11 +308,10 @@ class PublicationVisualizer:
         for di, ds in enumerate(datasets):
             ax = axes[di]
             for ai, algo in enumerate(algorithms):
-                runs = [r for r in results.runs if r.dataset == ds and r.algorithm == algo and r.error is None]
+                runs = [r for r in results.runs if r.dataset == ds and r.algorithm == algo and not r.error]
                 if not runs:
                     continue
                 c = _color(algo)
-                ls = LINE_STYLES[ai % len(LINE_STYLES)]
                 for tag, ls_actual, alpha in [("before", "--", 0.4), ("after", "-", 1.0)]:
                     all_fpr: list[np.ndarray] = []
                     all_tpr: list[np.ndarray] = []
@@ -326,11 +330,9 @@ class PublicationVisualizer:
                                     break
                     if not all_fpr:
                         continue
-                    max_len = max(len(a) for a in all_fpr)
                 mean_fpr = np.linspace(0, 1, 200)
-                mean_tpr_agg = []
                 for ai2, algo in enumerate(algorithms):
-                    runs = [r for r in results.runs if r.dataset == ds and r.algorithm == algo and r.error is None]
+                    runs = [r for r in results.runs if r.dataset == ds and r.algorithm == algo and not r.error]
                     if not runs:
                         continue
                     c = _color(algo)
@@ -385,7 +387,7 @@ class PublicationVisualizer:
                 c = _color(algo)
                 for tag, ls_actual, alpha, lw in [("before", "--", 0.35, 0.8), ("after", "-", 1.0, 1.2)]:
                     precs = []
-                    runs = [r for r in results.runs if r.dataset == ds and r.algorithm == algo and r.error is None]
+                    runs = [r for r in results.runs if r.dataset == ds and r.algorithm == algo and not r.error]
                     for r in runs:
                         pr = r.pr_curve_before if tag == "before" else r.pr_curve_after
                         if not pr or "precision" not in pr:
@@ -451,7 +453,7 @@ class PublicationVisualizer:
             c = _color(algo)
             ax.plot(angles, normed, color=c, linewidth=1.2, label=algo.replace("_", " ").title())
             ax.fill(angles, normed, color=c, alpha=0.08)
-        ax.set_thetagrids(np.degrees(angles[:-1]), axes_labels, fontsize=8)
+        ax.set_thetagrids(np.degrees(angles[:-1]), axes_labels, fontsize=8)  # type: ignore[attr-defined]  # PolarAxes method missing from Axes stub
         ax.set_ylim(0, 1.1)
         ax.set_title("Algorithm Multi-Axis Comparison", fontweight="bold", pad=18, fontsize=10)
         ax.legend(loc="upper right", bbox_to_anchor=(1.35, 1.1), fontsize=7)
@@ -469,8 +471,6 @@ class PublicationVisualizer:
         if not algo_means:
             return ""
         algos = list(algo_means.keys())
-        means = [algo_means[a].get(f"{metric}_mean", algo_means[a].get(metric, 0.0)) for a in algos]
-        stds = [algo_means[a].get(f"{metric}_std", 0.0) for a in algos]
         per_cfg = summary.get("per_config", {})
         datasets_seen: dict[str, None] = {}
         for key in per_cfg:
@@ -527,7 +527,7 @@ class PublicationVisualizer:
             ax = axes[di]
             for ai, algo in enumerate(algorithms):
                 groups = _group_by(
-                    [r for r in results.runs if r.dataset == ds and r.algorithm == algo and r.error is None],
+                    [r for r in results.runs if r.dataset == ds and r.algorithm == algo and not r.error],
                     "forget_ratio",
                 )
                 ratios = sorted(groups.keys())
@@ -629,7 +629,11 @@ class PublicationVisualizer:
             data_per_algo = []
             labels = []
             for algo in algorithms:
-                vals = [getattr(r, metric) for r in results.runs if r.algorithm == algo and r.error is None]
+                vals = [
+                    float(r.metrics[metric])
+                    for r in results.runs
+                    if r.algorithm == algo and not r.error and metric in r.metrics
+                ]
                 data_per_algo.append(vals)
                 labels.append(algo.replace("_", " ").title())
             if HAS_SEABORN:
@@ -680,22 +684,22 @@ def main() -> None:
     for rd in runs_data:
         filtered = {k: v for k, v in rd.items() if k in valid_fields}
         runs.append(RunResult(**filtered))
-    summary_path = results_path / "summary.json"
-    summary = json.loads(summary_path.read_text()) if summary_path.exists() else {}
     config_path = results_path / "config.json"
     if config_path.exists():
-        from evaluation.config import ExperimentConfig
         config = ExperimentConfig.load(config_path)
     else:
         config = ExperimentConfig()
+    metric_names: list[str] = []
+    for r in runs:
+        for m in r.metrics:
+            if m not in metric_names:
+                metric_names.append(m)
     results = ExperimentResults(
-        config=config,
+        config=config.to_dict() if hasattr(config, "to_dict") else {},
+        algorithm_names=sorted({r.algorithm for r in runs}),
+        dataset_names=sorted({r.dataset for r in runs}),
+        metric_names=metric_names,
         runs=runs,
-        summary=summary,
-        hardware_info={},
-        git_info={},
-        package_versions={},
-        timestamp="",
     )
     out_dir = args.output_dir or str(results_path / "figures")
     viz = PublicationVisualizer()

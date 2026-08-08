@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 
 class EmailTemplate:
     VERIFY_EMAIL = "verify_email"
-    RESET_PASSWORD = "reset_password"
+    RESET_PASSWORD = "reset_password"  # nosec B105 - template name constant
     WELCOME = "welcome"
     DELETION_CONFIRMED = "deletion_confirmed"
     ACCOUNT_DELETED = "account_deleted"
@@ -138,6 +138,30 @@ class EmailService:
 </div>
 <p style="font-size:16px;line-height:1.5">Hi {name},</p>
 <p style="font-size:16px;line-height:1.5">Your account is ready. You can now use the platform for verifiable machine unlearning.</p>
+</body></html>"""
+
+        if template_name == "deletion_confirmed":
+            proof_id = kwargs.get("proof_id", "")
+            return f"""<!DOCTYPE html>
+<html><body style="font-family:-apple-system,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+<div style="text-align:center;margin-bottom:30px">
+<h1 style="color:#16a34a;font-size:24px">Deletion Confirmed</h1>
+</div>
+<p style="font-size:16px;line-height:1.5">Hi {name},</p>
+<p style="font-size:16px;line-height:1.5">Your data deletion request has been completed. A cryptographic deletion proof has been recorded:</p>
+<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:12px;margin:20px 0;font-family:monospace;font-size:13px;word-break:break-all">{proof_id}</div>
+<p style="color:#6b7280;font-size:14px">You can verify this proof at any time using the certificate hash above.</p>
+</body></html>"""
+
+        if template_name == "account_deleted":
+            return f"""<!DOCTYPE html>
+<html><body style="font-family:-apple-system,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+<div style="text-align:center;margin-bottom:30px">
+<h1 style="color:#dc2626;font-size:24px">Account Deleted</h1>
+</div>
+<p style="font-size:16px;line-height:1.5">Hi {name},</p>
+<p style="font-size:16px;line-height:1.5">Your account and all associated data have been permanently deleted from VeriUnlearn.</p>
+<p style="color:#6b7280;font-size:14px">If this was a mistake or you need assistance, please contact our support team.</p>
 </body></html>"""
 
         return "<html><body>No template found</body></html>"

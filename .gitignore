@@ -30,6 +30,12 @@ mlruns/
 wandb/
 lightning_logs/
 
+# Runtime storage (RAG pipeline / HPO studies / adapter lifecycle registry)
+**/rag_storage/
+**/hpo_studies/
+**/adapter_registry/
+**/test_adapter_registry/
+
 # Node
 node_modules/
 .next/

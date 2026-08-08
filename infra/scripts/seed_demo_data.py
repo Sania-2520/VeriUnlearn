@@ -26,7 +26,6 @@ import secrets
 import sys
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any
 
 try:
     import httpx

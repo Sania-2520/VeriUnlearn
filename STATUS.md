@@ -52,7 +52,7 @@
 | Membership Inference Attack (confidence + loss) | ✅ 100% | 8 tests | percentile calibration, precision/recall/F1 |
 | Privacy Evaluation | ✅ 100% | 8 tests | MIA + DP estimate + risk level |
 | Deletion Certificate (unified endpoint) | ✅ 100% | 7 tests | unlearning + proof + privacy in one response |
-| **zk-SNARK Proof Service** | ✅ 100% | 19 tests | `ZKProofService` — Keccak-256 Merkle inclusion proofs wrapped in Groth16-like format (proving key, verification key, π_A/π_B/π_C proof points, Ed25519-signed root); proved ZK: verifier learns leaf + root but not leaf index or other leaves |
+| **zk-SNARK Proof Service (SIMULATED)** | ✅ 100% | 19 tests | `ZKProofService` — Keccak-256 Merkle inclusion proofs wrapped in a Groth16-style envelope (proving key, verification key, π_A/π_B/π_C proof points, Ed25519-signed root). **Hash-based simulation, NOT a real zero-knowledge proof** — no cryptographic ZK guarantees; production-gated via `VERIUNLEARN_ALLOW_SIMULATED_ZK=true` and tagged `proving_scheme: SIMULATED` in every API response |
 | API endpoints: /unlearn, /proof/*, /certificate, /evaluate/*, /health, **/proof/generate-zksnark, /proof/verify-zksnark** | ✅ 100% | 7 tests | 7 POST + 1 GET |
 | **ML Engine Total** | **~100%** | **69 tests** | |
 

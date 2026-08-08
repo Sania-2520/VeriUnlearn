@@ -46,6 +46,7 @@ async def upload_document(
     file: UploadFile = File(...),
     metadata: str = Form("{}"),
 ):
+    import hashlib
     import json as _json
     import os
 
@@ -67,6 +68,19 @@ async def upload_document(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"File too large ({len(file_content)} bytes). Maximum allowed: {max_size} bytes",
         )
+
+    # Persist the raw upload to a shared storage directory so the Celery
+    # worker (and the ML Engine) can read the original bytes for OCR,
+    # parsing and chunking. Binary formats (PDF/DOCX/images) cannot be
+    # ingested as inline text, so they MUST go through the storage path.
+    safe_filename = os.path.basename(file.filename or "document")
+    doc_dir = os.path.join(settings.rag_storage_dir, doc_id)
+    os.makedirs(doc_dir, exist_ok=True)
+    file_path = os.path.join(doc_dir, safe_filename)
+    with open(file_path, "wb") as fh:
+        fh.write(file_content)
+
+    content_hash = hashlib.sha256(file_content).hexdigest()
 
     try:
         text = file_content.decode("utf-8")
@@ -90,27 +104,49 @@ async def upload_document(
         original_filename=file.filename or "unknown",
         file_type=file_type,
         file_size_bytes=len(file_content),
-        storage_path="",
+        storage_path=file_path,
         mime_type=file.content_type,
         status="processing",
+        content_hash=content_hash,
         event_metadata=parsed_metadata,
         created_at=now,
         updated_at=now,
     )
     session.add(doc)
     await session.flush()
-    try:
-        ml_result = await ml_engine_client.ingest_document(
-            text=text,
-            source_name=file.filename or "unknown",
-            metadata=parsed_metadata,
-        )
-        doc.status = "indexed"
-        doc.chunk_count = len(ml_result.get("chunks", [])) if ml_result else 0
-    except MLEngineClientError as e:
-        logger.error("ML engine ingestion failed for document %s: %s", doc_id, str(e))
-        doc.status = "failed"
-        doc.error_message = str(e)
+
+    text_like = file_type in {"txt", "md", "markdown", "csv", "json", "html"}
+    if text_like and text.strip():
+        # Fast path: text content is ingested synchronously so the document is
+        # immediately searchable. The persisted copy still enables re-indexing
+        # and OCR fallback later.
+        try:
+            ml_result = await ml_engine_client.ingest_document(
+                text=text,
+                source_name=file.filename or "unknown",
+                metadata=parsed_metadata,
+            )
+            doc.status = "indexed"
+            doc.chunk_count = ml_result.get("chunk_count", 0) if ml_result else 0
+        except MLEngineClientError as e:
+            logger.error("ML engine ingestion failed for document %s: %s", doc_id, str(e))
+            # Fall back to the async pipeline (storage_path is set) so the
+            # upload is still processed in the background.
+            from app.workers.rag_tasks import process_document
+            process_document.delay(doc_id)
+            doc.status = "processing"
+    else:
+        # Binary document (PDF, DOCX, image, …): dispatch the async pipeline.
+        # Images go through OCR; everything else through the generic
+        # process_document path (which includes OCR fallback for PDFs).
+        from app.workers.rag_tasks import ocr_process, process_document
+
+        if file_type in {"png", "jpg", "jpeg", "webp", "gif", "bmp", "tiff"}:
+            ocr_process.delay(doc_id)
+        else:
+            process_document.delay(doc_id)
+        doc.status = "processing"
+
     doc.updated_at = datetime.now(timezone.utc)
     await session.commit()
     return {"document_id": doc_id, "filename": file.filename, "status": doc.status}

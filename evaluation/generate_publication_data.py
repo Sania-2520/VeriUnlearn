@@ -7,7 +7,6 @@ benchmark table and the IEEE paper structure.
 """
 import json
 import random
-import math
 from pathlib import Path
 
 random.seed(42)

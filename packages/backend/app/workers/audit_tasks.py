@@ -1,6 +1,7 @@
 from app.core.logging import get_logger
 from app.workers.celery_app import celery_app
 from app.workers.session import worker_session
+from app.workers.utils import run_async
 
 logger = get_logger(__name__)
 
@@ -21,8 +22,6 @@ def anchor_all_chains(self) -> dict:
         repo = SQLAlchemyAuditEventRepository(session=session)
         audit_svc = AuditService(repo=repo)
 
-        import asyncio
-
         async def _run():
             tenant_ids = await repo.get_all_tenant_ids()
             if not tenant_ids:
@@ -34,7 +33,7 @@ def anchor_all_chains(self) -> dict:
             return results
 
         try:
-            results = asyncio.run(_run())
+            results = run_async(_run())
         except Exception:
             logger.exception("Failed to run audit anchoring")
             return {"status": "completed", "anchored": 0, "failed": 0}

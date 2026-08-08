@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react"
 import { motion } from "framer-motion"
 import {
-  LineChart, Line, AreaChart, Area, BarChart, Bar, ScatterChart, Scatter,
+  LineChart, Line, Area, BarChart, Bar, ScatterChart, Scatter,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ZAxis, Cell, ComposedChart,
@@ -11,7 +11,6 @@ import {
 import { toast } from "sonner"
 import { clsx } from "clsx"
 import { format, subDays, addDays } from "date-fns"
-import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import { PageHeader } from "@/components/ui/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -25,14 +24,6 @@ import {
 
 const ALGORITHMS = ["SISA", "Retraining", "AmnesiacML", "FisherForgetting", "DeltaGrad"] as const
 type Algorithm = (typeof ALGORITHMS)[number]
-
-const ALGO_COLORS: Record<Algorithm, string> = {
-  SISA: "var(--chart-1)",
-  Retraining: "var(--chart-2)",
-  AmnesiacML: "var(--chart-3)",
-  FisherForgetting: "var(--chart-4)",
-  DeltaGrad: "var(--chart-5)",
-}
 
 const ALGO_COLORS_HEX: Record<Algorithm, string> = {
   SISA: "#10b981",
@@ -138,7 +129,6 @@ function generateLossCurves(): AlgorithmRun[] {
     let valLoss = trainLoss + 0.3 + Math.random() * 0.2
     const baseLR = algo === "SISA" ? 0.01 : algo === "Retraining" ? 0.008 : algo === "DeltaGrad" ? 0.05 : 0.02
     for (let e = 1; e <= 50; e++) {
-      const decay = Math.exp(-e / 18) * (0.6 + Math.random() * 0.15)
       trainLoss = Math.max(0.12, trainLoss * (0.88 + Math.random() * 0.04) - 0.02 * Math.random())
       valLoss = Math.max(0.18, trainLoss + 0.05 + Math.random() * 0.12 * (1 + Math.sin(e / 5) * 0.3))
       const epochLR = baseLR * (algo === "AmnesiacML" ? (0.5 * (1 + Math.cos((e * Math.PI) / 50))) : algo === "FisherForgetting" ? Math.pow(0.95, e) : algo === "DeltaGrad" ? (0.1 + 0.9 * Math.exp(-e / 10)) : 0.5 ** Math.floor(e / 15))
@@ -245,7 +235,6 @@ function generateEmbeddings(): EmbeddingPoint[] {
 function generateExperiments(): Experiment[] {
   const startBase = subDays(new Date(), 14)
   const algos = [...ALGORITHMS]
-  const statuses: Experiment["status"][] = ["completed", "running", "failed", "queued"]
   return Array.from({ length: 12 }, (_, i) => {
     const algo = algos[i % algos.length]
     const dur = 30 + Math.floor(Math.random() * 240)
@@ -310,12 +299,21 @@ function StatusBadge({ status }: { status: Experiment["status"] }) {
   return <Badge tone={tones[status]} dot>{status}</Badge>
 }
 
-function ChartTooltip({ active, payload, label }: any) {
+interface ChartTooltipPayloadEntry {
+  name?: string
+  dataKey?: string
+  value?: number | string
+  color?: string
+  stroke?: string
+  payload?: { unit?: string }
+}
+
+function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: ChartTooltipPayloadEntry[]; label?: string | number }) {
   if (!active || !payload?.length) return null
   return (
     <div className="surface-elevated rounded-lg px-3 py-2 text-xs shadow-[var(--shadow-md)] z-50">
       <p className="mb-1 font-medium text-[var(--text-primary)]">{label}</p>
-      {payload.map((p: any, i: number) => (
+      {payload.map((p, i) => (
         <p key={i} style={{ color: p.color ?? p.stroke }} className="tabular-nums">
           {p.name ?? p.dataKey}: {typeof p.value === "number" ? p.value.toLocaleString() : p.value}
           {p.payload?.unit ? ` ${p.payload.unit}` : ""}
@@ -536,7 +534,6 @@ function SelectBox({
 }
 
 function GanttBar({ exp, dayWidth }: { exp: Experiment; dayWidth: number }) {
-  const startX = 0
   const durHours = (exp.end.getTime() - exp.start.getTime()) / 3600000
   const width = Math.max(dayWidth, durHours * dayWidth)
   const colorMap: Record<string, string> = {
@@ -568,7 +565,6 @@ export default function VisualizationsPage() {
   const [fullscreenId, setFullscreenId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [pipelineStage, setPipelineStage] = useState<string | null>(null)
-  const [syncedEpoch, setSyncedEpoch] = useState<number | null>(null)
 
   const lossData = useMemo(() => addAccuracy(generateLossCurves()), [])
   const radarData = useMemo(() => generateRadarData(), [])
@@ -718,7 +714,7 @@ export default function VisualizationsPage() {
                   <XAxis dataKey="epoch" tick={{ fontSize: 10, fill: "var(--text-tertiary)" }} axisLine={false} tickLine={false} label={{ value: "Epoch", position: "insideBottom", offset: -4, style: { fontSize: 10, fill: "var(--text-tertiary)" } }} />
                   <YAxis tick={{ fontSize: 10, fill: "var(--text-tertiary)" }} axisLine={false} tickLine={false} width={36} />
                   <Tooltip content={<ChartTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: 10, color: "var(--text-secondary)" }} onClick={(e) => {}} />
+                  <Legend wrapperStyle={{ fontSize: 10, color: "var(--text-secondary)" }} onClick={() => {}} />
                   {activeAlgorithms.map((algo) => (
                     <Line key={`${algo}_tl`} type="monotone" dataKey={`${algo}_trainLoss`} stroke={ALGO_COLORS_HEX[algo]} strokeWidth={2} dot={false} name={`${algo} (Train)`} activeDot={{ r: 3 }} />
                   ))}

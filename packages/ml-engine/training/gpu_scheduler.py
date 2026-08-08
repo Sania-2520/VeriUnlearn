@@ -206,6 +206,9 @@ class GPUScheduler:
         current_loss: Optional[float] = None,
         checkpoint_path: Optional[str] = None,
     ) -> None:
+        # Snapshot the job under the lock, then invoke callbacks *outside* the
+        # lock: a callback that re-enters the scheduler (or blocks) must not
+        # stall progress updates or deadlock other scheduler operations.
         with self._lock:
             job = self._jobs.get(job_id)
             if job is None:
@@ -217,11 +220,12 @@ class GPUScheduler:
                 job.current_loss = current_loss
             if checkpoint_path:
                 job.checkpoint_path = checkpoint_path
-            for cb in self._progress_callbacks:
-                try:
-                    cb(job)
-                except Exception:
-                    logger.exception("Progress callback failed")
+            callbacks = list(self._progress_callbacks)
+        for cb in callbacks:
+            try:
+                cb(job)
+            except Exception:
+                logger.exception("Progress callback failed")
 
     def complete_job(
         self, job_id: str, status: JobStatus = JobStatus.COMPLETED,
@@ -299,7 +303,8 @@ class GPUScheduler:
             }
 
     def register_progress_callback(self, cb) -> None:
-        self._progress_callbacks.append(cb)
+        with self._lock:
+            self._progress_callbacks.append(cb)
 
     def _process_queue(self) -> None:
         with self._lock:
@@ -317,17 +322,30 @@ class GPUScheduler:
                         )
 
     def start(self) -> None:
-        if self._running:
-            return
-        self._running = True
-        self._scheduler_thread = threading.Thread(
-            target=self._scheduler_loop, daemon=True
-        )
-        self._scheduler_thread.start()
-        logger.info("GPU Scheduler started")
+        with self._lock:
+            if self._running:
+                return
+            self._running = True
+            self._scheduler_thread = threading.Thread(
+                target=self._scheduler_loop, daemon=True
+            )
+            self._scheduler_thread.start()
+            logger.info("GPU Scheduler started")
 
     def stop(self) -> None:
-        self._running = False
+        """Stop the scheduler loop, idempotently and safe to call from any thread."""
+        with self._lock:
+            if not self._running:
+                return
+            self._running = False
+            thread = self._scheduler_thread
+            self._scheduler_thread = None
+        if thread is not None and thread.is_alive():
+            # Join outside the lock so the loop thread (which acquires the lock
+            # itself) can exit cleanly without deadlocking.
+            thread.join(timeout=self.config.queue_poll_interval_seconds + 1.0)
+            if thread.is_alive():
+                logger.warning("GPU Scheduler loop thread did not stop within timeout")
         logger.info("GPU Scheduler stopped")
 
     def _scheduler_loop(self) -> None:

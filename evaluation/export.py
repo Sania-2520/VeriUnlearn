@@ -4,8 +4,7 @@ from __future__ import annotations
 import csv
 import json
 import math
-import os
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +21,15 @@ class RunResult:
     timing: dict[str, float] = field(default_factory=dict)
     success: bool = True
     error: str = ""
+    # Optional curve/confusion payloads carried through from the runner's
+    # richer RunResult so the visualizer can draw ROC/confusion figures from
+    # the same export model (see runner.ExperimentResults.to_export_model).
+    roc_curve_before: dict = field(default_factory=dict)
+    roc_curve_after: dict = field(default_factory=dict)
+    pr_curve_before: dict = field(default_factory=dict)
+    pr_curve_after: dict = field(default_factory=dict)
+    confusion_matrix_before: list = field(default_factory=list)
+    confusion_matrix_after: list = field(default_factory=list)
 
 
 @dataclass
@@ -53,11 +61,11 @@ class ExperimentResults:
             results = [r for r in results if math.isclose(r.forget_ratio, forget_ratio)]
         return results
 
-    def summary(self) -> dict[str, dict[str, dict[str, dict[str, float]]]]:
+    def summary(self) -> dict[str, dict[str, dict[str, dict[str, Any]]]]:
         """Aggregate results: summary[algorithm][dataset][forget_ratio][metric] = {mean, std, n}."""
         import numpy as np
 
-        agg: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
+        agg: dict[str, dict[str, dict[str, dict[str, Any]]]] = {}
         for algo in self.algorithm_names:
             agg[algo] = {}
             for ds in self.dataset_names:
@@ -77,11 +85,11 @@ class ExperimentResults:
                             agg[algo][ds][str(fr)][metric] = {"mean": 0.0, "std": 0.0, "n": 0}
         return agg
 
-    def summary_flat(self) -> dict[str, dict[str, dict[str, float]]]:
+    def summary_flat(self) -> dict[str, dict[str, dict[str, Any]]]:
         """Flat summary: summary[algorithm][metric] = {mean, std} across all datasets/ratios."""
         import numpy as np
 
-        agg: dict[str, dict[str, dict[str, float]]] = {}
+        agg: dict[str, dict[str, dict[str, Any]]] = {}
         for algo in self.algorithm_names:
             agg[algo] = {}
             matching = self.get_runs(algorithm=algo)

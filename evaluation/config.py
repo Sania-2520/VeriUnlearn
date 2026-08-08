@@ -1,15 +1,14 @@
 """Experiment configurations with full reproducibility support."""
 from __future__ import annotations
 
-import os
-import json
 import hashlib
+import json
+import os
 import platform
 import subprocess
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Literal
-import time
+from typing import Any, Literal
 
 
 @dataclass
@@ -24,6 +23,7 @@ class SeedConfig:
     def apply(self) -> None:
         """Apply all seeds for full determinism."""
         import random
+
         import numpy as np
         import torch
 
@@ -168,7 +168,7 @@ class ExperimentConfig:
 
 def get_hardware_info() -> dict:
     """Capture hardware configuration for reproducibility."""
-    info = {
+    info: dict[str, Any] = {
         "platform": platform.platform(),
         "processor": platform.processor(),
         "python_version": platform.python_version(),
@@ -183,7 +183,11 @@ def get_hardware_info() -> dict:
         if torch.cuda.is_available():
             info["cuda_version"] = torch.version.cuda
             info["gpu_name"] = torch.cuda.get_device_name(0)
-            info["gpu_memory_gb"] = round(torch.cuda.get_device_properties(0).total_mem / 1e9, 2)
+            # ``total_memory`` is the modern torch attribute; fall back to the
+            # older ``total_mem`` alias for compatibility with older releases.
+            props = torch.cuda.get_device_properties(0)
+            total_mem = getattr(props, "total_memory", getattr(props, "total_mem", 0))
+            info["gpu_memory_gb"] = round(float(total_mem) / 1e9, 2)
     except ImportError:
         info["torch_version"] = "not installed"
 

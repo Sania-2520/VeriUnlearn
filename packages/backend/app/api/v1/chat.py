@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.api.deps import (
     ChatServiceDep,
@@ -37,7 +37,10 @@ class UpdateSessionRequest(BaseModel):
 
 
 class SendMessageRequest(BaseModel):
-    content: str
+    # Bounded client input: the ML Engine enforces the same 10k limit at the
+    # inference chokepoint, so oversized prompts are rejected with a clean 422
+    # here before any proxying happens.
+    content: str = Field(..., max_length=10000)
     parent_id: Optional[str] = None
 
 

@@ -23,6 +23,7 @@ x-backend-env: &backend-env
   JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-jwt-secret-key-at-least-32-chars-long!!}
   APP_SECRET_KEY: ${APP_SECRET_KEY:-dev-app-secret-key-at-least-32-chars-long!!!}
   CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+  RAG_STORAGE_DIR: /data/rag
   PROMETHEUS_ENABLED: ${PROMETHEUS_ENABLED:-true}
   LOG_FORMAT: ${LOG_FORMAT:-json}
 
@@ -160,6 +161,7 @@ services:
         condition: service_healthy
     volumes:
       - backend-data:/data
+      - rag-data:/data/rag
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -199,6 +201,7 @@ services:
         condition: service_healthy
     volumes:
       - backend-data:/data
+      - rag-data:/data/rag
     command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=${CELERY_WORKER_CONCURRENCY:-4}
     healthcheck:
       test: ["CMD-SHELL", "celery -A app.workers.celery_app inspect ping || exit 1"]
@@ -232,6 +235,7 @@ services:
       MINIO_ENDPOINT: minio:9000
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-veriunlearn}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-veriunlearn_secret}
+      RAG_STORAGE_PATH: /data/rag
       DEVICE: ${ML_DEVICE:-cpu}
       PROMETHEUS_ENABLED: ${PROMETHEUS_ENABLED:-true}
       LOG_FORMAT: ${LOG_FORMAT:-json}
@@ -242,6 +246,7 @@ services:
         condition: service_healthy
     volumes:
       - ml-data:/data
+      - rag-data:/data/rag
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -464,6 +469,7 @@ volumes:
   minio-data:
   backend-data:
   ml-data:
+  rag-data:
   prometheus-data:
   alertmanager-data:
   grafana-data:

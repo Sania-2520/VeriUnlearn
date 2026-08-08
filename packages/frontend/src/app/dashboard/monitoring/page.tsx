@@ -15,11 +15,10 @@ import {
   Clock,
   AlertCircle,
   RefreshCw,
-  CheckCircle,
-  XCircle,
   Thermometer,
   Gauge,
   Server,
+  type LucideIcon,
 } from "lucide-react"
 
 interface SystemHealth {
@@ -91,7 +90,7 @@ function ProgressBar({ value, max, color }: { value: number; max: number; color?
   )
 }
 
-function MetricCard({ icon: Icon, label, value, sub }: { icon: any; label: string; value: string | number; sub?: string }) {
+function MetricCard({ icon: Icon, label, value, sub }: { icon: LucideIcon; label: string; value: string | number; sub?: string }) {
   return (
     <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4">
       <div className="flex items-center gap-2 text-xs text-[var(--text-tertiary)] uppercase tracking-wider font-semibold mb-2">

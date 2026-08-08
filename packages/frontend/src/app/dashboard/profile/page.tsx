@@ -9,7 +9,7 @@ import { MFASetupForm } from "@/components/auth/mfa-setup-form"
 import * as authApi from "@/lib/api/auth"
 
 export default function ProfilePage() {
-  const { user, updateUser, logout } = useAuthStore()
+  const { user, updateUser } = useAuthStore()
   const [fullName, setFullName] = useState(user?.full_name || "")
   const [updating, setUpdating] = useState(false)
   const [updateError, setUpdateError] = useState("")

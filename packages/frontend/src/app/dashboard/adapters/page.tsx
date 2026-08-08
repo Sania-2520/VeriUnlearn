@@ -29,7 +29,7 @@ export default function AdaptersPage() {
     setLoading(true)
     try {
       const data = await apiRequest<Adapter[] | { data: Adapter[] }>("/api/v1/adapters")
-      setAdapters(Array.isArray(data) ? data : (data as any).data || [])
+      setAdapters(Array.isArray(data) ? data : data.data || [])
     } catch (err) { console.error("Failed to fetch adapters:", err) } finally { setLoading(false) }
   }
 

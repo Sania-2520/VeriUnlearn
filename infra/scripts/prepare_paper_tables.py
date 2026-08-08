@@ -6,9 +6,7 @@ that can be included directly in a paper via \\input{}.
 """
 import argparse
 import json
-import sys
 from pathlib import Path
-from typing import Any
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 
@@ -407,7 +405,7 @@ def main() -> None:
     # Preamble
     preamble_path = out_dir / "preamble.tex"
     preamble_path.write_text(generate_preamble(), encoding="utf-8")
-    print(f"  Saved: preamble.tex")
+    print("  Saved: preamble.tex")
 
     # Combined file
     combined_path = out_dir / "all_tables.tex"
@@ -421,7 +419,7 @@ def main() -> None:
         combined_parts.append("")
 
     combined_path.write_text("\n".join(combined_parts), encoding="utf-8")
-    print(f"  Saved: all_tables.tex (combined)")
+    print("  Saved: all_tables.tex (combined)")
 
     print(f"\nDone. Include in your paper: \\input{{{out_dir / 'main_results.tex'}}}")
 

@@ -11,6 +11,20 @@ from training.mlflow_tracker import (
 )
 
 
+@pytest.fixture(autouse=True)
+def _hermetic_mlflow(tmp_path):
+    try:
+        import mlflow
+    except ImportError:
+        yield
+        return
+    mlflow.set_tracking_uri(f"sqlite:///{(tmp_path / 'mlruns.db').as_posix()}")
+    mlflow.set_experiment("veriunlearn_test")
+    yield
+    mlflow.end_run()
+    mlflow.set_tracking_uri("")
+
+
 class TestMLflowConfig:
     def test_default_config(self):
         config = MLflowConfig()

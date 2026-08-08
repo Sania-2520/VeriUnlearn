@@ -7,9 +7,10 @@ import math
 import numpy as np
 import pytest
 
-
 # ── helpers ────────────────────────────────────────────────────────────────
 from evaluation.metrics import (
+    MetricsComputer,
+    aggregate_results,
     compute_classification_metrics,
     compute_confusion_matrix,
     compute_efficiency_metrics,
@@ -20,10 +21,7 @@ from evaluation.metrics import (
     compute_statistical_significance,
     compute_trust_score,
     compute_utility_metrics,
-    aggregate_results,
-    MetricsComputer,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 1. Trust score

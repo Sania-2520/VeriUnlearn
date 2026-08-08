@@ -1,5 +1,3 @@
-import type { User } from "./auth"
-
 export interface AdminUserUpdate {
   role?: string
   is_active?: boolean

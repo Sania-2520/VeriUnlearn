@@ -95,12 +95,11 @@ interface AlertEntry {
    Mock data generators
    ───────────────────────────────────────────── */
 
-function generateTimeSeries(days: number, min: number, max: number, smooth = true): { date: string; value: number }[] {
+function generateTimeSeries(days: number, min: number, max: number): { date: string; value: number }[] {
   const data: { date: string; value: number }[] = []
   let prev = (min + max) / 2
   for (let i = days; i >= 0; i--) {
     const noise = Math.random() * (max - min) * 0.4 - (max - min) * 0.2
-    const change = smooth ? noise : Math.random() * (max - min) + min
     prev = Math.max(min, Math.min(max, prev + noise * 0.3))
     data.push({ date: format(subDays(new Date(), i), "MMM dd"), value: Math.round(prev) })
   }
@@ -128,7 +127,7 @@ function complianceMetrics(): ComplianceMetrics {
     verificationRate: 99.7,
     pendingAudits: 3,
     activeCertificates: 42,
-    trustTrend: generateTimeSeries(14, 72, 96, true).map((d) => ({ day: d.date, score: d.value })),
+    trustTrend: generateTimeSeries(14, 72, 96).map((d) => ({ day: d.date, score: d.value })),
   }
 }
 
@@ -138,7 +137,7 @@ function unlearningMetrics(): UnlearningMetrics {
     successfulDeletions: 16,
     failedRequests: 2,
     averageLatency: 347,
-    requestsOverTime: generateTimeSeries(30, 5, 45, true),
+    requestsOverTime: generateTimeSeries(30, 5, 45),
     algorithmBreakdown: [
       { name: "SISA", value: 45, color: "var(--chart-1)" },
       { name: "Influence", value: 28, color: "var(--chart-2)" },
@@ -223,12 +222,18 @@ function systemAlerts(): AlertEntry[] {
    Tooltip formatters
    ───────────────────────────────────────────── */
 
-function ChartTooltip({ active, payload, label }: any) {
+interface ChartTooltipPayload {
+  name?: string
+  value?: number | string
+  color?: string
+}
+
+function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: ChartTooltipPayload[]; label?: string | number }) {
   if (!active || !payload?.length) return null
   return (
     <div className="surface-elevated rounded-lg px-3 py-2 text-xs shadow-[var(--shadow-md)]">
       <p className="mb-1 font-medium text-[var(--text-primary)]">{label}</p>
-      {payload.map((p: any, i: number) => (
+      {payload.map((p, i) => (
         <p key={i} style={{ color: p.color }} className="tabular-nums">
           {p.name}: {p.value}
         </p>
@@ -294,9 +299,6 @@ function GaugeRing({ value, size = 48 }: { value: number; size?: number }) {
 /* ─────────────────────────────────────────────
    Helpers
    ───────────────────────────────────────────── */
-
-const statusIcon = (s: ActivityEntry["status"]) =>
-  ({ completed: CheckCircle2, running: Loader2, pending: Clock, failed: XCircle })[s]
 
 const activityIcon = (action: string) =>
   action.includes("delet") || action.includes("unlearn") ? Trash2 :
@@ -754,7 +756,6 @@ export default function DashboardPage() {
             <div className="divide-y divide-[var(--border-subtle)] max-h-[380px] overflow-y-auto">
               {visibleActivities.map((a) => {
                 const Icon = activityIcon(a.action)
-                const StatusIcon = statusIcon(a.status)
                 return (
                   <div key={a.id} className="flex items-start gap-3 px-5 py-3 hover:bg-[var(--bg-subtle)] transition-colors">
                     <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-subtle)] text-[var(--text-tertiary)]">

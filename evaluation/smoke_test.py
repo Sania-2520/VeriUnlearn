@@ -1,15 +1,27 @@
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 os.chdir(os.path.join(os.path.dirname(__file__), '..'))
 
-import json, time, logging
+import json
+import logging
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("smoke_test")
 
 from evaluation.config import (
-    ExperimentConfig, SeedConfig, DatasetConfig, ModelConfig,
-    TrainingConfig, UnlearningConfig, PrivacyConfig, OutputConfig,
-    get_hardware_info, get_git_info, get_package_versions,
+    DatasetConfig,
+    ExperimentConfig,
+    ModelConfig,
+    OutputConfig,
+    PrivacyConfig,
+    SeedConfig,
+    TrainingConfig,
+    UnlearningConfig,
+    get_git_info,
+    get_hardware_info,
+    get_package_versions,
 )
 
 logger.info("=== MILESTONE 1: Experimental Environment ===")
@@ -44,16 +56,24 @@ logger.info(f"Algorithms: {config.unlearning.algorithms}")
 logger.info(f"Forget ratios: {config.unlearning.forget_ratios}")
 
 from evaluation.runner import ExperimentRunner
+
 runner = ExperimentRunner(config)
 results = runner.run_all()
-logger.info(f"Experiment complete. Entries: {len(results)}")
 
-for r in results:
-    m = r.get("metrics", {})
-    s = r.get("status", "?")
-    logger.info(f"  {r.get('dataset')}/{r.get('algorithm')} fr={r.get('forget_ratio')} "
-                 f"seed={r.get('seed')} status={s} "
-                 f"acc={m.get('test_accuracy', 'N/A'):.4f}" if isinstance(m.get('test_accuracy'), (int, float)) else
-                 f"acc={m.get('test_accuracy', 'N/A')}")
+# ``run_all()`` returns an ``ExperimentResults`` container; per-run records live
+# in its ``runs`` attribute (a list of typed ``RunResult`` dataclasses).
+logger.info("Experiment complete. Runs: %d", len(results.runs))
+
+for r in results.runs:
+    status = "OK" if r.error is None else f"FAILED: {r.error}"
+    logger.info(
+        "  %s/%s fr=%.2f seed=%s status=%s acc_after=%.4f",
+        r.dataset,
+        r.algorithm,
+        r.forget_ratio,
+        r.seed,
+        status,
+        r.accuracy_after,
+    )
 
 logger.info("=== SMOKE TEST COMPLETE ===")

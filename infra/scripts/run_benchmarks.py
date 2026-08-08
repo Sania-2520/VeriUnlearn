@@ -10,11 +10,10 @@ import asyncio
 import csv
 import json
 import math
-import os
 import sys
 import time
 import uuid
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -28,18 +27,15 @@ sys.path.insert(0, str(_MLENGINE))
 
 import numpy as np
 import torch
-
-from training.data import Dataset, accuracy_score, generate_synthetic_data
-from models.single_model import SingleModel
 from models.sharded_classifier import ShardedModel
-from unlearning.algorithms.sisa import SISAUnlearning
-from unlearning.algorithms.influence import InfluenceFunctionUnlearning
+from models.single_model import SingleModel
+from security.attacks.membership_inference import LossBasedMIA, MembershipInferenceAttack
+from training.data import Dataset, accuracy_score, generate_synthetic_data
+from unlearning.algorithms.base import UnlearningContext
 from unlearning.algorithms.certified_removal import CertifiedRemovalUnlearning
-from unlearning.hybrid_controller import HybridAdaptiveController, ControllerConfig
-from unlearning.algorithms.base import UnlearningContext, UnlearningResult
-from security.attacks.membership_inference import MembershipInferenceAttack, LossBasedMIA
-from verification.privacy_evaluation import PrivacyEvaluator
-
+from unlearning.algorithms.influence import InfluenceFunctionUnlearning
+from unlearning.algorithms.sisa import SISAUnlearning
+from unlearning.hybrid_controller import HybridAdaptiveController
 
 # ---------------------------------------------------------------------------
 # Dataset descriptors
@@ -450,7 +446,7 @@ def main() -> None:
     algos = [a for a in args.algorithms if a != "all"] or ["sisa", "influence", "certified", "hybrid"]
     ds_keys = [d for d in args.datasets if d != "all"] or list(DATASETS.keys())
 
-    print(f"VeriUnlearn Benchmark Runner")
+    print("VeriUnlearn Benchmark Runner")
     print(f"  Timestamp : {timestamp}")
     print(f"  Datasets  : {ds_keys}")
     print(f"  Algorithms: {algos}")
@@ -475,7 +471,7 @@ def main() -> None:
             if dataset is not None:
                 print(f"  Loaded real dataset: {desc.name}")
             else:
-                print(f"  Real dataset unavailable, using synthetic")
+                print("  Real dataset unavailable, using synthetic")
         if dataset is None:
             dataset = generate_benchmark_dataset(desc, size_override=size)
             print(f"  Generated synthetic data: {size} samples")

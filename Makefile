@@ -74,14 +74,20 @@ install-dev:
 
 lint:
 	cd packages/backend && ruff check .
-	cd packages/backend && mypy app
+	cd packages/backend && mypy app --config-file ../../pyproject.toml
 	cd packages/frontend && npm run lint
 	ruff check evaluation/
 	ruff check scripts/
 
 typecheck:
-	cd packages/backend && mypy app
+	cd packages/backend && mypy app --config-file ../../pyproject.toml
 	mypy evaluation/ --ignore-missing-imports
+
+security:
+	cd packages/backend && bandit -r app -q
+	# Scan the ml-engine source packages explicitly (tests contain intentional
+	# asserts/temp paths and are excluded by design).
+	cd packages/ml-engine && bandit -r api training inference security verification unlearning explainability models -q
 
 test:
 	cd packages/backend && KMP_DUPLICATE_LIB_OK=TRUE pytest -v --cov=app --cov-report=term-missing
@@ -94,7 +100,7 @@ test-ml:
 
 test-evaluation:
 	pytest evaluation/tests/ -v
-	python evaluation/smoke_test.py
+	KMP_DUPLICATE_LIB_OK=TRUE python evaluation/smoke_test.py
 
 test-unit:
 	cd packages/backend && KMP_DUPLICATE_LIB_OK=TRUE pytest -v -m unit

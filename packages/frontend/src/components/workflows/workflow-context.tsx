@@ -47,7 +47,6 @@ export function useWorkflow() {
 
 export function WorkflowProvider({
   steps,
-  onComplete,
   children,
   initialData,
 }: {
