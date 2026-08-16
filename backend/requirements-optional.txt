@@ -1,0 +1,14 @@
+# Optional capabilities — install only what you need.
+#
+# LLM + LoRA unlearning (backend/app/services/models/llm_lora.py)
+# Requires a CUDA device for real workloads.
+torch>=2.3
+transformers>=4.44
+peft>=0.12
+sentence-transformers>=3.0
+
+# Qdrant vector store (backend/app/services/embeddings.py)
+qdrant-client>=1.11
+
+# Ethereum blockchain certificates (backend/app/services/blockchain.py)
+web3>=6.20

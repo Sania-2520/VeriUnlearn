@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+backend/veriunlearn.db*
+backend/data/
+backend/keys/
+backend/uploads/
+
+# Node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+frontend/.env.local
+
+# Env / secrets
+.env
+.env.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Logs
+*.log

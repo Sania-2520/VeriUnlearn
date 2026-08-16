@@ -1,0 +1,57 @@
+services:
+  backend:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:////data/veriunlearn.db}
+      VECTOR_STORE_BACKEND: ${VECTOR_STORE_BACKEND:-memory}
+      REDIS_URL: ${REDIS_URL:-}
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_data:/data
+    profiles: ["core", "full"]
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    profiles: ["core", "full"]
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: veriunlearn
+      POSTGRES_PASSWORD: veriunlearn
+      POSTGRES_DB: veriunlearn
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    profiles: ["full"]
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    profiles: ["full"]
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    profiles: ["full"]
+
+volumes:
+  backend_data:
+  pg_data:
+  qdrant_data:
