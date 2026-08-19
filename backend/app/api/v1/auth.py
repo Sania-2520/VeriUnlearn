@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter
 
 from app.api.deps import CurrentUser, DbSession
 from app.api.serializers import user_out

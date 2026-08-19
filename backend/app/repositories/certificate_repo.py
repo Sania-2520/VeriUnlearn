@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.db.models import Certificate
 from app.repositories.base import BaseRepository
 

@@ -18,6 +18,10 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
+      - name: Lint (compile + import check)
+        run: |
+          python -m compileall -q app tests
+          python -c "from app.main import app; print('routes:', len(app.routes))"
       - run: python -m pytest tests -q
 
   frontend:
@@ -33,3 +37,19 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+
+  benchmark:
+    # Lightweight Phase 6 benchmark smoke: runs the benchmark-focused tests
+    # only, so research regressions surface quickly on every PR.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m pytest tests/test_phase6.py tests/test_phase7.py -q

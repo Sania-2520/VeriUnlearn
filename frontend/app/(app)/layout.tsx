@@ -18,21 +18,45 @@ import {
   Lock,
   Menu,
   X,
+  Scissors,
+  ShieldCheck,
+  Atom,
+  Bell,
+  Shield,
+  TerminalSquare,
+  Activity,
+  type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { canView, isRole, type Role } from "@/lib/rbac";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/progress";
+import { useQuery } from "@tanstack/react-query";
 
-const nav = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/privacy", label: "Privacy Auditor", icon: Fingerprint },
-  { href: "/datasets", label: "Datasets & Training", icon: Database },
-  { href: "/certificates", label: "Certificates", icon: FileCheck2 },
-  { href: "/audit", label: "Audit Trail", icon: ScrollText },
-  { href: "/compliance", label: "Compliance", icon: Scale },
-  { href: "/attacks", label: "Attack Lab", icon: Crosshair },
-  { href: "/benchmark", label: "Benchmark", icon: Gauge },
-  { href: "/settings", label: "Settings", icon: Settings },
+interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  roles: Role[];
+}
+
+const nav: NavItem[] = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "researcher", "auditor", "operator", "viewer"] },
+  { href: "/privacy", label: "Privacy Auditor", icon: Fingerprint, roles: ["admin", "researcher", "auditor", "operator", "viewer"] },
+  { href: "/unlearning", label: "Surgical Unlearning", icon: Scissors, roles: ["admin", "operator"] },
+  { href: "/datasets", label: "Datasets & Training", icon: Database, roles: ["admin", "researcher", "auditor", "operator", "viewer"] },
+  { href: "/verification", label: "Verification", icon: ShieldCheck, roles: ["admin", "researcher", "auditor", "operator"] },
+  { href: "/certificates", label: "Certificates", icon: FileCheck2, roles: ["admin", "researcher", "auditor", "operator", "viewer"] },
+  { href: "/audit", label: "Audit Trail", icon: ScrollText, roles: ["admin", "researcher", "auditor"] },
+  { href: "/compliance", label: "Compliance", icon: Scale, roles: ["admin", "researcher", "auditor", "operator", "viewer"] },
+  { href: "/attacks", label: "Attack Lab", icon: Crosshair, roles: ["admin", "researcher", "operator"] },
+  { href: "/benchmark", label: "Benchmark", icon: Gauge, roles: ["admin", "researcher", "operator"] },
+  { href: "/research", label: "Research Hub", icon: Atom, roles: ["admin", "researcher"] },
+  { href: "/monitoring", label: "Monitoring", icon: Activity, roles: ["admin", "auditor"] },
+  { href: "/developer", label: "Developer", icon: TerminalSquare, roles: ["admin", "researcher", "auditor", "operator"] },
+  { href: "/admin", label: "Admin", icon: Shield, roles: ["admin"] },
+  { href: "/settings", label: "Settings", icon: Settings, roles: ["admin", "researcher", "auditor", "operator", "viewer"] },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -41,9 +65,21 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
+  const unread = useQuery<{ unread: number }>({
+    queryKey: ["notifications-unread"],
+    queryFn: () => api.get("/api/v1/notifications/unread-count"),
+    refetchInterval: 30_000,
+  });
+
   useEffect(() => {
     if (!user) router.replace("/login");
   }, [user, router]);
+
+  // Phase 7 page guard: hide routes the user's role cannot access.
+  useEffect(() => {
+    if (!user) return;
+    if (!canView(user.role, pathname)) router.replace("/dashboard");
+  }, [user, pathname, router]);
 
   if (!user) {
     return (
@@ -62,7 +98,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </span>
       </div>
       <nav className="flex-1 space-y-1 px-3">
-        {nav.map((item) => {
+        {nav.filter((item) => isRole(user.role, ...item.roles)).map((item) => {
           const active = pathname.startsWith(item.href);
           return (
             <Link key={item.href} href={item.href} onClick={() => setOpen(false)}>
@@ -133,10 +169,20 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <p className="mono text-xs text-slate-500">
             {pathname.replace("/", "") || "dashboard"}
           </p>
-          <span className="mono flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] text-emerald-300">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-            system online
-          </span>
+          <div className="flex items-center gap-3">
+            <Link href="/notifications" className="relative text-slate-400 transition-colors hover:text-cyan-300">
+              <Bell className="h-5 w-5" />
+              {(unread.data?.unread ?? 0) > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+                  {Math.min(unread.data?.unread ?? 0, 99)}
+                </span>
+              )}
+            </Link>
+            <span className="mono flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] text-emerald-300">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+              system online
+            </span>
+          </div>
         </header>
         <main className="mx-auto max-w-7xl p-6">{children}</main>
       </div>

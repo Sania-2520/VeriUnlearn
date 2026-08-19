@@ -5,11 +5,8 @@ Uses a synthetic 600-row dataset with two classes so the whole SISA pipeline
 """
 from __future__ import annotations
 
-import io
-
 import numpy as np
 import pytest
-
 from sqlalchemy import select
 
 from app.db.models import DatasetRecord, DeletionRequest, MLModel
@@ -53,7 +50,7 @@ async def build_pipeline(session_factory, n: int = 600) -> dict:
 
 @pytest.mark.asyncio
 async def test_full_flow(session_factory):
-    ctx = await build_pipeline(session_factory)
+    await build_pipeline(session_factory)
     async with session_factory() as session:
         # --- identity search ---
         privacy = PrivacyService(session)
@@ -132,7 +129,7 @@ async def test_certified_method(session_factory):
 
 @pytest.mark.asyncio
 async def test_influence_method(session_factory):
-    ctx = await build_pipeline(session_factory, n=400)
+    await build_pipeline(session_factory, n=400)
     async with session_factory() as session:
         privacy = PrivacyService(session)
         target = (await privacy.search_identities("a"))[0]

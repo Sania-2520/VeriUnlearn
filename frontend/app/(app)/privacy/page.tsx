@@ -16,6 +16,9 @@ import {
   Cpu,
   Database,
   BadgeCheck,
+  FileSearch,
+  History,
+  FileText,
 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -76,10 +79,25 @@ export default function PrivacyPage() {
   const [method, setMethod] = useState("retrain");
   const [activeRequest, setActiveRequest] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [scanReportId, setScanReportId] = useState<string | null>(null);
 
   const search = useMutation({
     mutationFn: (q: string) => api.post<{ matches: Match[] }>(`/api/v1/privacy/search?query=${encodeURIComponent(q)}`),
     onError: (e) => setNotice(e instanceof ApiError ? e.message : "Search failed"),
+  });
+
+  const scan = useMutation({
+    mutationFn: () =>
+      api.post<{ report_id: string; scanned_records: number; findings_count: number; risk_score: number }>(
+        "/api/v1/privacy/scan"
+      ),
+    onSuccess: (data) => {
+      setNotice(
+        `Scan complete — ${data.scanned_records} records, ${data.findings_count} PII findings, risk ${data.risk_score}/100.`
+      );
+      setScanReportId(data.report_id);
+    },
+    onError: (e) => setNotice(e instanceof ApiError ? e.message : "Scan failed"),
   });
 
   const footprint = useQuery<Footprint>({
@@ -146,29 +164,61 @@ export default function PrivacyPage() {
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Identity Search</CardTitle>
-          <Fingerprint className="h-5 w-5 text-cyan-400" />
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-              <Input
-                className="pl-9"
-                placeholder="Search a name or email — e.g. 'maya' or 'nguyen'"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && search.mutate(query)}
-              />
+      <div className="flex flex-wrap items-center gap-3">
+        <Card className="flex-1 min-w-[280px]">
+          <CardHeader>
+            <CardTitle>Identity Search</CardTitle>
+            <Fingerprint className="h-5 w-5 text-cyan-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <Input
+                  className="pl-9"
+                  placeholder="Search name, email, phone, Aadhaar, PAN, chat id…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && search.mutate(query)}
+                />
+              </div>
+              <Button onClick={() => search.mutate(query)} loading={search.isPending}>
+                Audit all shards
+              </Button>
             </div>
-            <Button onClick={() => search.mutate(query)} loading={search.isPending}>
-              Audit all shards
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="mt-3 flex items-center gap-3 text-xs text-slate-500">
+              <Link href="/privacy/history" className="flex items-center gap-1 text-cyan-400 hover:underline">
+                <History className="h-3.5 w-3.5" /> Search history
+              </Link>
+              <span className="text-slate-700">·</span>
+              <span>structured filters supported (email, phone, aadhaar, pan, record_id, chat_id)</span>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="min-w-[280px]">
+          <CardHeader>
+            <CardTitle>Privacy Scan</CardTitle>
+            <FileSearch className="h-5 w-5 text-violet-400" />
+          </CardHeader>
+          <CardContent>
+            <p className="mb-3 text-sm text-slate-500">
+              Full-dataset PII detection — categories, severity, risk score, persisted report.
+            </p>
+            <div className="flex items-center gap-3">
+              <Button variant="outline" onClick={() => scan.mutate()} loading={scan.isPending}>
+                <FileSearch className="h-4 w-4" /> Scan all datasets
+              </Button>
+              {scanReportId && (
+                <Link href={`/privacy/report/${scanReportId}`}>
+                  <Button>
+                    <FileText className="h-4 w-4" /> View report
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {search.data && (
         <Card>
@@ -216,9 +266,16 @@ export default function PrivacyPage() {
                   <Td>{m.has_embedding ? <Badge tone="emerald">indexed</Badge> : <span className="text-slate-600">—</span>}</Td>
                   <Td className="mono text-xs">{m.adapter ?? "—"}</Td>
                   <Td>
-                    <Button variant="outline" size="sm" onClick={() => setSelected(m)}>
-                      <Eye className="h-3.5 w-3.5" /> Footprint
+                <div className="flex items-center gap-2">
+                  <Link href={`/privacy/records?id=${m.record_id}`} target="_blank">
+                    <Button variant="ghost" size="sm">
+                      <FileText className="h-3.5 w-3.5" /> View
                     </Button>
+                  </Link>
+                  <Button variant="outline" size="sm" onClick={() => setSelected(m)}>
+                    <Eye className="h-3.5 w-3.5" /> Footprint
+                  </Button>
+                </div>
                   </Td>
                 </TRow>
               ))}

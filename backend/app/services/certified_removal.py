@@ -19,7 +19,6 @@ hope.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 import numpy as np
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -67,7 +66,7 @@ class CertifiedRemovalService:
         if not remaining:
             raise ValueError(f"Shard {shard_index} would become empty; use SISA retraining instead")
 
-        X, y, encoder = self.sisa.build_design_matrix(
+        X, y, _encoder = self.sisa.build_design_matrix(
             active, dataset.feature_names, encoder=self.sisa.load_encoder(model)
         )
         classes = np.unique(y)

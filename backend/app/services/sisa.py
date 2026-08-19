@@ -26,7 +26,7 @@ import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -34,9 +34,7 @@ from app.db.models import Dataset, DatasetRecord, MLModel, ModelShard
 from app.repositories.dataset_repo import DatasetRepository
 from app.repositories.model_repo import ModelRepository
 from app.services.crypto import canonical_json, sha256_hex
-from app.services.models.base import ModelSpec
 from app.services.models.linear import SklearnLinearModel
-from app.services.models.registry import build_model
 
 logger = logging.getLogger("veriunlearn.sisa")
 
@@ -159,7 +157,7 @@ class SISAEngine:
                 status="ready",
                 accuracy=accuracy,
                 train_loss=loss,
-                retrained_at=datetime.now(timezone.utc),
+                retrained_at=datetime.now(timezone.utc).replace(tzinfo=None),
                 trained_on=len(shard_records),
             )
             shards.append(shard)
@@ -249,7 +247,7 @@ class SISAEngine:
             np.savez(shard.weights_path, weights=clf.weights())
             shard.status = "ready"
             shard.accuracy = None
-            shard.retrained_at = datetime.now(timezone.utc)
+            shard.retrained_at = datetime.now(timezone.utc).replace(tzinfo=None)
             shard.record_version += 1
             shard.trained_on = len(records)
             retrained.append(shard_index)

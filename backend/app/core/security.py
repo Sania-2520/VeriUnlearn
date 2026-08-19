@@ -88,7 +88,7 @@ def aes_decrypt(token: str) -> str:
         ciphertext = base64.b64decode(cipher_b64)
         plaintext = AESGCM(_symmetric_key()).decrypt(nonce, ciphertext, None)
         return plaintext.decode("utf-8")
-    except Exception as exc:  # noqa: BLE001 - decryption must never crash the API
+    except Exception as exc:
         raise ValueError("Failed to decrypt value") from exc
 
 

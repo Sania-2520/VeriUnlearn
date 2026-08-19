@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
 from app.db.models import Dataset, DatasetRecord

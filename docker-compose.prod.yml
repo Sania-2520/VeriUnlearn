@@ -1,0 +1,145 @@
+# Production profile — VeriUnlearn
+#
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#
+# Secrets are NOT committed. Provide them via the environment / `.env.prod`
+# (see backend/.env.example and frontend/.env.example for the full list).
+# Replace image names (${REGISTRY}/veriunlearn-*) when pushing to your registry.
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  backend:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_BACKEND:-veriunlearn/backend}:${TAG:-latest}
+    build:
+      context: ./backend
+    environment:
+      ENV: production
+      DATABASE_URL: postgresql+asyncpg://veriunlearn:${POSTGRES_PASSWORD}@postgres:5432/veriunlearn
+      REDIS_URL: redis://redis:6379/0
+      VECTOR_STORE_BACKEND: ${VECTOR_STORE_BACKEND:-memory}
+      QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env.prod}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-null}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@veriunlearn.dev}
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+      RATE_LIMIT_DEFAULT: ${RATE_LIMIT_DEFAULT:-200/minute}
+    volumes:
+      - backend_data:/data
+      - backend_keys:/app/keys
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  frontend:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_FRONTEND:-veriunlearn/frontend}:${TAG:-latest}
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost/api/v1}
+    depends_on:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: veriunlearn
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}
+      POSTGRES_DB: veriunlearn
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U veriunlearn"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prom_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  backend_data:
+  backend_keys:
+  pg_data:
+  redis_data:
+  qdrant_data:
+  prom_data:
+  grafana_data:

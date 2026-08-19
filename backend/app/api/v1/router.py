@@ -2,6 +2,8 @@ from fastapi import APIRouter
 
 from app.api.v1 import (
     admin,
+    analytics,
+    apikeys,
     attacks,
     auth,
     benchmarks,
@@ -9,7 +11,10 @@ from app.api.v1 import (
     compliance,
     datasets,
     models,
+    monitoring,
+    notifications,
     privacy,
+    research,
     unlearning,
     verification,
 )
@@ -26,3 +31,8 @@ api_router.include_router(compliance.router)
 api_router.include_router(attacks.router)
 api_router.include_router(benchmarks.router)
 api_router.include_router(admin.router)
+api_router.include_router(research.router)
+api_router.include_router(apikeys.router)
+api_router.include_router(notifications.router)
+api_router.include_router(monitoring.router)
+api_router.include_router(analytics.router)

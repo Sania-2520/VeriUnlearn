@@ -19,12 +19,11 @@ Implementation notes: for a linear model the Hessian is ``X^T D X + lambda I``
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 import numpy as np
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Dataset, DatasetRecord, MLModel
+from app.db.models import Dataset, MLModel
 from app.repositories.dataset_repo import DatasetRepository
 from app.services.sisa import SISAEngine
 
@@ -98,7 +97,7 @@ class InfluenceEngine:
         )
         if not records:
             return {}
-        X, y, encoder = self.sisa.build_design_matrix(
+        X, y, _encoder = self.sisa.build_design_matrix(
             records, dataset.feature_names, encoder=self.sisa.load_encoder(model)
         )
         classes = np.unique(y)

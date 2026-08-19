@@ -17,7 +17,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import AuditEvent, Certificate, DeletionRequest
+from app.db.models import Certificate, ComplianceReport, DeletionRequest
 from app.services.audit import AuditService
 
 
@@ -113,3 +113,57 @@ class ComplianceService:
             DeletionRequest.completed_at.isnot(None),
             DeletionRequest.duration_seconds > 30 * 24 * 3600,
         )
+
+    # ---------------------------------------------------- Phase 7: reports
+
+    async def run_report(self, created_by: str = "system") -> ComplianceReport:
+        """Capture a persisted compliance snapshot (Phase 7 dashboards)."""
+        data = await self.overview()
+        report = ComplianceReport(
+            gdpr_score=data["gdpr"]["score"],
+            gdpr_status=data["gdpr"]["status"],
+            dpdp_score=data["dpdp"]["score"],
+            dpdp_status=data["dpdp"]["status"],
+            risk_score=data["risk"]["score"],
+            risk_level=data["risk"]["level"],
+            open_requests=data["requests"]["pending"],
+            completed_requests=data["requests"]["completed"],
+            certs_valid=data["certificates"]["valid"],
+            scores=data,
+            created_by=created_by,
+        )
+        self.session.add(report)
+        await self.session.flush()
+        await self.audit.log(
+            event_type="compliance.report_generated",
+            actor=created_by,
+            subject=report.id,
+            payload={"gdpr": report.gdpr_score, "dpdp": report.dpdp_score, "risk": report.risk_score},
+        )
+        return report
+
+    async def history(self, *, limit: int = 100) -> list[dict]:
+        from sqlalchemy import select
+
+        result = await self.session.execute(
+            select(ComplianceReport).order_by(ComplianceReport.created_at.desc()).limit(limit)
+        )
+        rows = list(result.scalars().all())
+        rows.reverse()
+        return [
+            {
+                "id": r.id,
+                "gdpr_score": r.gdpr_score,
+                "gdpr_status": r.gdpr_status,
+                "dpdp_score": r.dpdp_score,
+                "dpdp_status": r.dpdp_status,
+                "risk_score": r.risk_score,
+                "risk_level": r.risk_level,
+                "open_requests": r.open_requests,
+                "completed_requests": r.completed_requests,
+                "certs_valid": r.certs_valid,
+                "created_by": r.created_by,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+            }
+            for r in rows
+        ]

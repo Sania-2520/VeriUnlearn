@@ -6,7 +6,9 @@ from collections.abc import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import settings
-from app.db.base import Base  # noqa: F401 - ensure models are registered via app.db.models import
+from app.db.base import (
+    Base,
+)
 
 _connect_args = {"timeout": 30} if settings.DATABASE_URL.startswith("sqlite") else {}
 
@@ -18,6 +20,9 @@ engine = create_async_engine(
 )
 
 SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+# Alias for middleware / background use where a fresh session is needed.
+session_factory = SessionLocal
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

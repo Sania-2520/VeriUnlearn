@@ -7,9 +7,12 @@ from app.api.serializers import deletion_request_out
 from app.core.exceptions import ValidationFailedError
 from app.db.models import DeletionRequest
 from app.repositories.deletion_repo import DeletionRepository
+from app.repositories.privacy_repo import DeletionHistoryRepository
 from app.schemas.unlearning import (
+    DeletionHistoryOut,
     DeletionRequestOut,
     IdentityResetRequest,
+    ImpactRequest,
     SelectiveDeletionRequest,
 )
 from app.services.audit import AuditService
@@ -21,28 +24,88 @@ router = APIRouter(prefix="/unlearning", tags=["unlearning"])
 _VALID_METHODS = {"retrain", "certified", "influence"}
 
 
+@router.post("/impact")
+async def impact_analysis(payload: ImpactRequest, db: DbSession, user: CurrentUser) -> dict:
+    """Phase 4 STEP 2 — impact report before any deletion."""
+    if payload.scope not in {"records", "chat", "dataset"}:
+        raise ValidationFailedError("scope must be records | chat | dataset")
+    report = await UnlearningService(db).analyze_impact(
+        identity_key=payload.identity_key,
+        record_ids=payload.record_ids,
+        chat_id=payload.chat_id,
+        dataset_id=payload.dataset_id,
+        scope=payload.scope,
+    )
+    return report
+
+
+@router.get("/history", response_model=list[DeletionHistoryOut])
+async def deletion_history(db: DbSession, user: CurrentUser, limit: int = 50) -> list[DeletionHistoryOut]:
+    """Phase 4 STEP 7 — persisted deletion reports."""
+    reports = await DeletionHistoryRepository(db).list_reports(limit=limit)
+    return [
+        DeletionHistoryOut(
+            id=r.id,
+            request_id=r.request_id,
+            scope=r.scope,
+            subject=r.subject,
+            method=r.method,
+            status=r.status,
+            record_count=r.record_count,
+            shard_ids=r.shard_ids,
+            duration_seconds=r.duration_seconds,
+            model_id=r.model_id,
+            model_version=r.model_version,
+            dataset_id=r.dataset_id,
+            dataset_version=r.dataset_version,
+            records_before=r.records_before,
+            records_after=r.records_after,
+            embeddings_before=r.embeddings_before,
+            embeddings_after=r.embeddings_after,
+            vectors_removed=r.vectors_removed,
+            certified_bound=r.certified_bound,
+            certificate_id=r.certificate_id,
+            before=r.before,
+            after=r.after,
+            created_at=r.created_at,
+        )
+        for r in reports
+    ]
+
+
 @router.post("/selective", response_model=DeletionRequestOut, status_code=202)
 async def selective_unlearning(
     payload: SelectiveDeletionRequest, db: DbSession, user: CurrentUser
 ) -> DeletionRequestOut:
-    """Selective surgical unlearning: single record / embedding / chat / adapter."""
+    """Selective surgical unlearning: single record / multiple / chat / user / dataset."""
     if payload.method not in _VALID_METHODS:
         raise ValidationFailedError(f"method must be one of {sorted(_VALID_METHODS)}")
-    if not payload.identity_key and not payload.record_ids:
-        raise ValidationFailedError("Provide identity_key or record_ids")
+    if payload.scope not in {"records", "chat", "dataset"}:
+        raise ValidationFailedError("scope must be records | chat | dataset")
+    if not payload.identity_key and not payload.record_ids and not payload.chat_id and not payload.dataset_id:
+        raise ValidationFailedError("Provide identity_key, record_ids, chat_id (scope=chat) or dataset_id (scope=dataset)")
     if payload.method == "certified" and payload.record_ids and len(payload.record_ids) > 200:
         raise ValidationFailedError("certified method supports up to 200 records per call")
 
     service = UnlearningService(db)
     records = await service.resolve_records(
-        identity_key=payload.identity_key, record_ids=payload.record_ids
+        identity_key=payload.identity_key,
+        record_ids=payload.record_ids,
+        chat_id=payload.chat_id,
+        dataset_id=payload.dataset_id,
+        scope=payload.scope,
     )
     request = DeletionRequest(
         identity_key=payload.identity_key,
-        subject_label=payload.identity_key or f"{len(payload.record_ids or [])} records",
+        subject_label=(
+            payload.identity_key
+            or (f"chat:{payload.chat_id}" if payload.chat_id else None)
+            or (f"dataset:{payload.dataset_id}" if payload.dataset_id else None)
+            or f"{len(payload.record_ids or [])} records"
+        ),
         deletion_type=payload.deletion_type,
         method=payload.method,
-        scope={"source": "selective"},
+        scope={"source": "selective", "scope": payload.scope, "chat_id": payload.chat_id, "dataset_id": payload.dataset_id},
         record_ids=[r.id for r in records],
         requested_by=user["sub"],
     )

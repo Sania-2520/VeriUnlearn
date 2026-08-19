@@ -19,5 +19,7 @@ class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
 
     created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(timezone.utc), nullable=False
+        # Naive UTC: columns are ``TIMESTAMP WITHOUT TIME ZONE`` in PostgreSQL;
+        # storing offset-aware datetimes raises asyncpg DataError.
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), nullable=False
     )

@@ -27,7 +27,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError, ValidationFailedError
-from app.db.models import DatasetRecord, DeletionRequest, MLModel
+from app.db.models import (
+    DatasetRecord,
+    DeletionHistory,
+    DeletionRequest,
+    EmbeddingIndex,
+    MLModel,
+)
 from app.repositories.dataset_repo import DatasetRepository
 from app.repositories.deletion_repo import DeletionRepository
 from app.repositories.model_repo import ModelRepository
@@ -35,7 +41,13 @@ from app.services.audit import AuditService
 from app.services.blockchain import BlockchainService
 from app.services.certificate import CertificateService
 from app.services.certified_removal import CertifiedRemovalService
-from app.services.crypto import MerkleTree, canonical_json, leaf_hash, sha256_hex, tombstone_hash
+from app.services.crypto import (
+    MerkleTree,
+    canonical_json,
+    leaf_hash,
+    sha256_hex,
+    tombstone_hash,
+)
 from app.services.embeddings import get_vector_store
 from app.services.influence import InfluenceEngine
 from app.services.sisa import SISAEngine
@@ -61,8 +73,34 @@ class UnlearningService:
     # ------------------------------------------------------------------ resolution
 
     async def resolve_records(
-        self, *, identity_key: str | None = None, record_ids: list[str] | None = None
+        self,
+        *,
+        identity_key: str | None = None,
+        record_ids: list[str] | None = None,
+        chat_id: str | None = None,
+        dataset_id: str | None = None,
+        scope: str = "records",
     ) -> list[DatasetRecord]:
+        """Resolve the records targeted by a deletion selection.
+
+        Scopes (Phase 4 STEP 1): ``records`` (single/multiple/identity),
+        ``chat`` (entire conversation), ``dataset`` (entire dataset).
+        """
+        if scope == "dataset" and dataset_id:
+            records = await self.datasets.get_records(dataset_id, include_deleted=False)
+            if not records:
+                raise NotFoundError(f"No active records in dataset {dataset_id}")
+            return records
+        if scope == "chat" and chat_id:
+            result = await self.session.execute(
+                select(DatasetRecord).where(
+                    DatasetRecord.chat_id == chat_id, DatasetRecord.is_deleted.is_(False)
+                )
+            )
+            records = list(result.scalars().all())
+            if not records:
+                raise NotFoundError(f"No active records for chat '{chat_id}'")
+            return records
         if record_ids:
             records = await self.datasets.get_records_by_ids(record_ids)
             active = [r for r in records if not r.is_deleted]
@@ -80,7 +118,97 @@ class UnlearningService:
             if not records:
                 raise NotFoundError(f"No active records for identity '{identity_key}'")
             return records
-        raise ValidationFailedError("Provide identity_key or record_ids")
+        raise ValidationFailedError("Provide a selection (identity_key, record_ids, chat_id or dataset_id)")
+
+    # ------------------------------------------------------------------ impact analysis
+
+    async def analyze_impact(
+        self,
+        *,
+        identity_key: str | None = None,
+        record_ids: list[str] | None = None,
+        chat_id: str | None = None,
+        dataset_id: str | None = None,
+        scope: str = "records",
+    ) -> dict[str, Any]:
+        """Phase 4 STEP 2 — impact report computed *before* any deletion.
+
+        Lists affected embeddings, vectors, knowledge chunks, model shards,
+        influence estimates, dependencies and deletion eligibility.
+        """
+        records = await self.resolve_records(
+            identity_key=identity_key,
+            record_ids=record_ids,
+            chat_id=chat_id,
+            dataset_id=dataset_id,
+            scope=scope,
+        )
+        groups: dict[str, list[DatasetRecord]] = {}
+        for record in records:
+            groups.setdefault(record.dataset_id, []).append(record)
+
+        datasets_out: dict[str, Any] = {}
+        totals = {"records": 0, "embeddings": 0, "chunks": 0, "shards": 0, "influence_abs": 0.0}
+        for ds_id, group in groups.items():
+            dataset = await self.datasets.get(ds_id)
+            model = await self.models_repo.get_active_for_dataset(ds_id)
+            shards = sorted({r.shard_id for r in group})
+            embeddings = [r.embedding_id for r in group if r.embedding_id]
+            vectors = [r.vector_id for r in group if r.vector_id]
+            influences = [r.influence_score for r in group if r.influence_score is not None]
+            est_retrain = 0.0
+            if model:
+                per_shard = float(model.metrics.get("training_seconds", 0)) / max(model.shard_count, 1)
+                est_retrain = round(per_shard * len(shards), 3)
+            entry = {
+                "dataset_id": ds_id,
+                "dataset_name": dataset.name,
+                "dataset_version": dataset.version,
+                "record_count": len(group),
+                "record_ids": [r.id for r in group],
+                "embedding_ids": embeddings,
+                "vector_ids": vectors,
+                "knowledge_chunks": [f"chunk-{ds_id}-{r.record_index}" for r in group],
+                "chat_ids": sorted({r.chat_id for r in group if r.chat_id}),
+                "affected_shards": shards,
+                "influence": {
+                    "mean": round(float(np.mean(influences)), 6) if influences else None,
+                    "abs_sum": round(float(np.sum(np.abs(influences))), 6) if influences else 0.0,
+                },
+                "dependencies": {
+                    "model_id": model.id if model else None,
+                    "model_version": model.version if model else None,
+                    "adapters": model.adapters if model else [],
+                },
+                "estimated_retraining_seconds": est_retrain,
+                "deletion_eligible": model is not None and model.status == "ready",
+            }
+            totals["records"] += len(group)
+            totals["embeddings"] += len(embeddings)
+            totals["chunks"] += len(entry["knowledge_chunks"])
+            totals["shards"] += len(shards)
+            totals["influence_abs"] += entry["influence"]["abs_sum"]
+            datasets_out[ds_id] = entry
+
+        return {
+            "scope": scope,
+            "selection": {
+                "identity_key": identity_key,
+                "record_ids": record_ids,
+                "chat_id": chat_id,
+                "dataset_id": dataset_id,
+            },
+            "totals": {
+                "records": totals["records"],
+                "embeddings": totals["embeddings"],
+                "vectors": totals["embeddings"],
+                "knowledge_chunks": totals["chunks"],
+                "affected_shards": totals["shards"],
+                "influence_abs_sum": round(totals["influence_abs"], 6),
+            },
+            "datasets": datasets_out,
+            "eligible": all(d["deletion_eligible"] for d in datasets_out.values()) if datasets_out else False,
+        }
 
     # ------------------------------------------------------------------ execution
 
@@ -91,8 +219,13 @@ class UnlearningService:
         start = time.monotonic()
 
         try:
+            scope = request.scope.get("scope", "records") if request.scope else "records"
             records = await self.resolve_records(
-                identity_key=request.identity_key, record_ids=request.record_ids
+                identity_key=request.identity_key,
+                record_ids=request.record_ids,
+                chat_id=request.scope.get("chat_id") if request.scope else None,
+                dataset_id=request.scope.get("dataset_id") if request.scope else None,
+                scope=scope,
             )
             if not records:
                 raise ValidationFailedError("Nothing to delete")
@@ -109,7 +242,7 @@ class UnlearningService:
                 outcome["certificates"].append(dataset_outcome["certificate_id"])
 
             request.status = "completed"
-            request.completed_at = datetime.now(timezone.utc)
+            request.completed_at = datetime.now(timezone.utc).replace(tzinfo=None)
             request.duration_seconds = round(time.monotonic() - start, 3)
             request.certificate_id = outcome["certificates"][0] if outcome["certificates"] else None
             request.result = {
@@ -134,7 +267,7 @@ class UnlearningService:
             await self.session.flush()
             logger.info("Unlearning %s completed in %ss", request.id, request.duration_seconds)
             return request.result
-        except Exception as exc:  # noqa: BLE001 - persist failure state for the audit trail
+        except Exception as exc:
             request.status = "failed"
             request.error = str(exc)
             await self.audit.log(
@@ -150,6 +283,7 @@ class UnlearningService:
     async def _execute_for_dataset(
         self, request: DeletionRequest, dataset_id: str, records: list[DatasetRecord]
     ) -> dict[str, Any]:
+        dataset_start = time.monotonic()
         model = await self.models_repo.get_active_for_dataset(dataset_id)
         if model is None:
             raise NotFoundError(f"No trained model for dataset {dataset_id}")
@@ -158,24 +292,50 @@ class UnlearningService:
         affected_shards = sorted({r.shard_id for r in records})
         pre_root = await self._dataset_root(dataset_id)
 
-        # 1. Tombstone records + drop embeddings.
+        # Phase 4 STEP 6 — before snapshot.
+        all_active = await self.datasets.get_records(dataset_id, include_deleted=False)
+        shard_metrics_before = {}
+        for shard in await self.models_repo.get_shards(model.id):
+            if shard.shard_index in affected_shards:
+                shard_metrics_before[shard.shard_index] = {
+                    "accuracy": shard.accuracy,
+                    "record_version": shard.record_version,
+                    "trained_on": shard.trained_on,
+                }
+        before = {
+            "records": len(all_active),
+            "embeddings": sum(1 for r in all_active if r.embedding_id),
+            "vectors": sum(1 for r in all_active if r.vector_id),
+            "shards": shard_metrics_before,
+            "dataset_version": dataset.version,
+            "model_version": model.version,
+        }
+
+        # 1. Tombstone records + drop embeddings/vectors (STEP 3).
         collection = f"dataset_{dataset_id}"
         for record in records:
             record.is_deleted = True
             record.tombstone_hash = tombstone_hash(record.id, record.content_hash)
-            record.deleted_at = datetime.now(timezone.utc)
+            record.deleted_at = datetime.now(timezone.utc).replace(tzinfo=None)
             if record.embedding_id:
                 self.vectors.delete(collection, [record.embedding_id])
                 record.embedding_id = None
+                record.vector_id = None
+        await self.session.execute(
+            EmbeddingIndex.__table__.update()
+            .where(EmbeddingIndex.record_id.in_([r.id for r in records]))
+            .values(is_deleted=True)
+        )
         await self.session.flush()
 
-        # 2. Scrub the model.
+        # 2. Scrub the model (STEP 4 SISA retrain / STEP 5 weight scrub).
         scrub = await self._scrub_model(model, dataset, affected_shards, records, request.method)
 
         # 3. Post root + certificate.
         post_root = await self._dataset_root(dataset_id)
         model.version += 1
         model.parent_version = model.version - 1
+        dataset.version += 1
         await self.session.flush()
 
         certificate = await self.certificates.issue(
@@ -214,12 +374,54 @@ class UnlearningService:
         ledger = await self.blockchain.register_certificate(certificate.id, certificate.content_hash)
         certificate.blockchain_tx = ledger.get("tx_hash")
 
+        # Phase 4 STEP 6 — after snapshot + STEP 7 deletion report row.
+        remaining = await self.datasets.get_records(dataset_id, include_deleted=False)
+        after = {
+            "records": len(remaining),
+            "embeddings": sum(1 for r in remaining if r.embedding_id),
+            "vectors": sum(1 for r in remaining if r.vector_id),
+            "dataset_version": dataset.version,
+            "model_version": model.version,
+        }
+        self.session.add(
+            DeletionHistory(
+                request_id=request.id,
+                scope=request.scope.get("scope", "records") if request.scope else "records",
+                subject=request.identity_key or request.subject_label,
+                method=request.method,
+                status="completed",
+                record_count=len(records),
+                shard_ids=affected_shards,
+                duration_seconds=round(time.monotonic() - dataset_start, 3),
+                model_id=model.id,
+                model_version=model.version,
+                dataset_id=dataset_id,
+                dataset_version=dataset.version,
+                records_before=before["records"],
+                records_after=after["records"],
+                embeddings_before=before["embeddings"],
+                embeddings_after=after["embeddings"],
+                vectors_removed=sum(1 for r in records if r.vector_id is None and r.is_deleted),
+                certified_bound=scrub.get("certified_bound"),
+                certificate_id=certificate.id,
+                before=before,
+                after=after,
+            )
+        )
+        await self.session.flush()
+
         return {
             "deleted_records": len(records),
             "shards": affected_shards,
             "pre_root": pre_root,
             "post_root": post_root,
             "certificate_id": certificate.id,
+            "before": before,
+            "after": after,
+            "vectors_removed": sum(1 for r in records if r.vector_id is None and r.is_deleted),
+            "remaining_records": after["records"],
+            "model_version": model.version,
+            "dataset_version": dataset.version,
             **scrub,
         }
 
@@ -295,7 +497,7 @@ class UnlearningService:
                     np.savez(shard.weights_path, weights=weights)
                     results["gradient_norm"] = float(np.linalg.norm(grad))
             shard.record_version += 1
-            shard.retrained_at = datetime.now(timezone.utc)
+            shard.retrained_at = datetime.now(timezone.utc).replace(tzinfo=None)
             results["updated_shards"].append(shard_index)
 
         all_shards = await self.models_repo.get_shards(model.id)
@@ -315,7 +517,7 @@ class UnlearningService:
         """Complete identity reset: every record of the identity across all
         datasets/shards, plus all embeddings. Adaptor removal is handled by the
         LLM backend when such a model is deployed."""
-        from app.services.privacy import decrypt_identity  # local import avoids cycle
+        from app.services.privacy import decrypt_profile  # local import avoids cycle
 
         result = await self.session.execute(
             select(DatasetRecord).where(DatasetRecord.identity_key == identity_key)
@@ -327,7 +529,7 @@ class UnlearningService:
         datasets_affected = sorted({r.dataset_id for r in records})
         request = DeletionRequest(
             identity_key=identity_key,
-            subject_label=decrypt_identity(records[0])["full_name"] or identity_key,
+            subject_label=decrypt_profile(records[0])["full_name"] or identity_key,
             deletion_type=deletion_type,
             method="retrain",
             scope={"datasets_affected": datasets_affected, "all_datasets": True},

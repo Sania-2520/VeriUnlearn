@@ -133,7 +133,9 @@ class CertificateService:
         hash_ok = recomputed_hash == certificate.content_hash
         sig_ok = verify_sha256(canonical_json(body).encode("utf-8"), certificate.signature)
 
-        from app.services.privacy import recompute_dataset_roots  # local import avoids cycle
+        from app.services.privacy import (
+            recompute_dataset_roots,  # local import avoids cycle
+        )
 
         root_state = await recompute_dataset_roots(
             self.session, certificate.dataset_id, certificate.deleted_record_hashes

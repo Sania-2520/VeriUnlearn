@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import time
-
-from fastapi import APIRouter
 import numpy as np
 import pandas as pd
+from fastapi import APIRouter
 
 from app.api.deps import CurrentUser, DbSession
 from app.api.serializers import model_out
-from app.core.exceptions import NotFoundError, ValidationFailedError
+from app.core.exceptions import ValidationFailedError
 from app.db.models import MLModel
 from app.repositories.dataset_repo import DatasetRepository
 from app.repositories.model_repo import ModelRepository

@@ -18,7 +18,10 @@ logger = logging.getLogger("veriunlearn.lora")
 try:  # optional heavy deps — imported lazily on first use
     import torch  # type: ignore[import-not-found]
     from peft import LoraConfig, get_peft_model  # type: ignore[import-not-found]
-    from transformers import AutoModelForSequenceClassification, AutoTokenizer  # type: ignore[import-not-found]
+    from transformers import (  # type: ignore[import-not-found]
+        AutoModelForSequenceClassification,
+        AutoTokenizer,
+    )
 
     _LORA_AVAILABLE = True
 except ImportError:  # pragma: no cover - exercised only without optional deps

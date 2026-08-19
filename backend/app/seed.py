@@ -6,7 +6,6 @@ model with influence scoring, and creates demo users. Safe to re-run.
 from __future__ import annotations
 
 import asyncio
-import logging
 
 from app.core.logging import configure_logging, get_logger
 from app.core.security import hash_password

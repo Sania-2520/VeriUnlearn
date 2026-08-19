@@ -81,7 +81,13 @@ class MerkleTree:
         return self.levels[-1][0] if self.levels else sha256_hex("empty-tree")
 
     def proof(self, leaf: str) -> list[dict[str, str]]:
-        """Merkle proof for ``leaf``: list of {hash, side} siblings."""
+        """Merkle proof for ``leaf``: list of {hash, side} siblings.
+
+        Handles odd-count levels: the final node of an odd level is paired
+        with *itself* during the tree build, so the proof appends a self-pair
+        entry (``hash == the node's own hash``) that the verifier must combine
+        the accumulated node with itself to reproduce the parent.
+        """
         if leaf not in self.leaves:
             raise ValueError("Leaf not present in tree")
         proof: list[dict[str, str]] = []
@@ -91,6 +97,11 @@ class MerkleTree:
             if sibling_index < len(level):
                 sibling = level[sibling_index]
                 proof.append({"hash": sibling, "side": "right" if index % 2 == 0 else "left"})
+            else:
+                # Odd level: this node is duplicated (paired with itself).
+                # level[index] is exactly the node's accumulated hash at this
+                # height, so verifying H(current, current) reproduces the parent.
+                proof.append({"hash": level[index], "side": "right"})
             index //= 2
         return proof
 

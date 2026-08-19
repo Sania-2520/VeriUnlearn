@@ -1,9 +1,13 @@
 from __future__ import annotations
 
-import pytest
-
 from app.core.security import aes_decrypt, aes_encrypt, sign_sha256, verify_sha256
-from app.services.crypto import MerkleTree, canonical_json, leaf_hash, sha256_hex, tombstone_hash
+from app.services.crypto import (
+    MerkleTree,
+    canonical_json,
+    leaf_hash,
+    sha256_hex,
+    tombstone_hash,
+)
 
 
 def test_canonical_json_is_deterministic():

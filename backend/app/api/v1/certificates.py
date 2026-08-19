@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse, Response
 
-from app.api.deps import CurrentUser, DbSession
+from app.api.deps import DbSession
 from app.api.serializers import certificate_out
 from app.repositories.certificate_repo import CertificateRepository
 from app.schemas.certificate import CertificateOut

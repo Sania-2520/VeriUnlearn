@@ -1,9 +1,10 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Scale, ShieldCheck, AlertTriangle, Timer, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Scale, ShieldCheck, AlertTriangle, Timer, CheckCircle2, XCircle, Clock, FileBarChart, Download } from "lucide-react";
 import { api } from "@/lib/api";
+import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/ui/stat";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge, statusTone } from "@/components/ui/badge";
@@ -20,12 +21,40 @@ type Overview = {
   audit_chain: { verified: boolean; event_count: number };
 };
 
+interface ComplianceReportRow {
+  id: string;
+  gdpr_score: number;
+  gdpr_status: string;
+  dpdp_score: number;
+  dpdp_status: string;
+  risk_score: number;
+  risk_level: string;
+  open_requests: number;
+  completed_requests: number;
+  created_at: string | null;
+}
+
 export default function CompliancePage() {
   const { data, isLoading } = useQuery<Overview>({
     queryKey: ["compliance-overview"],
     queryFn: () => api.get("/api/v1/compliance/overview"),
     refetchInterval: 30_000,
   });
+  const reports = useQuery<{ reports: ComplianceReportRow[] }>({
+    queryKey: ["compliance-reports"],
+    queryFn: () => api.get("/api/v1/compliance/reports"),
+  });
+  const qc = useQueryClient();
+  const generate = useMutation({
+    mutationFn: () => api.post("/api/v1/compliance/report"),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["compliance-reports"] }),
+  });
+  const download = (format: string) => {
+    const a = document.createElement("a");
+    a.href = `/api/v1/compliance/export?format=${format}`;
+    a.download = `veriunlearn-compliance.${format}`;
+    a.click();
+  };
 
   if (isLoading || !data) {
     return <div className="flex justify-center py-16"><Spinner className="h-8 w-8" /></div>;
@@ -106,6 +135,47 @@ export default function CompliancePage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Phase 7 — persisted compliance reports */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2"><FileBarChart className="h-4 w-4 text-violet-400" /> Compliance reports</span>
+            <span className="flex items-center gap-2">
+              <Button size="sm" onClick={() => generate.mutate()} loading={generate.isPending}>
+                <FileBarChart className="h-3.5 w-3.5" /> Generate snapshot
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => download("csv")}><Download className="h-3.5 w-3.5" /> CSV</Button>
+              <Button variant="outline" size="sm" onClick={() => download("json")}><Download className="h-3.5 w-3.5" /> JSON</Button>
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {reports.isLoading ? (
+            <div className="flex justify-center py-6"><Spinner /></div>
+          ) : (reports.data?.reports ?? []).length === 0 ? (
+            <p className="py-6 text-center text-sm text-slate-500">No snapshots yet — generate one to trend compliance over time.</p>
+          ) : (
+            <div className="max-h-72 space-y-1.5 overflow-auto">
+              {(reports.data?.reports ?? []).slice(0, 50).map((r, i) => (
+                <motion.div
+                  key={r.id}
+                  initial={{ opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: Math.min(i * 0.02, 0.4) }}
+                  className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-800/70 bg-slate-900/30 px-3 py-2 text-xs"
+                >
+                  <Badge tone={statusTone(r.gdpr_status)}>GDPR {r.gdpr_score.toFixed(0)}</Badge>
+                  <Badge tone={statusTone(r.dpdp_status)}>DPDP {r.dpdp_score.toFixed(0)}</Badge>
+                  <Badge tone={r.risk_level === "low" ? "emerald" : r.risk_level === "medium" ? "amber" : "rose"}>risk {r.risk_score.toFixed(0)}</Badge>
+                  <span className="mono text-slate-500">{r.completed_requests} done / {r.open_requests} open</span>
+                  <span className="ml-auto text-slate-500">{r.created_at ? new Date(r.created_at).toLocaleString() : "—"}</span>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

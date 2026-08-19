@@ -18,11 +18,17 @@ logger = logging.getLogger("veriunlearn.embeddings")
 class VectorStore(Protocol):
     def upsert(self, collection: str, vector_id: str, vector: np.ndarray, payload: dict[str, Any]) -> None: ...
 
+    def upsert_batch(
+        self, collection: str, vectors: list[tuple[str, np.ndarray, dict[str, Any]]]
+    ) -> None: ...
+
     def search(self, collection: str, vector: np.ndarray, k: int = 10) -> list[dict[str, Any]]: ...
 
     def delete(self, collection: str, vector_ids: list[str]) -> None: ...
 
     def count(self, collection: str) -> int: ...
+
+    def drop_collection(self, name: str) -> None: ...
 
 
 class MemoryVectorStore:
@@ -36,6 +42,13 @@ class MemoryVectorStore:
 
     def upsert(self, collection: str, vector_id: str, vector: np.ndarray, payload: dict[str, Any]) -> None:
         self._collection(collection)[vector_id] = (np.asarray(vector, dtype=float), payload)
+
+    def upsert_batch(
+        self, collection: str, vectors: list[tuple[str, np.ndarray, dict[str, Any]]]
+    ) -> None:
+        bucket = self._collection(collection)
+        for vector_id, vector, payload in vectors:
+            bucket[vector_id] = (np.asarray(vector, dtype=float), payload)
 
     def search(self, collection: str, vector: np.ndarray, k: int = 10) -> list[dict[str, Any]]:
         query = np.asarray(vector, dtype=float)
@@ -60,6 +73,9 @@ class MemoryVectorStore:
     def count(self, collection: str) -> int:
         return len(self._collection(collection))
 
+    def drop_collection(self, name: str) -> None:
+        self._data.pop(name, None)
+
 
 class QdrantVectorStore:
     """Qdrant-backed store; requires the optional ``qdrant-client`` package."""
@@ -67,7 +83,11 @@ class QdrantVectorStore:
     def __init__(self, url: str, api_key: str | None = None) -> None:
         try:
             from qdrant_client import QdrantClient  # type: ignore[import-not-found]
-            from qdrant_client.models import Distance, PointStruct, VectorParams  # type: ignore[import-not-found]
+            from qdrant_client.models import (  # type: ignore[import-not-found]
+                Distance,
+                PointStruct,
+                VectorParams,
+            )
         except ImportError as exc:  # pragma: no cover
             raise RuntimeError("qdrant-client not installed (pip install qdrant-client)") from exc
         self._client = QdrantClient(url=url, api_key=api_key)
@@ -90,6 +110,27 @@ class QdrantVectorStore:
             points=[self._PointStruct(id=vector_id, vector=vector.tolist(), payload=payload)],
         )
 
+    def upsert_batch(
+        self, collection: str, vectors: list[tuple[str, np.ndarray, dict[str, Any]]]
+    ) -> None:
+        """Bulk upsert: one collection check + one request for all points.
+
+        Per-point upserts cost ~25 ms each with qdrant-client (collection
+        existence check per call), which makes large ingests quadratic in
+        round-trips. Batching keeps a 5,000-row upload at a handful of calls.
+        """
+        if not vectors:
+            return
+        vector = np.asarray(vectors[0][1], dtype=float)
+        self._ensure_collection(collection, vector.shape[0])
+        self._client.upsert(
+            collection,
+            points=[
+                self._PointStruct(id=vector_id, vector=np.asarray(v, dtype=float).tolist(), payload=payload)
+                for vector_id, v, payload in vectors
+            ],
+        )
+
     def search(self, collection: str, vector: np.ndarray, k: int = 10) -> list[dict[str, Any]]:
         if not self._client.collection_exists(collection):
             return []
@@ -108,6 +149,10 @@ class QdrantVectorStore:
             return 0
         return int(self._client.count(collection).count)
 
+    def drop_collection(self, name: str) -> None:
+        if self._client.collection_exists(name):
+            self._client.delete_collection(name)
+
 
 class VectorStoreFactory:
     @staticmethod
@@ -117,8 +162,17 @@ class VectorStoreFactory:
         if settings.VECTOR_STORE_BACKEND == "qdrant":
             if not settings.QDRANT_URL:
                 raise RuntimeError("VECTOR_STORE_BACKEND=qdrant requires QDRANT_URL")
-            logger.info("Using Qdrant vector store at %s", settings.QDRANT_URL)
-            return QdrantVectorStore(settings.QDRANT_URL, settings.QDRANT_API_KEY)
+            try:
+                store = QdrantVectorStore(settings.QDRANT_URL, settings.QDRANT_API_KEY)
+                # Probe the connection so we can fall back early.
+                store._client.get_collections()
+                logger.info("Using Qdrant vector store at %s", settings.QDRANT_URL)
+                return store
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "Qdrant unavailable (%s) — falling back to in-memory vector store",
+                    exc,
+                )
         return MemoryVectorStore()
 
 

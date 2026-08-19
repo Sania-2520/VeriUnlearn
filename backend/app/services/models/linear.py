@@ -12,8 +12,6 @@ from __future__ import annotations
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 
-from app.services.models.base import UnlearnableModel
-
 
 class SklearnLinearModel:
     model_type = "linear"

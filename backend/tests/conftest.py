@@ -1,6 +1,7 @@
 """Test fixtures.
 
 - in-memory SQLite engine (StaticPool single shared connection)
+- in-memory vector store (overrides any Qdrant config in .env)
 - API client with the real FastAPI app and an overridden DB dependency
 - the unlearning dispatcher is replaced with a recorder; tests execute the
   recorded requests inline (after the HTTP transaction commits) via
@@ -16,7 +17,17 @@ from sqlalchemy.pool import StaticPool
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
+from app.services import embeddings as _embeddings_mod
+from app.services.embeddings import MemoryVectorStore
 from app.services.unlearning import UnlearningService
+
+
+@pytest_asyncio.fixture(autouse=True)
+def _use_memory_vector_store():
+    """Ensure every test uses the in-memory vector store regardless of .env config."""
+    _embeddings_mod._vector_store = MemoryVectorStore()
+    yield
+    _embeddings_mod._vector_store = None  # reset for next test
 
 
 @pytest_asyncio.fixture
@@ -35,6 +46,13 @@ async def db_engine():
 @pytest_asyncio.fixture
 async def session_factory(db_engine):
     return async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
+
+
+@pytest_asyncio.fixture
+async def db_session(session_factory):
+    """A single test session (no auto-commit) for service-level tests."""
+    async with session_factory() as session:
+        yield session
 
 
 @pytest_asyncio.fixture

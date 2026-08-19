@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/veriunlearn/veriunlearn/tree/main/docs
+    about: Check the docs (guides, API reference, troubleshooting) before opening an issue.
+  - name: Security
+    url: https://github.com/veriunlearn/veriunlearn/blob/main/SECURITY.md
+    about: Report vulnerabilities privately — do not open a public issue.

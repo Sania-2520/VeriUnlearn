@@ -11,16 +11,13 @@ import time
 import numpy as np
 from fastapi import APIRouter, Query
 from sklearn.metrics import accuracy_score, f1_score
-from sklearn.model_selection import train_test_split
 
 from app.api.deps import CurrentUser, DbSession
 from app.core.exceptions import NotFoundError
 from app.repositories.dataset_repo import DatasetRepository
 from app.repositories.model_repo import ModelRepository
-from app.schemas.common import MessageResponse
 from app.services.certified_removal import CertifiedRemovalService
 from app.services.influence import InfluenceEngine
-from app.services.models.linear import SklearnLinearModel
 from app.services.sisa import SISAEngine
 from app.services.unlearning import UnlearningService
 
@@ -51,7 +48,7 @@ async def run_benchmark(
     eval_records = [records[i] for i in idx[n_delete : n_delete + 300]]
 
     sisa = SISAEngine(db)
-    X_eval, y_eval, encoder = sisa.build_design_matrix(
+    X_eval, y_eval, _encoder = sisa.build_design_matrix(
         eval_records, dataset.feature_names, encoder=sisa.load_encoder(model)
     )
     classes = np.unique(y_eval)
