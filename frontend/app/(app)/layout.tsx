@@ -25,6 +25,7 @@ import {
   Shield,
   TerminalSquare,
   Activity,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -42,6 +43,7 @@ interface NavItem {
 }
 
 const nav: NavItem[] = [
+  { href: "/assistant", label: "Assistant", icon: Sparkles, roles: ["admin", "researcher", "auditor", "operator", "viewer"] },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "researcher", "auditor", "operator", "viewer"] },
   { href: "/privacy", label: "Privacy Auditor", icon: Fingerprint, roles: ["admin", "researcher", "auditor", "operator", "viewer"] },
   { href: "/unlearning", label: "Surgical Unlearning", icon: Scissors, roles: ["admin", "operator"] },

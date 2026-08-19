@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       setSession(res.access_token, res.user);
       setUserState(res.user);
-      router.push("/dashboard");
+      router.push("/assistant");
     },
     [router]
   );
@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       setSession(res.access_token, res.user);
       setUserState(res.user);
-      router.push("/dashboard");
+      router.push("/assistant");
     },
     [router]
   );

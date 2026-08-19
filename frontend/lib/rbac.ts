@@ -7,6 +7,7 @@
 export type Role = "admin" | "researcher" | "auditor" | "operator" | "viewer";
 
 const ROUTE_ROLES: Record<string, Role[]> = {
+  "/assistant": ["admin", "researcher", "auditor", "operator", "viewer"],
   "/dashboard": ["admin", "researcher", "auditor", "operator", "viewer"],
   "/privacy": ["admin", "researcher", "auditor", "operator", "viewer"],
   "/unlearning": ["admin", "operator"],

@@ -4,6 +4,7 @@ from app.api.v1 import (
     admin,
     analytics,
     apikeys,
+    assistant,
     attacks,
     auth,
     benchmarks,
@@ -21,6 +22,7 @@ from app.api.v1 import (
 
 api_router = APIRouter()
 api_router.include_router(auth.router)
+api_router.include_router(assistant.router)
 api_router.include_router(datasets.router)
 api_router.include_router(models.router)
 api_router.include_router(privacy.router)

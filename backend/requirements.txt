@@ -1,41 +1,136 @@
-# --- Web framework ---
-fastapi==0.115.6
-uvicorn[standard]==0.34.0
-python-multipart==0.0.20
-slowapi==0.1.9
+# ============================================
+# VeriUnlearn Requirements
+# Machine Unlearning with Verification
+# ============================================
 
-# --- Validation & config ---
-pydantic==2.10.4
-pydantic-settings==2.7.0
+# ----------------------------
+# FastAPI Backend
+# ----------------------------
+fastapi>=0.116.0
+uvicorn[standard]>=0.35.0
+starlette>=0.47.0
 
-# --- Database ---
-SQLAlchemy==2.0.36
-aiosqlite==0.20.0
-asyncpg==0.30.0
-alembic==1.14.0
+# ----------------------------
+# Database
+# ----------------------------
+sqlalchemy>=2.0.43
+alembic>=1.16.4
+aiosqlite>=0.21.0
+asyncpg>=0.30.0
+greenlet>=3.2.4
 
-# --- Security / crypto ---
-PyJWT==2.10.1
-bcrypt==4.2.1
-cryptography==44.0.0
+# ----------------------------
+# Validation
+# ----------------------------
+pydantic>=2.11.7
+pydantic-settings>=2.10.1
+email-validator>=2.3.0
 
-# --- ML ---
-numpy==2.2.1
-pandas==2.2.3
-scikit-learn==1.6.0
+# ----------------------------
+# Authentication & Security
+# ----------------------------
+python-jose[cryptography]>=3.5.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.3.0
+cryptography>=45.0.6
+PyJWT>=2.10.1
 
-# --- Certificates (PDF) ---
-fpdf2==2.8.2
+# ----------------------------
+# Environment Variables
+# ----------------------------
+python-dotenv>=1.1.1
 
-# --- PDF ingestion / parsing ---
-pypdf==5.1.0
-psutil>=6.0.0
-openpyxl>=3.1.0
+# ----------------------------
+# File Uploads
+# ----------------------------
+python-multipart>=0.0.20
 
-# --- Observability ---
-prometheus-client>=0.21.0
+# ----------------------------
+# Machine Learning
+# ----------------------------
+numpy>=2.3.2
+pandas>=2.3.1
+scikit-learn>=1.7.1
+scipy>=1.16.1
+joblib>=1.5.1
 
-# --- Testing ---
-pytest==8.3.4
-pytest-asyncio==0.25.0
-httpx==0.28.1
+# Optional Deep Learning
+torch>=2.8.0
+torchvision>=0.23.0
+
+# ----------------------------
+# Vector Database
+# ----------------------------
+qdrant-client>=1.15.1
+
+# ----------------------------
+# AI (Gemini)
+# ----------------------------
+google-genai>=1.30.0
+
+# ----------------------------
+# HTTP Clients
+# ----------------------------
+httpx>=0.28.1
+requests>=2.32.4
+
+# ----------------------------
+# Data Processing
+# ----------------------------
+orjson>=3.11.2
+
+# ----------------------------
+# Logging
+# ----------------------------
+loguru>=0.7.3
+rich>=14.1.0
+
+# ----------------------------
+# Visualization
+# ----------------------------
+matplotlib>=3.10.5
+plotly>=6.3.0
+
+# ----------------------------
+# Monitoring
+# ----------------------------
+prometheus-client>=0.22.1
+psutil>=7.0.0
+
+# ----------------------------
+# Redis (Optional)
+# ----------------------------
+redis>=6.4.0
+
+# ----------------------------
+# Email Notifications
+# ----------------------------
+aiosmtplib>=4.0.2
+
+# ----------------------------
+# Blockchain (Optional)
+# ----------------------------
+web3>=7.13.0
+
+# ----------------------------
+# Testing
+# ----------------------------
+pytest>=8.4.1
+pytest-asyncio>=1.1.0
+pytest-cov>=6.2.1
+
+# ----------------------------
+# Utilities
+# ----------------------------
+tqdm>=4.67.1
+tenacity>=9.1.2
+
+# ----------------------------
+# Production Server
+# ----------------------------
+gunicorn>=23.0.0
+
+# ----------------------------
+# CORS
+# ----------------------------
+fastapi-cli>=0.0.11

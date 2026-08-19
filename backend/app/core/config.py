@@ -88,6 +88,14 @@ class Settings(BaseSettings):
     # --- API keys (Phase 7) ---
     API_KEY_DEFAULT_QUOTA: int = 60
 
+    # --- Assistant (OpenAI-compatible LLM) ---
+    LLM_BASE_URL: str | None = None  # e.g. https://api.openai.com/v1
+    LLM_API_KEY: str | None = None
+    LLM_MODEL: str = "gpt-4o-mini"
+    LLM_TIMEOUT_SECONDS: int = 120
+    LLM_TEMPERATURE: float = 0.7
+    LLM_MAX_TOKENS: int = 2048
+
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def _split_origins(cls, v: object) -> object:
