@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Query
+from pydantic import BaseModel, Field
 
 from app.api.deps import CurrentUser, DbSession
 from app.api.serializers import deletion_request_out
@@ -16,12 +17,17 @@ from app.schemas.unlearning import (
     SelectiveDeletionRequest,
 )
 from app.services.audit import AuditService
+from app.services.chat_deletion import ChatDeletionService
 from app.services.unlearning import UnlearningService
 from app.workers.tasks import dispatch_unlearning, task_status
 
 router = APIRouter(prefix="/unlearning", tags=["unlearning"])
 
 _VALID_METHODS = {"retrain", "certified", "influence"}
+
+
+class ChatDeletionRequest(BaseModel):
+    mode: str = Field(..., description="'full' deletes the whole chat; 'sensitive' only scrubs PII")
 
 
 @router.post("/impact")
@@ -118,6 +124,27 @@ async def selective_unlearning(
     )
     await dispatch_unlearning(request.id)
     return DeletionRequestOut(**deletion_request_out(request))
+
+
+@router.post("/chats/{chat_session_id}/delete")
+async def delete_chat_session(
+    chat_session_id: str,
+    payload: ChatDeletionRequest,
+    db: DbSession,
+    user: CurrentUser,
+) -> dict:
+    """Surgically delete a chat session — either the whole conversation
+    (``mode=full``) or only the sensitive data inside it (``mode=sensitive``).
+
+    Every deletion mints a signed certificate stored in Certificates and fed
+    into the verification engine.
+    """
+    return await ChatDeletionService(db).delete(
+        user_id=user["sub"],
+        chat_session_id=chat_session_id,
+        mode=payload.mode,
+        actor=user["sub"],
+    )
 
 
 @router.post("/full-reset", response_model=DeletionRequestOut, status_code=202)

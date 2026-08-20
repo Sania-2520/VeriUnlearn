@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { api, clearSession, getUser, setSession } from "@/lib/api";
 
@@ -8,6 +8,7 @@ type User = { id: string; email: string; full_name: string; role: string };
 
 interface AuthContextValue {
   user: User | null;
+  initialized: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, full_name: string, password: string) => Promise<void>;
   logout: () => void;
@@ -16,8 +17,18 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUserState] = useState<User | null>(() => getUser());
+  // NOTE: `user` intentionally starts as `null` on BOTH the server and the
+  // first client render so SSR and CSR produce identical HTML. The persisted
+  // session is read from localStorage only after mount (in useEffect), so the
+  // initial paint is always the loading state and hydration can never diverge.
+  const [user, setUserState] = useState<User | null>(null);
+  const [initialized, setInitialized] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    setUserState(getUser());
+    setInitialized(true);
+  }, []);
 
   const login = useCallback(
     async (email: string, password: string) => {
@@ -53,7 +64,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router]);
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, initialized, login, register, logout }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 

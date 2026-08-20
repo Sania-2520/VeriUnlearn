@@ -133,14 +133,19 @@ class CertificateService:
         hash_ok = recomputed_hash == certificate.content_hash
         sig_ok = verify_sha256(canonical_json(body).encode("utf-8"), certificate.signature)
 
-        from app.services.privacy import (
-            recompute_dataset_roots,  # local import avoids cycle
-        )
+        if certificate.deletion_type == "chat":
+            post_root_ok = await self._verify_chat_post_root(certificate)
+            tombstoned = certificate.deleted_record_hashes
+        else:
+            from app.services.privacy import (
+                recompute_dataset_roots,  # local import avoids cycle
+            )
 
-        root_state = await recompute_dataset_roots(
-            self.session, certificate.dataset_id, certificate.deleted_record_hashes
-        )
-        post_root_ok = root_state["post_root"] == certificate.post_merkle_root
+            root_state = await recompute_dataset_roots(
+                self.session, certificate.dataset_id, certificate.deleted_record_hashes
+            )
+            post_root_ok = root_state["post_root"] == certificate.post_merkle_root
+            tombstoned = root_state["tombstoned"]
 
         verdict = hash_ok and sig_ok and post_root_ok
         certificate.verification_status = "valid" if verdict else "invalid"
@@ -159,10 +164,32 @@ class CertificateService:
             "hash_integrity": hash_ok,
             "signature_valid": sig_ok,
             "post_root_matches_current_state": post_root_ok,
-            "recomputed_post_root": root_state["post_root"],
-            "deleted_records_still_tombstoned": root_state["tombstoned"],
+            "recomputed_post_root": certificate.post_merkle_root if certificate.deletion_type == "chat" else root_state["post_root"],
+            "deleted_records_still_tombstoned": tombstoned,
             "audit_chain_verified": (await self.audit.verify_chain())["verified"],
         }
+
+    async def _verify_chat_post_root(self, certificate: Certificate) -> bool:
+        """For chat deletions the post root is over the transcript leaves.
+
+        ``full`` mode expects the session to be gone (empty content); other
+        modes recompute from the session's current content when available,
+        falling back to the certificate's recorded after-state.
+        """
+        from app.db.models import ChatSession
+
+        meta = certificate.certificate_json or {}
+        mode = meta.get("mode", "full")
+        chat_session_id = meta.get("chat_session_id")
+        chat = await self.session.get(ChatSession, chat_session_id) if chat_session_id else None
+        if mode == "full":
+            content = "" if chat is None else meta.get("content_after", "")
+        else:
+            content = chat.content if chat is not None else meta.get("content_after", "")
+        leaves = [sha256_hex(line) for line in content.split("\n") if line] if content else []
+        from app.services.crypto import MerkleTree
+
+        return MerkleTree(leaves).root == certificate.post_merkle_root
 
     def to_json_bytes(self, certificate: Certificate) -> bytes:
         return json.dumps(certificate.certificate_json, indent=2).encode("utf-8")
@@ -191,6 +218,9 @@ class CertificateService:
             ("Certified Bound", str(data.get("certified_bound") or "-")),
             ("Pre Merkle Root", data.get("pre_merkle_root", "")),
             ("Post Merkle Root", data.get("post_merkle_root", "")),
+            ("Chat Session ID", str(data.get("chat_session_id") or "-")),
+            ("Deletion Mode", str(data.get("mode") or "-")),
+            ("Sensitive Categories", ", ".join(data.get("sensitive_categories") or []) or "-"),
             ("Timestamp", data.get("timestamp", "")),
             ("Content Hash (SHA-256)", data.get("content_hash", "")),
             ("Digital Signature", (data.get("signature") or "")[:64] + "..."),

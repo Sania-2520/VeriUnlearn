@@ -697,3 +697,24 @@ class AnalyticsCache(Base):
     cache_key: Mapped[str] = mapped_column(String(128), unique=True, index=True, nullable=False)
     payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=_now, onupdate=_now)
+
+
+class ChatSession(Base):
+    """A chat conversation with the Assistant.
+
+    Stores the running transcript and the sensitive-data categories detected
+    in it so users can audit what was shared with the LLM.
+    """
+
+    __tablename__ = "chat_sessions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)  # first user message
+    content: Mapped[str] = mapped_column(Text, default="")  # running transcript
+    messages_json: Mapped[str] = mapped_column(Text, default="")  # structured [{role, content}] history
+    sensitive_data: Mapped[str] = mapped_column(Text, default="")  # comma-separated categories
+    message_count: Mapped[int] = mapped_column(Integer, default=0)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=_now, onupdate=_now, index=True)

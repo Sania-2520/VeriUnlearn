@@ -21,6 +21,6 @@ class UserRepository(BaseRepository[User]):
     async def create(self, *, email: str, full_name: str, password_hash: str, role: str = "operator") -> User:
         existing = await self.get_by_email(email)
         if existing is not None:
-            raise ConflictError(f"User with email {email} already exists")
+            raise ConflictError("Account already exists with this email. Please sign in instead.")
         user = User(email=email, full_name=full_name, password_hash=password_hash, role=role)
         return await self.add(user)

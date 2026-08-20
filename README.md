@@ -76,29 +76,72 @@ docs/               full guide set, IEEE paper, project report, diagrams, report
 
 ## Quickstart (local)
 
-Prerequisites: Python 3.12+, Node 22+.
+Prerequisites: **Python 3.12+**, **Node 22+**, **Git**.
+
+> Everything below runs with zero external services — SQLite is used as the
+> dev database and the model ships a tiny scikit-learn pipeline. No Docker,
+> Redis, PostgreSQL or GPU required.
+
+### 1. Backend
 
 ```bash
-# 1. Backend
+# create + activate a virtual environment
 python -m venv .venv
-source .venv/bin/activate            # Windows: .venv\Scripts\activate
+# Windows:
+.venv\Scripts\activate
+# macOS / Linux:
+source .venv/bin/activate
+
+# install Python dependencies
 pip install -r backend/requirements.txt
 
-# 2. Seed demo data (downloads Adult Census, trains a 4-shard SISA model)
+# configure environment (copy example first time)
 cd backend
-python -m app.seed
-
-# 3. Run API
-uvicorn app.main:app --reload        # http://localhost:8000  ·  /docs
-
-# 4. Frontend (new terminal)
-cd frontend
-npm install
-npm run dev                          # http://localhost:3000
+cp .env.example .env        # Windows: copy .env.example .env
+# edit .env if needed — especially LLM_* keys to enable the Assistant chat
+cd ..
 ```
 
-Demo logins (created by the seed): `admin@veriunlearn.dev / admin12345`,
-`operator@veriunlearn.dev / operator123`, `auditor@veriunlearn.dev / auditor123`.
+Apply database migrations and seed the demo data (downloads the Adult Census
+dataset and trains a 4-shard SISA model):
+
+```bash
+cd backend
+alembic upgrade head
+python -m app.seed
+```
+
+Run the API server (http://localhost:8000 · interactive docs at `/docs`):
+
+```bash
+cd backend
+uvicorn app.main:app --reload
+```
+
+### 2. Frontend
+
+In a **new terminal**:
+
+```bash
+cd frontend
+npm install          # first time only
+npm run dev          # http://localhost:3000
+```
+
+### 3. Log in
+
+Open http://localhost:3000 and sign in with a seeded account:
+
+| Role     | Email                    | Password    |
+|----------|--------------------------|-------------|
+| Admin    | `admin@veriunlearn.dev`  | `admin12345`|
+| Operator | `operator@veriunlearn.dev`| `operator123`|
+| Auditor  | `auditor@veriunlearn.dev` | `auditor123` |
+
+> The **Assistant** chat tab needs an LLM provider. Set `LLM_BASE_URL`,
+> `LLM_API_KEY` and `LLM_MODEL` in `backend/.env` (any OpenAI-compatible
+> endpoint works — OpenAI, Groq, OpenRouter, vLLM, …). Without it, the rest
+> of the platform still runs; only the live chat streaming is disabled.
 
 ### Walk the demo flow
 

@@ -5,26 +5,16 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-  LayoutDashboard,
   Fingerprint,
-  Database,
   FileCheck2,
   ScrollText,
-  Scale,
-  Crosshair,
-  Gauge,
-  Settings,
   LogOut,
   Lock,
   Menu,
   X,
   Scissors,
   ShieldCheck,
-  Atom,
   Bell,
-  Shield,
-  TerminalSquare,
-  Activity,
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
@@ -44,25 +34,15 @@ interface NavItem {
 
 const nav: NavItem[] = [
   { href: "/assistant", label: "Assistant", icon: Sparkles, roles: ["admin", "researcher", "auditor", "operator", "viewer"] },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "researcher", "auditor", "operator", "viewer"] },
+  { href: "/audit", label: "Audit Trail", icon: ScrollText, roles: ["admin", "researcher", "auditor"] },
   { href: "/privacy", label: "Privacy Auditor", icon: Fingerprint, roles: ["admin", "researcher", "auditor", "operator", "viewer"] },
   { href: "/unlearning", label: "Surgical Unlearning", icon: Scissors, roles: ["admin", "operator"] },
-  { href: "/datasets", label: "Datasets & Training", icon: Database, roles: ["admin", "researcher", "auditor", "operator", "viewer"] },
   { href: "/verification", label: "Verification", icon: ShieldCheck, roles: ["admin", "researcher", "auditor", "operator"] },
   { href: "/certificates", label: "Certificates", icon: FileCheck2, roles: ["admin", "researcher", "auditor", "operator", "viewer"] },
-  { href: "/audit", label: "Audit Trail", icon: ScrollText, roles: ["admin", "researcher", "auditor"] },
-  { href: "/compliance", label: "Compliance", icon: Scale, roles: ["admin", "researcher", "auditor", "operator", "viewer"] },
-  { href: "/attacks", label: "Attack Lab", icon: Crosshair, roles: ["admin", "researcher", "operator"] },
-  { href: "/benchmark", label: "Benchmark", icon: Gauge, roles: ["admin", "researcher", "operator"] },
-  { href: "/research", label: "Research Hub", icon: Atom, roles: ["admin", "researcher"] },
-  { href: "/monitoring", label: "Monitoring", icon: Activity, roles: ["admin", "auditor"] },
-  { href: "/developer", label: "Developer", icon: TerminalSquare, roles: ["admin", "researcher", "auditor", "operator"] },
-  { href: "/admin", label: "Admin", icon: Shield, roles: ["admin"] },
-  { href: "/settings", label: "Settings", icon: Settings, roles: ["admin", "researcher", "auditor", "operator", "viewer"] },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user, initialized, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -74,16 +54,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
+    if (!initialized) return;
     if (!user) router.replace("/login");
-  }, [user, router]);
+  }, [initialized, user, router]);
 
   // Phase 7 page guard: hide routes the user's role cannot access.
   useEffect(() => {
-    if (!user) return;
-    if (!canView(user.role, pathname)) router.replace("/dashboard");
-  }, [user, pathname, router]);
+    if (!initialized || !user) return;
+    if (!canView(user.role, pathname)) router.replace("/assistant");
+  }, [initialized, user, pathname, router]);
 
-  if (!user) {
+  if (!initialized || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Spinner className="h-8 w-8" />

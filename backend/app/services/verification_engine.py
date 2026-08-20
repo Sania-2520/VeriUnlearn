@@ -30,6 +30,7 @@ from app.core.exceptions import NotFoundError, ValidationFailedError
 from app.core.security import verify_sha256
 from app.db.models import (
     Certificate,
+    ChatSession,
     Dataset,
     DatasetRecord,
     DeletionRequest,
@@ -45,6 +46,7 @@ from app.services.audit import AuditService
 from app.services.crypto import MerkleTree, canonical_json, leaf_hash, sha256_hex
 from app.services.embeddings import get_vector_store
 from app.services.merkle_engine import MerkleEngine
+from app.services.pii_detection import PIIDetectionEngine
 
 logger = __import__("logging").getLogger("veriunlearn.verification")
 
@@ -93,14 +95,17 @@ class VerificationService:
         start = time.monotonic()
         checks: dict[str, dict[str, Any]] = {}
 
-        checks["records"] = await self._check_records(cert)
-        checks["embeddings"] = await self._check_embeddings(cert)
-        checks["vectors"] = await self._check_vectors(cert)
-        checks["versions"] = await self._check_versions(cert)
-        checks["merkle"] = await self._check_merkle(cert)
-        checks["signature"] = await self._check_signature(cert)
-        checks["audit"] = await self._check_audit()
-        checks["consistency"] = await self._check_consistency(cert)
+        if cert.deletion_type == "chat":
+            checks = await self._run_chat_checks(cert)
+        else:
+            checks["records"] = await self._check_records(cert)
+            checks["embeddings"] = await self._check_embeddings(cert)
+            checks["vectors"] = await self._check_vectors(cert)
+            checks["versions"] = await self._check_versions(cert)
+            checks["merkle"] = await self._check_merkle(cert)
+            checks["signature"] = await self._check_signature(cert)
+            checks["audit"] = await self._check_audit()
+            checks["consistency"] = await self._check_consistency(cert)
 
         passed = sum(1 for c in checks.values() if c["passed"])
         verdict = "valid" if passed == len(checks) else "invalid"
@@ -144,6 +149,96 @@ class VerificationService:
         return report
 
     # ---------------------------------------------------------------- checks
+
+    # ----------------------------------------------------------- chat checks
+
+    async def _run_chat_checks(self, cert: Certificate) -> dict[str, dict[str, Any]]:
+        """Verify a chat-deletion certificate against live chat state.
+
+        Chat certificates commit to the transcript Merkle roots and the scrub
+        mode at issue time, so the checks differ from the dataset pipeline:
+
+        - **signature**  — the certificate body hash + RSA signature validate.
+        - **merkle**     — the post root recomputed from the *current* chat
+                           transcript matches the certificate.
+        - **content**    — the deletion is real: for ``full`` the chat session
+                           row is gone; for ``sensitive`` the remaining
+                           transcript re-scans PII-clean and equals the
+                           certificate's recorded after-state.
+        - **audit**      — the hash-chained audit trail is intact.
+        """
+        return {
+            "signature": await self._check_signature(cert),
+            "merkle": await self._check_chat_merkle(cert),
+            "content": await self._check_chat_content(cert),
+            "audit": await self._check_audit(),
+        }
+
+    def _chat_metadata(self, cert: Certificate) -> dict[str, Any]:
+        meta = cert.certificate_json or {}
+        return {
+            "chat_session_id": meta.get("chat_session_id"),
+            "mode": meta.get("mode", "full"),
+            "content_after": meta.get("content_after", ""),
+        }
+
+    async def _current_chat_content(self, cert: Certificate) -> str:
+        meta = self._chat_metadata(cert)
+        if meta["mode"] == "full":
+            return ""  # the whole chat is gone by design
+        chat = await self.session.get(ChatSession, meta["chat_session_id"])
+        return chat.content if chat is not None else meta["content_after"]
+
+    async def _check_chat_merkle(self, cert: Certificate) -> dict[str, Any]:
+        meta = self._chat_metadata(cert)
+        content = await self._current_chat_content(cert)
+        leaves = [sha256_hex(line) for line in content.split("\n") if line] if content else []
+        tree = MerkleTree(leaves)
+        post_ok = tree.root == cert.post_merkle_root
+        snapshot = MerkleEngine.snapshot(tree)
+        return {
+            "passed": post_ok,
+            "details": {
+                "recomputed_post_root": tree.root,
+                "certificate_post_root": cert.post_merkle_root,
+                "post_root_matches": post_ok,
+                "mode": meta["mode"],
+                "chat_session_id": meta["chat_session_id"],
+                "leaf_count": len(leaves),
+            },
+            "snapshot": snapshot,
+        }
+
+    async def _check_chat_content(self, cert: Certificate) -> dict[str, Any]:
+        meta = self._chat_metadata(cert)
+        chat = await self.session.get(ChatSession, meta["chat_session_id"])
+
+        if meta["mode"] == "full":
+            removed = chat is None
+            return {
+                "passed": removed,
+                "details": {
+                    "chat_session_gone": removed,
+                    "expected": "deleted",
+                    "found": "deleted" if chat is None else "still present",
+                },
+            }
+
+        # Sensitive scrub: session must survive with a PII-clean transcript
+        # equal to the certificate's recorded after-state.
+        content = chat.content if chat is not None else ""
+        findings = PIIDetectionEngine().analyze(content)
+        pii_clean = not findings.findings
+        matches_after = content == meta["content_after"]
+        passed = chat is not None and pii_clean and matches_after
+        return {
+            "passed": passed,
+            "details": {
+                "chat_session_present": chat is not None,
+                "pii_findings_after": len(findings.findings),
+                "transcript_matches_after_state": matches_after,
+            },
+        }
 
     async def _check_records(self, cert: Certificate) -> dict[str, Any]:
         """All claimed records must be tombstoned with a matching tombstone.

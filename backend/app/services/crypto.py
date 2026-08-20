@@ -78,7 +78,9 @@ class MerkleTree:
 
     @property
     def root(self) -> str:
-        return self.levels[-1][0] if self.levels else sha256_hex("empty-tree")
+        if not self.leaves:
+            return sha256_hex("empty-tree")
+        return self.levels[-1][0]
 
     def proof(self, leaf: str) -> list[dict[str, str]]:
         """Merkle proof for ``leaf``: list of {hash, side} siblings.

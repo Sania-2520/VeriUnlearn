@@ -53,8 +53,6 @@ interface Certificate {
 export default function VerificationPage() {
   const qc = useQueryClient();
   const [certId, setCertId] = useState("");
-  const [scope, setScope] = useState<"certificate" | "dataset">("certificate");
-  const [datasetFilter, setDatasetFilter] = useState("");
   const [notice, setNotice] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
   const certificates = useQuery<Certificate[]>({
@@ -71,7 +69,7 @@ export default function VerificationPage() {
     mutationFn: () =>
       api.post<{ report_id: string; verdict: string; checks_passed: number; checks_total: number; duration_seconds: number }>(
         "/api/v1/verification/run",
-        { certificate_id: scope === "certificate" ? certId || undefined : undefined, dataset_id: scope === "dataset" ? datasetFilter || undefined : undefined }
+        { certificate_id: certId || undefined }
       ),
     onSuccess: async (data) => {
       setNotice({
@@ -137,50 +135,18 @@ export default function VerificationPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm text-slate-400">Target:</span>
-            <div className="flex gap-2">
-              {(["certificate", "dataset"] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setScope(s)}
-                  className={`rounded-lg border px-3 py-2 text-sm capitalize transition-colors ${
-                    scope === s ? "border-cyan-400/50 bg-cyan-500/10 text-cyan-300" : "border-slate-700 text-slate-400 hover:bg-slate-800/50"
-                  }`}
-                >
-                  {s}
-                </button>
+            <Select value={certId} onChange={(e) => setCertId(e.target.value)} className="min-w-[320px] flex-1">
+              <option value="">— select a certificate —</option>
+              {(certificates.data ?? []).map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.subject_user_id} · {c.deletion_type} · {c.deleted_record_count} records · {c.id.slice(0, 8)}
+                </option>
               ))}
-            </div>
+            </Select>
+            <Button onClick={() => run.mutate()} loading={run.isPending} disabled={!certId}>
+              <ShieldCheck className="h-4 w-4" /> Run verification
+            </Button>
           </div>
-
-          {scope === "certificate" ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <Select value={certId} onChange={(e) => setCertId(e.target.value)} className="min-w-[320px] flex-1">
-                <option value="">— select a certificate —</option>
-                {(certificates.data ?? []).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.subject_user_id} · {c.deletion_type} · {c.deleted_record_count} records · {c.id.slice(0, 8)}
-                  </option>
-                ))}
-              </Select>
-              <Button onClick={() => run.mutate()} loading={run.isPending} disabled={!certId}>
-                <ShieldCheck className="h-4 w-4" /> Run verification
-              </Button>
-            </div>
-          ) : (
-            <DatasetPicker value={datasetFilter} onChange={setDatasetFilter} />
-          )}
-        </CardContent>
-      </Card>
-
-      {/* verification flow */}
-      <Card className="border-emerald-500/20">
-        <CardHeader>
-          <CardTitle>Verification pipeline</CardTitle>
-          <ShieldCheck className="h-5 w-5 text-emerald-400" />
-        </CardHeader>
-        <CardContent>
-          <FlowSteps />
         </CardContent>
       </Card>
 
@@ -266,53 +232,5 @@ export default function VerificationPage() {
         </CardContent>
       </Card>
     </div>
-  );
-}
-
-function FlowSteps() {
-  const steps = [
-    { label: "Deletion", desc: "records tombstoned" },
-    { label: "Retraining", desc: "shards scrubbed" },
-    { label: "Verification", desc: "8 checks run" },
-    { label: "Merkle", desc: "roots recomputed" },
-    { label: "Signature", desc: "RSA verified" },
-    { label: "Certificate", desc: "bound to roots" },
-    { label: "Audit", desc: "chain intact" },
-    { label: "Completed", desc: "report issued" },
-  ];
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      {steps.map((s, i) => (
-        <div key={s.label} className="flex items-center gap-2">
-          <div className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-2">
-            <span className={`h-2 w-2 rounded-full ${i < 3 ? "bg-cyan-400" : i < 7 ? "bg-violet-400" : "bg-emerald-400"}`} />
-            <div>
-              <p className="text-xs font-semibold text-slate-200">{s.label}</p>
-              <p className="text-[10px] text-slate-500">{s.desc}</p>
-            </div>
-          </div>
-          {i < steps.length - 1 && <ArrowRight className="h-3.5 w-3.5 text-slate-600" />}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function DatasetPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const datasets = useQuery<{ datasets: { id: string; name: string; record_count: number; status: string }[] }>({
-    queryKey: ["datasets"],
-    queryFn: () => api.get("/api/v1/datasets"),
-  });
-  if (datasets.isLoading) return <Spinner />;
-  const list = datasets.data?.datasets ?? [];
-  return (
-    <Select value={value} onChange={(e) => onChange(e.target.value)} className="max-w-md">
-      <option value="">— select a dataset —</option>
-      {list.map((d) => (
-        <option key={d.id} value={d.id}>
-          {d.name} · {d.record_count} records
-        </option>
-      ))}
-    </Select>
   );
 }
