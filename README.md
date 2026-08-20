@@ -15,7 +15,7 @@ while generating **cryptographic proof that the deletion actually happened** —
 Instead of retraining an entire model for every deletion request, VeriUnlearn combines
 **SISA training**, **influence functions**, and **certified removal** into a single pipeline,
 then anchors every deletion with **Merkle-tree proofs, RSA-signed certificates, and an immutable
-hash-chained audit trail** — with optional Ethereum testnet registration.
+hash-chained audit trail**.
 
 The repository ships a fully runnable application: **ingest → train sharded model → audit an
 identity → selectively unlearn → certificate → verify → compliance dashboard.** No placeholders —
